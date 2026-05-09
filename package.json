@@ -1,0 +1,39 @@
+{
+  "name": "hospitalisation-back",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/apps/clinique/src/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/apps/clinique/src/main.js",
+    "start:dev": "ts-node-dev --respawn --transpile-only apps/clinique/src/main.ts",
+    "test": "echo \"No tests configured yet\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@as-integrations/express5": "^1.1.2",
+    "@nestjs/apollo": "^13.4.0",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/graphql": "^13.4.0",
+    "@nestjs/platform-express": "^11.1.19",
+    "@nestjs/typeorm": "^11.0.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "graphql": "^16.14.0",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^0.3.29"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.3"
+  }
+}
