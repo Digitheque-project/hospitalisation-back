@@ -5,16 +5,24 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import {
   AvisMedicalEntity,
+  AffectationLitEntity,
   DemandeAvisEntity,
+  DemandeTransfertEntity,
   DiagnosticsEntity,
   HospitalisationEntity,
+  PrescriptionMedicaleEntity,
 } from './hospitalisation.entities';
 import { HospitalisationService } from './hospitalisation.service';
 import {
+  CloturerHospitalisationDto,
+  CreateAffectationLitDto,
   CreateAvisMedicalDto,
   CreateDemandeAvisDto,
+  CreateDemandeTransfertDto,
   CreateDiagnosticsDto,
   CreateHospitalisationDto,
+  CreatePrescriptionMedicaleDto,
+  TraiterDemandeTransfertDto,
 } from './hospitalisation.dto';
 
 @Resolver(() => HospitalisationEntity)
@@ -26,6 +34,12 @@ export class HospitalisationResolver {
   @Roles('ONM')
   createHospitalisation(@Args('input') input: CreateHospitalisationDto) {
     return this.hospitalisationService.createHospitalisation(input);
+  }
+
+  @Mutation(() => AffectationLitEntity)
+  @Roles('ONM', 'ONIM')
+  createAffectationLit(@Args('input') input: CreateAffectationLitDto) {
+    return this.hospitalisationService.createAffectationLit(input);
   }
 
   @Query(() => HospitalisationEntity, { nullable: true })
@@ -62,5 +76,38 @@ export class HospitalisationResolver {
     @Context() context: { req?: { user?: { orderNumber?: string } } },
   ) {
     return this.hospitalisationService.createAvisMedical(input, context?.req?.user ?? null);
+  }
+
+  @Mutation(() => PrescriptionMedicaleEntity)
+  @Roles('ONM')
+  createPrescriptionMedicale(
+    @Args('input') input: CreatePrescriptionMedicaleDto,
+    @Context() context: { req?: { user?: { orderNumber?: string } } },
+  ) {
+    return this.hospitalisationService.createPrescriptionMedicale(input, context?.req?.user ?? null);
+  }
+
+  @Mutation(() => DemandeTransfertEntity)
+  @Roles('ONM')
+  createDemandeTransfert(@Args('input') input: CreateDemandeTransfertDto) {
+    return this.hospitalisationService.createDemandeTransfert(input);
+  }
+
+  @Mutation(() => DemandeTransfertEntity)
+  @Roles('ONM')
+  traiterDemandeTransfert(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: TraiterDemandeTransfertDto,
+  ) {
+    return this.hospitalisationService.traiterDemandeTransfert(id, input);
+  }
+
+  @Mutation(() => HospitalisationEntity)
+  @Roles('ONM')
+  cloturerHospitalisation(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('input') input: CloturerHospitalisationDto,
+  ) {
+    return this.hospitalisationService.cloturerHospitalisation(id, input);
   }
 }

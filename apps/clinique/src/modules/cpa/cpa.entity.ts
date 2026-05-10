@@ -32,6 +32,34 @@ export class CpaEntity {
   @Column({ type: 'int' })
   asaScore: number;
 
+  @Field()
+  @Column({ type: 'varchar', length: 180 })
+  typeChirurgie: string;
+
+  @Field()
+  @Column({ type: 'varchar', length: 180 })
+  chirurgien: string;
+
+  @Field(() => Int)
+  @Column({ type: 'int' })
+  dureePrevueMinutes: number;
+
+  @Field()
+  @Column({ type: 'boolean', default: false })
+  risqueHemorragique: boolean;
+
+  @Field()
+  @Column({ type: 'boolean', default: false })
+  urgence: boolean;
+
+  @Field()
+  @Column({ type: 'varchar', length: 180 })
+  decisionAnesthesique: string;
+
+  @Field()
+  @Column({ type: 'text' })
+  protocoleInstructions: string;
+
   @Field(() => CpaStatus)
   @Column({ type: 'varchar', default: CpaStatus.PLANIFIE })
   status: CpaStatus;

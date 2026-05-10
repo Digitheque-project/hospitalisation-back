@@ -22,6 +22,9 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = this.getRequest(context);
+    if (request?.method === 'GET') {
+      return true;
+    }
     const profileHeaderName = this.configService.get<string>(
       'SECURITY_PROFILE_HEADER',
       'x-profile',

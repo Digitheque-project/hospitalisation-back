@@ -13,7 +13,6 @@ exports.DossierPatientUnique = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const cpa_entity_1 = require("../cpa/cpa.entity");
 const vpa_entity_1 = require("../vpa/vpa.entity");
-const bloc_entity_1 = require("../bloc/bloc.entity");
 let DossierPatientUnique = class DossierPatientUnique {
 };
 exports.DossierPatientUnique = DossierPatientUnique;
@@ -29,10 +28,6 @@ __decorate([
     (0, graphql_1.Field)(() => vpa_entity_1.VpaEntity, { nullable: true }),
     __metadata("design:type", Object)
 ], DossierPatientUnique.prototype, "vpa", void 0);
-__decorate([
-    (0, graphql_1.Field)(() => bloc_entity_1.BlocOperatoireEntity, { nullable: true }),
-    __metadata("design:type", Object)
-], DossierPatientUnique.prototype, "bloc", void 0);
 exports.DossierPatientUnique = DossierPatientUnique = __decorate([
     (0, graphql_1.ObjectType)()
 ], DossierPatientUnique);

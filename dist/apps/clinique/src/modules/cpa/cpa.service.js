@@ -24,11 +24,24 @@ let CpaService = class CpaService {
         this.hospitalisationService = hospitalisationService;
     }
     async create(input) {
-        await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
+        const hospitalisation = await this.hospitalisationService.findHospitalisationById(input.hospitalisationId);
+        if (!hospitalisation) {
+            throw new common_1.NotFoundException('Hospitalisation introuvable');
+        }
+        if (hospitalisation.idPatient !== input.patientId) {
+            throw new common_1.UnprocessableEntityException('Le patient de la CPA doit correspondre au patient de hospitalisation');
+        }
         const cpa = this.cpaRepository.create({
             patientId: input.patientId,
             hospitalisationId: input.hospitalisationId,
             asaScore: input.asaScore,
+            typeChirurgie: input.typeChirurgie,
+            chirurgien: input.chirurgien,
+            dureePrevueMinutes: input.dureePrevueMinutes,
+            risqueHemorragique: input.risqueHemorragique,
+            urgence: input.urgence,
+            decisionAnesthesique: input.decisionAnesthesique,
+            protocoleInstructions: input.protocoleInstructions,
             status: cpa_entity_1.CpaStatus.PLANIFIE,
         });
         return this.cpaRepository.save(cpa);

@@ -9,10 +9,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateAvisMedicalDto = exports.CreateDiagnosticsDto = exports.CreateDemandeAvisDto = exports.CreateHospitalisationDto = void 0;
+exports.UpdateLitStatutDto = exports.CreateLitDto = exports.CreateChambreDto = exports.CreateAffectationLitDto = exports.CloturerHospitalisationDto = exports.TraiterDemandeTransfertDto = exports.CreateDemandeTransfertDto = exports.CreatePrescriptionMedicaleDto = exports.CreateAvisMedicalDto = exports.CreateDiagnosticsDto = exports.CreateDemandeAvisDto = exports.CreateHospitalisationDto = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
+const hospitalisation_entities_1 = require("./hospitalisation.entities");
 let CreateHospitalisationDto = class CreateHospitalisationDto {
 };
 exports.CreateHospitalisationDto = CreateHospitalisationDto;
@@ -60,6 +61,13 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateHospitalisationDto.prototype, "commentaire", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Lit cible (optionnel)', required: false }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateHospitalisationDto.prototype, "idLit", void 0);
 exports.CreateHospitalisationDto = CreateHospitalisationDto = __decorate([
     (0, graphql_1.InputType)()
 ], CreateHospitalisationDto);
@@ -147,4 +155,180 @@ __decorate([
 exports.CreateAvisMedicalDto = CreateAvisMedicalDto = __decorate([
     (0, graphql_1.InputType)()
 ], CreateAvisMedicalDto);
+let CreatePrescriptionMedicaleDto = class CreatePrescriptionMedicaleDto {
+};
+exports.CreatePrescriptionMedicaleDto = CreatePrescriptionMedicaleDto;
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Hospitalisation reference', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePrescriptionMedicaleDto.prototype, "idHospitalisation", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Medecin prescripteur', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePrescriptionMedicaleDto.prototype, "idMedecin", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: "Contenu de l'ordonnance", required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePrescriptionMedicaleDto.prototype, "contenuPrescription", void 0);
+exports.CreatePrescriptionMedicaleDto = CreatePrescriptionMedicaleDto = __decorate([
+    (0, graphql_1.InputType)()
+], CreatePrescriptionMedicaleDto);
+let CreateDemandeTransfertDto = class CreateDemandeTransfertDto {
+};
+exports.CreateDemandeTransfertDto = CreateDemandeTransfertDto;
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Hospitalisation reference', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateDemandeTransfertDto.prototype, "idHospitalisation", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Service source', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateDemandeTransfertDto.prototype, "serviceSource", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Service destination', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateDemandeTransfertDto.prototype, "serviceDestination", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Motif du transfert', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateDemandeTransfertDto.prototype, "motifDemandeTransfert", void 0);
+exports.CreateDemandeTransfertDto = CreateDemandeTransfertDto = __decorate([
+    (0, graphql_1.InputType)()
+], CreateDemandeTransfertDto);
+let TraiterDemandeTransfertDto = class TraiterDemandeTransfertDto {
+};
+exports.TraiterDemandeTransfertDto = TraiterDemandeTransfertDto;
+__decorate([
+    (0, graphql_1.Field)(() => hospitalisation_entities_1.StatutDemandeTransfert),
+    (0, swagger_1.ApiProperty)({
+        enum: hospitalisation_entities_1.StatutDemandeTransfert,
+        description: 'Decision sur la demande de transfert',
+        required: true,
+    }),
+    (0, class_validator_1.IsEnum)(hospitalisation_entities_1.StatutDemandeTransfert),
+    __metadata("design:type", String)
+], TraiterDemandeTransfertDto.prototype, "statut", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Justification de la decision', required: false }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], TraiterDemandeTransfertDto.prototype, "justification", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Lit destination specifique', required: false }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], TraiterDemandeTransfertDto.prototype, "idLitDestination", void 0);
+exports.TraiterDemandeTransfertDto = TraiterDemandeTransfertDto = __decorate([
+    (0, graphql_1.InputType)()
+], TraiterDemandeTransfertDto);
+let CloturerHospitalisationDto = class CloturerHospitalisationDto {
+};
+exports.CloturerHospitalisationDto = CloturerHospitalisationDto;
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Mode de sortie', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CloturerHospitalisationDto.prototype, "idModeSortie", void 0);
+__decorate([
+    (0, graphql_1.Field)({ nullable: true }),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Commentaire de sortie', required: false }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CloturerHospitalisationDto.prototype, "commentaire", void 0);
+exports.CloturerHospitalisationDto = CloturerHospitalisationDto = __decorate([
+    (0, graphql_1.InputType)()
+], CloturerHospitalisationDto);
+let CreateAffectationLitDto = class CreateAffectationLitDto {
+};
+exports.CreateAffectationLitDto = CreateAffectationLitDto;
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Hospitalisation reference', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAffectationLitDto.prototype, "idHospitalisation", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Lit a affecter', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAffectationLitDto.prototype, "idLit", void 0);
+exports.CreateAffectationLitDto = CreateAffectationLitDto = __decorate([
+    (0, graphql_1.InputType)()
+], CreateAffectationLitDto);
+let CreateChambreDto = class CreateChambreDto {
+};
+exports.CreateChambreDto = CreateChambreDto;
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Service de rattachement', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateChambreDto.prototype, "idService", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Number, description: 'Numero de chambre', required: true }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CreateChambreDto.prototype, "numeroChambre", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Type de chambre', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateChambreDto.prototype, "type", void 0);
+exports.CreateChambreDto = CreateChambreDto = __decorate([
+    (0, graphql_1.InputType)()
+], CreateChambreDto);
+let CreateLitDto = class CreateLitDto {
+};
+exports.CreateLitDto = CreateLitDto;
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Chambre de rattachement', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateLitDto.prototype, "idChambre", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Code unique du lit', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateLitDto.prototype, "codeLit", void 0);
+exports.CreateLitDto = CreateLitDto = __decorate([
+    (0, graphql_1.InputType)()
+], CreateLitDto);
+let UpdateLitStatutDto = class UpdateLitStatutDto {
+};
+exports.UpdateLitStatutDto = UpdateLitStatutDto;
+__decorate([
+    (0, graphql_1.Field)(() => hospitalisation_entities_1.StatutLit),
+    (0, swagger_1.ApiProperty)({ enum: hospitalisation_entities_1.StatutLit, description: 'Nouveau statut du lit', required: true }),
+    (0, class_validator_1.IsEnum)(hospitalisation_entities_1.StatutLit),
+    __metadata("design:type", String)
+], UpdateLitStatutDto.prototype, "statut", void 0);
+exports.UpdateLitStatutDto = UpdateLitStatutDto = __decorate([
+    (0, graphql_1.InputType)()
+], UpdateLitStatutDto);
 //# sourceMappingURL=hospitalisation.dto.js.map

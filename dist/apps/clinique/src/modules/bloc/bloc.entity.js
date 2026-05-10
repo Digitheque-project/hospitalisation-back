@@ -13,6 +13,7 @@ exports.BlocOperatoireEntity = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const typeorm_1 = require("typeorm");
 const hospitalisation_entities_1 = require("../hospitalisation/hospitalisation.entities");
+const vpa_entity_1 = require("../vpa/vpa.entity");
 let BlocOperatoireEntity = class BlocOperatoireEntity {
 };
 exports.BlocOperatoireEntity = BlocOperatoireEntity;
@@ -42,10 +43,50 @@ __decorate([
     __metadata("design:type", String)
 ], BlocOperatoireEntity.prototype, "vpaId", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => vpa_entity_1.VpaEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'vpaId', referencedColumnName: 'id' }),
+    __metadata("design:type", vpa_entity_1.VpaEntity)
+], BlocOperatoireEntity.prototype, "vpa", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ default: false }),
     __metadata("design:type", Boolean)
-], BlocOperatoireEntity.prototype, "checklistOmsValidee", void 0);
+], BlocOperatoireEntity.prototype, "checklistAvantInduction", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], BlocOperatoireEntity.prototype, "checklistAvantIncision", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], BlocOperatoireEntity.prototype, "checklistSortieBloc", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'text' }),
+    __metadata("design:type", String)
+], BlocOperatoireEntity.prototype, "protocoleOperatoire", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'text' }),
+    __metadata("design:type", String)
+], BlocOperatoireEntity.prototype, "prescriptionPostOperatoire", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'text' }),
+    __metadata("design:type", String)
+], BlocOperatoireEntity.prototype, "reperesPostOperatoires", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], BlocOperatoireEntity.prototype, "scoreSccre", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], BlocOperatoireEntity.prototype, "sortieSalleReveilAutorisee", void 0);
 __decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.CreateDateColumn)(),

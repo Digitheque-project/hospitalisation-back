@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VpaEntity = exports.VpaStatus = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const typeorm_1 = require("typeorm");
+const cpa_entity_1 = require("../cpa/cpa.entity");
 const hospitalisation_entities_1 = require("../hospitalisation/hospitalisation.entities");
 var VpaStatus;
 (function (VpaStatus) {
@@ -47,6 +48,26 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], VpaEntity.prototype, "cpaId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => cpa_entity_1.CpaEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'cpaId', referencedColumnName: 'id' }),
+    __metadata("design:type", cpa_entity_1.CpaEntity)
+], VpaEntity.prototype, "cpa", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], VpaEntity.prototype, "instructionsRespectees", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'text' }),
+    __metadata("design:type", String)
+], VpaEntity.prototype, "ordonnanceAnesthesie", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    (0, typeorm_1.Column)({ type: 'timestamp' }),
+    __metadata("design:type", Date)
+], VpaEntity.prototype, "heureDepartBloc", void 0);
 __decorate([
     (0, graphql_1.Field)(() => VpaStatus),
     (0, typeorm_1.Column)({ type: 'varchar', default: VpaStatus.EN_ATTENTE }),

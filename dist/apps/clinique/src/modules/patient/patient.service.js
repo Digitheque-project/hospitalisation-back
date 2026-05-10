@@ -11,29 +11,25 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PatientService = void 0;
 const common_1 = require("@nestjs/common");
-const bloc_service_1 = require("../bloc/bloc.service");
 const cpa_service_1 = require("../cpa/cpa.service");
 const vpa_service_1 = require("../vpa/vpa.service");
 let PatientService = class PatientService {
-    constructor(cpaService, vpaService, blocService) {
+    constructor(cpaService, vpaService) {
         this.cpaService = cpaService;
         this.vpaService = vpaService;
-        this.blocService = blocService;
     }
     async getDossier(patientId) {
-        const [cpa, vpa, bloc] = await Promise.all([
+        const [cpa, vpa] = await Promise.all([
             this.cpaService.findLatestByPatient(patientId),
             this.vpaService.findLatestByPatient(patientId),
-            this.blocService.findLatestByPatient(patientId),
         ]);
-        return { patientId, cpa, vpa, bloc };
+        return { patientId, cpa, vpa };
     }
 };
 exports.PatientService = PatientService;
 exports.PatientService = PatientService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [cpa_service_1.CpaService,
-        vpa_service_1.VpaService,
-        bloc_service_1.BlocService])
+        vpa_service_1.VpaService])
 ], PatientService);
 //# sourceMappingURL=patient.service.js.map

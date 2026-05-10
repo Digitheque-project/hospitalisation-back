@@ -22,8 +22,13 @@ exports.HospitalisationModule = HospitalisationModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([
                 hospitalisation_entities_1.HospitalisationEntity,
+                hospitalisation_entities_1.PatientRefEntity,
+                hospitalisation_entities_1.ServiceRefEntity,
+                hospitalisation_entities_1.DemandeHospitalisationRefEntity,
+                hospitalisation_entities_1.PersonnelRefEntity,
                 hospitalisation_entities_1.ObservationMedicalEntity,
                 hospitalisation_entities_1.DiagnosticsEntity,
+                hospitalisation_entities_1.PrescriptionMedicaleEntity,
                 hospitalisation_entities_1.SoinsEntity,
                 hospitalisation_entities_1.ChambreEntity,
                 hospitalisation_entities_1.LitEntity,

@@ -61,7 +61,7 @@ __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
     (0, swagger_1.ApiOperation)({ summary: 'Signer un acte critique' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Acte signe' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Acte signe' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [SignatureDto]),
@@ -69,6 +69,7 @@ __decorate([
 ], SignatureController.prototype, "signer", null);
 exports.SignatureController = SignatureController = __decorate([
     (0, swagger_1.ApiTags)('Signature'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('signatures'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [signature_service_1.SignatureService])

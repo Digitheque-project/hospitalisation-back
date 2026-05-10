@@ -34,6 +34,24 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateVpaInput.prototype, "cpaId", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Instructions CPA respectees', required: true }),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateVpaInput.prototype, "instructionsRespectees", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: "Ordonnance d'anesthesie", required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateVpaInput.prototype, "ordonnanceAnesthesie", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Heure depart bloc (ISO)', required: true }),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateVpaInput.prototype, "heureDepartBloc", void 0);
 exports.CreateVpaInput = CreateVpaInput = __decorate([
     (0, graphql_1.InputType)()
 ], CreateVpaInput);

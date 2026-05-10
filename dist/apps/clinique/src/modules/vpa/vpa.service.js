@@ -27,10 +27,22 @@ let VpaService = class VpaService {
         this.hospitalisationService = hospitalisationService;
     }
     async create(input) {
-        await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
+        const hospitalisation = await this.hospitalisationService.findHospitalisationById(input.hospitalisationId);
+        if (!hospitalisation) {
+            throw new common_1.NotFoundException('Hospitalisation introuvable');
+        }
+        if (hospitalisation.idPatient !== input.patientId) {
+            throw new common_1.UnprocessableEntityException('Le patient de la VPA doit correspondre au patient de hospitalisation');
+        }
         const cpa = await this.cpaService.findById(input.cpaId);
         if (!cpa) {
             throw new common_1.NotFoundException('CPA referencee introuvable');
+        }
+        if (cpa.hospitalisationId !== input.hospitalisationId) {
+            throw new common_1.UnprocessableEntityException('La CPA referencee doit appartenir a la meme hospitalisation');
+        }
+        if (cpa.patientId !== input.patientId) {
+            throw new common_1.UnprocessableEntityException('La CPA referencee doit appartenir au meme patient');
         }
         if (cpa.status !== cpa_entity_1.CpaStatus.REALISE) {
             throw new common_1.UnprocessableEntityException('VPA interdite tant que la CPA n\'est pas REALISEE');
@@ -39,6 +51,9 @@ let VpaService = class VpaService {
             patientId: input.patientId,
             hospitalisationId: input.hospitalisationId,
             cpaId: input.cpaId,
+            instructionsRespectees: input.instructionsRespectees,
+            ordonnanceAnesthesie: input.ordonnanceAnesthesie,
+            heureDepartBloc: new Date(input.heureDepartBloc),
             status: vpa_entity_1.VpaStatus.EN_ATTENTE,
         });
         return this.vpaRepository.save(vpa);

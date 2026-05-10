@@ -1,84 +1,135 @@
-# hospitalisation-back
+# Hospitalisation Back
 
-Backend NestJS pour la gestion d'hospitalisation.
+Microservice NestJS (`apps/clinique`) pour le domaine **Clinique / Hospitalisation** du SIH.
 
-## Structure du projet
+Architecture API hybride:
+- **REST** pour les commandes transactionnelles et actions à effet de bord.
+- **GraphQL** pour les lectures agrégées.
+- **Règle de conception**: controllers REST et resolvers GraphQL délèguent aux mêmes services (logique métier centralisée).
 
-```text
-hospitalisation-back/
-├── .dockerignore
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-├── package.json
-├── package-lock.json
-├── tsconfig.json
-├── apps/
-│   └── clinique/
-│       ├── Dockerfile
-│       └── src/
-│           ├── app.module.ts
-│           ├── main.ts
-│           ├── common/
-│           │   ├── decorators/
-│           │   │   └── roles.decorator.ts
-│           │   └── guards/
-│           │       └── roles.guard.ts
-│           └── modules/
-│               ├── bloc/
-│               │   ├── bloc.controller.ts
-│               │   ├── bloc.entity.ts
-│               │   ├── bloc.module.ts
-│               │   ├── bloc.resolver.ts
-│               │   ├── bloc.service.ts
-│               │   └── planifier-bloc.input.ts
-│               ├── cpa/
-│               │   ├── cpa.controller.ts
-│               │   ├── cpa.entity.ts
-│               │   ├── cpa.module.ts
-│               │   ├── cpa.resolver.ts
-│               │   ├── cpa.service.ts
-│               │   └── create-cpa.input.ts
-│               ├── patient/
-│               │   ├── dossier-patient.type.ts
-│               │   ├── patient.module.ts
-│               │   ├── patient.resolver.ts
-│               │   └── patient.service.ts
-│               ├── signature/
-│               │   ├── signature.controller.ts
-│               │   └── signature.module.ts
-│               └── vpa/
-│                   ├── create-vpa.input.ts
-│                   ├── vpa.controller.ts
-│                   ├── vpa.entity.ts
-│                   ├── vpa.module.ts
-│                   ├── vpa.resolver.ts
-│                   └── vpa.service.ts
-└── dist/
-    ├── tsconfig.tsbuildinfo
-    └── apps/
-        └── clinique/
-            └── src/
-                ├── app.module.js
-                ├── app.module.js.map
-                ├── main.js
-                ├── main.js.map
-                ├── common/
-                │   ├── decorators/
-                │   │   ├── roles.decorator.js
-                │   │   └── roles.decorator.js.map
-                │   └── guards/
-                │       ├── roles.guard.js
-                │       └── roles.guard.js.map
-                └── modules/
-                    ├── bloc/
-                    ├── cpa/
-                    ├── patient/
-                    ├── signature/
-                    └── vpa/
+## Stack technique
+
+- NestJS 11
+- TypeORM 0.3 + PostgreSQL
+- GraphQL (Apollo)
+- Swagger / OpenAPI
+- Validation `class-validator`
+
+## Prérequis
+
+- Node.js 20+ recommandé
+- npm 10+
+- PostgreSQL
+- (optionnel) Docker / Docker Compose
+
+## Installation
+
+```bash
+npm install
 ```
 
-## Notes
+## Configuration
 
-- Le dossier `dist/` contient les fichiers compilés JavaScript du code TypeScript présent dans `apps/`.
-- Les sous-dossiers `dist/apps/clinique/src/modules/*` reprennent la même organisation que `apps/clinique/src/modules/*`.
+Copier `.env.example` vers `.env` et adapter les variables.
+
+Variables principales utilisées:
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `CLINIQUE_PORT` (défaut: `3001`)
+- `GRAPHQL_PLAYGROUND_ENABLED` (`true`/`false`)
+- `SECURITY_PROFILE_HEADER` (défaut: `x-profile`)
+- `SECURITY_ALLOWED_PROFILES` (défaut: `ONM,ONIM`)
+
+## Lancement
+
+### En local (dev)
+
+```bash
+npm run start:dev
+```
+
+### Build + run
+
+```bash
+npm run build
+npm run start
+```
+
+### Avec Docker
+
+```bash
+docker compose up --build
+```
+
+## Endpoints
+
+- API REST base: `http://localhost:3001`
+- Swagger: `http://localhost:3001/api/docs`
+- GraphQL: `http://localhost:3001/graphql`
+
+## Sécurité / Auth
+
+Les routes protégées utilisent `JwtAuthGuard` + `RolesGuard`.
+
+Headers attendus:
+- `Authorization: Bearer <token>`
+- `x-profile: <profil>` (ex: `ONM`, `ONIM`)
+- `x-user-id: <id utilisateur>`
+- `x-order-number: <numero ordre>` pour signatures critiques
+
+## Modules métier actuels
+
+- `hospitalisation`: admissions, affectations de lit, transferts, demandes d'avis, avis médicaux, diagnostics, prescriptions, sorties.
+- `cpa`: consultation pré-anesthésique.
+- `vpa`: visite pré-anesthésique.
+- `signature`: validation d'ordre professionnel.
+- `patient`: vue dossier patient agrégée (CPA/VPA).
+
+## Règles métier clés implémentées
+
+- Une admission/transfert doit cibler un **lit disponible** dans le service.
+- À l’affectation, le lit passe à `OCCUPE`; lors de sortie/changement, il repasse à `DISPONIBLE`.
+- VPA interdite si CPA associée non `REALISE`.
+- Demande d’avis: relance toutes les 5 minutes jusqu’à consultation.
+- Diagnostics / avis / prescriptions critiques vérifient le numéro d’ordre via le module `signature`.
+
+## Exemples REST utiles
+
+- Créer une hospitalisation: `POST /hospitalisations`
+- Affecter un lit: `POST /hospitalisations/affectations-lits`
+- Créer une demande de transfert: `POST /hospitalisations/demandes-transfert`
+- Traiter un transfert: `PATCH /hospitalisations/demandes-transfert/:id`
+- Créer une demande d'avis: `POST /hospitalisations/demandes-avis`
+- Marquer consultation avis: `PATCH /hospitalisations/demandes-avis/:id/consulter`
+- Créer diagnostic: `POST /hospitalisations/diagnostics`
+- Créer avis médical: `POST /hospitalisations/avis-medical`
+- Créer prescription: `POST /hospitalisations/prescriptions`
+- Clôturer hospitalisation: `PATCH /hospitalisations/:id/cloture`
+
+## Structure source (résumé)
+
+```text
+apps/clinique/src/
+  app.module.ts
+  main.ts
+  common/
+    decorators/
+    guards/
+  modules/
+    cpa/
+    hospitalisation/
+    patient/
+    signature/
+    vpa/
+```
+
+## Vérification rapide
+
+```bash
+npm run build
+```
+
+Si le build passe, le service est cohérent côté TypeScript.

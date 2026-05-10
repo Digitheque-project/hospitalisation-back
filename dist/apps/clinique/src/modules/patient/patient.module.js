@@ -8,7 +8,6 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PatientModule = void 0;
 const common_1 = require("@nestjs/common");
-const bloc_module_1 = require("../bloc/bloc.module");
 const cpa_module_1 = require("../cpa/cpa.module");
 const vpa_module_1 = require("../vpa/vpa.module");
 const patient_resolver_1 = require("./patient.resolver");
@@ -18,7 +17,7 @@ let PatientModule = class PatientModule {
 exports.PatientModule = PatientModule;
 exports.PatientModule = PatientModule = __decorate([
     (0, common_1.Module)({
-        imports: [cpa_module_1.CpaModule, vpa_module_1.VpaModule, bloc_module_1.BlocModule],
+        imports: [cpa_module_1.CpaModule, vpa_module_1.VpaModule],
         providers: [patient_service_1.PatientService, patient_resolver_1.PatientResolver],
     })
 ], PatientModule);

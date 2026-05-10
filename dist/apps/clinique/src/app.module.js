@@ -16,9 +16,9 @@ const typeorm_1 = require("@nestjs/typeorm");
 const path_1 = require("path");
 const cpa_module_1 = require("./modules/cpa/cpa.module");
 const vpa_module_1 = require("./modules/vpa/vpa.module");
-const bloc_module_1 = require("./modules/bloc/bloc.module");
 const patient_module_1 = require("./modules/patient/patient.module");
 const hospitalisation_module_1 = require("./modules/hospitalisation/hospitalisation.module");
+const auth_module_1 = require("./modules/auth/auth.module");
 const signature_module_1 = require("./modules/signature/signature.module");
 let AppModule = class AppModule {
 };
@@ -56,9 +56,9 @@ exports.AppModule = AppModule = __decorate([
             }),
             cpa_module_1.CpaModule,
             vpa_module_1.VpaModule,
-            bloc_module_1.BlocModule,
             patient_module_1.PatientModule,
             hospitalisation_module_1.HospitalisationModule,
+            auth_module_1.AuthModule,
             signature_module_1.SignatureModule,
         ],
     })

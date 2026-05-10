@@ -5,17 +5,19 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  PrimaryColumn,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
 export enum StatutHospitalisation {
   EN_COURS = 'EN_COURS',
-  TERMINEE = 'TERMINEE',
+  CLOTUREE = 'CLOTUREE',
 }
 
 export enum StatutLit {
-  LIBRE = 'LIBRE',
+  DISPONIBLE = 'DISPONIBLE',
   OCCUPE = 'OCCUPE',
+  MAINTENANCE = 'MAINTENANCE',
 }
 
 export enum StatutDemande {
@@ -23,9 +25,48 @@ export enum StatutDemande {
   CONSULTEE = 'CONSULTEE',
 }
 
+export enum StatutDemandeTransfert {
+  ACCEPTE = 'ACCEPTE',
+  A_VOIR = 'A_VOIR',
+  REFUSE = 'REFUSE',
+}
+
 registerEnumType(StatutHospitalisation, { name: 'StatutHospitalisation' });
 registerEnumType(StatutLit, { name: 'StatutLit' });
 registerEnumType(StatutDemande, { name: 'StatutDemande' });
+registerEnumType(StatutDemandeTransfert, { name: 'StatutDemandeTransfert' });
+
+@ObjectType()
+@Entity('patient_ref')
+export class PatientRefEntity {
+  @Field(() => ID)
+  @PrimaryColumn({ name: 'id_patient', type: 'varchar', length: 120 })
+  id: string;
+}
+
+@ObjectType()
+@Entity('service_ref')
+export class ServiceRefEntity {
+  @Field(() => ID)
+  @PrimaryColumn({ name: 'id_service', type: 'varchar', length: 120 })
+  id: string;
+}
+
+@ObjectType()
+@Entity('demande_hospitalisation_ref')
+export class DemandeHospitalisationRefEntity {
+  @Field(() => ID)
+  @PrimaryColumn({ name: 'id_demande_hospitalisation', type: 'varchar', length: 120 })
+  id: string;
+}
+
+@ObjectType()
+@Entity('personnel_ref')
+export class PersonnelRefEntity {
+  @Field(() => ID)
+  @PrimaryColumn({ name: 'id_personnel', type: 'varchar', length: 120 })
+  id: string;
+}
 
 @ObjectType()
 @Entity('mode_sortie')
@@ -53,13 +94,25 @@ export class HospitalisationEntity {
   @Column({ name: 'id_patient', type: 'varchar', length: 120 })
   idPatient: string;
 
+  @ManyToOne(() => PatientRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_patient', referencedColumnName: 'id' })
+  patient: PatientRefEntity;
+
   @Field()
   @Column({ name: 'id_service', type: 'varchar', length: 120 })
   idService: string;
 
+  @ManyToOne(() => ServiceRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_service', referencedColumnName: 'id' })
+  service: ServiceRefEntity;
+
   @Field()
   @Column({ name: 'id_demande_hospitalisation', type: 'varchar', length: 120 })
   idDemandeHospitalisation: string;
+
+  @ManyToOne(() => DemandeHospitalisationRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_demande_hospitalisation', referencedColumnName: 'id' })
+  demandeHospitalisation: DemandeHospitalisationRefEntity;
 
   @Field(() => Date)
   @Column({ name: 'date_entrer', type: 'timestamp' })
@@ -91,6 +144,33 @@ export class HospitalisationEntity {
 }
 
 @ObjectType()
+@Entity('prescription_medicale')
+export class PrescriptionMedicaleEntity {
+  @Field(() => ID)
+  @PrimaryGeneratedColumn('uuid', { name: 'id_prescription' })
+  id: string;
+
+  @Column({ name: 'id_hospitalisation', type: 'uuid' })
+  idHospitalisation: string;
+
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
+
+  @Field()
+  @Column({ name: 'id_medecin', type: 'varchar', length: 120 })
+  idMedecin: string;
+
+  @Field()
+  @Column({ name: 'contenu_prescription', type: 'text' })
+  contenuPrescription: string;
+
+  @Field(() => Date)
+  @Column({ name: 'date_prescription', type: 'timestamp' })
+  datePrescription: Date;
+}
+
+@ObjectType()
 @Entity('observation_medical')
 export class ObservationMedicalEntity {
   @Field(() => ID)
@@ -103,6 +183,10 @@ export class ObservationMedicalEntity {
   @Field()
   @Column({ name: 'id_personnel', type: 'varchar', length: 120 })
   idPersonnel: string;
+
+  @ManyToOne(() => PersonnelRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_personnel', referencedColumnName: 'id' })
+  personnel: PersonnelRefEntity;
 
   @Field(() => Date)
   @Column({ name: 'date_observation', type: 'timestamp' })
@@ -123,9 +207,17 @@ export class DiagnosticsEntity {
   @Column({ name: 'id_hospitalisation', type: 'uuid' })
   idHospitalisation: string;
 
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
+
   @Field()
   @Column({ name: 'id_personnel', type: 'varchar', length: 120 })
   idPersonnel: string;
+
+  @ManyToOne(() => PersonnelRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_personnel', referencedColumnName: 'id' })
+  personnel: PersonnelRefEntity;
 
   @Field(() => Date)
   @Column({ name: 'date_diagnostics', type: 'timestamp' })
@@ -146,9 +238,17 @@ export class SoinsEntity {
   @Column({ name: 'id_hospitalisation', type: 'uuid' })
   idHospitalisation: string;
 
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
+
   @Field()
   @Column({ name: 'id_personnel', type: 'varchar', length: 120 })
   idPersonnel: string;
+
+  @ManyToOne(() => PersonnelRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_personnel', referencedColumnName: 'id' })
+  personnel: PersonnelRefEntity;
 
   @Field()
   @Column({ name: 'type_soins', type: 'varchar', length: 120 })
@@ -174,6 +274,10 @@ export class ChambreEntity {
   @Column({ name: 'id_service', type: 'varchar', length: 120 })
   idService: string;
 
+  @ManyToOne(() => ServiceRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_service', referencedColumnName: 'id' })
+  service: ServiceRefEntity;
+
   @Field(() => Int)
   @Column({ name: 'numero_chambre', type: 'int' })
   numeroChambre: number;
@@ -193,12 +297,17 @@ export class LitEntity {
   @Column({ name: 'id_chambre', type: 'uuid' })
   idChambre: string;
 
+  @Field(() => ChambreEntity)
+  @ManyToOne(() => ChambreEntity, { nullable: false })
+  @JoinColumn({ name: 'id_chambre' })
+  chambre: ChambreEntity;
+
   @Field()
   @Column({ name: 'code_lit', type: 'varchar', length: 120 })
   codeLit: string;
 
   @Field(() => StatutLit)
-  @Column({ name: 'statut', type: 'varchar', default: StatutLit.LIBRE })
+  @Column({ name: 'statut', type: 'varchar', default: StatutLit.DISPONIBLE })
   statut: StatutLit;
 }
 
@@ -212,8 +321,18 @@ export class AffectationLitEntity {
   @Column({ name: 'id_hospitalisation', type: 'uuid' })
   idHospitalisation: string;
 
+  @Field(() => HospitalisationEntity)
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
+
   @Column({ name: 'id_lit', type: 'uuid' })
   idLit: string;
+
+  @Field(() => LitEntity)
+  @ManyToOne(() => LitEntity, { nullable: false })
+  @JoinColumn({ name: 'id_lit' })
+  lit: LitEntity;
 
   @Field(() => Date)
   @Column({ name: 'date_debut_affectation', type: 'timestamp' })
@@ -234,9 +353,19 @@ export class AffectationMedecinEntity {
   @Column({ name: 'id_hospitalisation', type: 'uuid' })
   idHospitalisation: string;
 
+  @Field(() => HospitalisationEntity)
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
+
   @Field()
   @Column({ name: 'id_personnel', type: 'varchar', length: 120 })
   idPersonnel: string;
+
+  @Field(() => PersonnelRefEntity)
+  @ManyToOne(() => PersonnelRefEntity, { nullable: false })
+  @JoinColumn({ name: 'id_personnel', referencedColumnName: 'id' })
+  personnel: PersonnelRefEntity;
 
   @Field(() => Date)
   @Column({ name: 'date_debut', type: 'timestamp' })
@@ -261,6 +390,11 @@ export class DemandeTransfertEntity {
   @Column({ name: 'id_hospitalisation', type: 'uuid' })
   idHospitalisation: string;
 
+  @Field(() => HospitalisationEntity)
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
+
   @Field()
   @Column({ name: 'service_source', type: 'varchar', length: 120 })
   serviceSource: string;
@@ -277,9 +411,13 @@ export class DemandeTransfertEntity {
   @Column({ name: 'motif_demande_transfert', type: 'text' })
   motifDemandeTransfert: string;
 
-  @Field(() => StatutDemande)
-  @Column({ name: 'statut', type: 'varchar', default: StatutDemande.EN_ATTENTE })
-  statut: StatutDemande;
+  @Field(() => StatutDemandeTransfert)
+  @Column({ name: 'statut', type: 'varchar', default: StatutDemandeTransfert.A_VOIR })
+  statut: StatutDemandeTransfert;
+
+  @Field(() => String, { nullable: true })
+  @Column({ name: 'justification', type: 'text', nullable: true })
+  justification?: string | null;
 }
 
 @ObjectType()
@@ -311,6 +449,11 @@ export class DemandeAvisEntity {
 
   @Column({ name: 'id_hospitalisation', type: 'uuid' })
   idHospitalisation: string;
+
+  @Field(() => HospitalisationEntity)
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'id_hospitalisation' })
+  hospitalisation: HospitalisationEntity;
 
   @Field()
   @Column({ name: 'id_medecin_demandeur', type: 'varchar', length: 120 })

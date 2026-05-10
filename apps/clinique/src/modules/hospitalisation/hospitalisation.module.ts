@@ -14,6 +14,11 @@ import {
   LitEntity,
   ModeSortieEntity,
   ObservationMedicalEntity,
+  PatientRefEntity,
+  PersonnelRefEntity,
+  PrescriptionMedicaleEntity,
+  DemandeHospitalisationRefEntity,
+  ServiceRefEntity,
   SoinsEntity,
   TransfertEntity,
 } from './hospitalisation.entities';
@@ -24,8 +29,13 @@ import { HospitalisationService } from './hospitalisation.service';
   imports: [
     TypeOrmModule.forFeature([
       HospitalisationEntity,
+      PatientRefEntity,
+      ServiceRefEntity,
+      DemandeHospitalisationRefEntity,
+      PersonnelRefEntity,
       ObservationMedicalEntity,
       DiagnosticsEntity,
+      PrescriptionMedicaleEntity,
       SoinsEntity,
       ChambreEntity,
       LitEntity,

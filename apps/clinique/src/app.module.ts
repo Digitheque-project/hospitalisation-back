@@ -7,9 +7,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { CpaModule } from './modules/cpa/cpa.module';
 import { VpaModule } from './modules/vpa/vpa.module';
-import { BlocModule } from './modules/bloc/bloc.module';
 import { PatientModule } from './modules/patient/patient.module';
 import { HospitalisationModule } from './modules/hospitalisation/hospitalisation.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { SignatureModule } from './modules/signature/signature.module';
 
 @Module({
@@ -45,9 +45,9 @@ import { SignatureModule } from './modules/signature/signature.module';
     }),
     CpaModule,
     VpaModule,
-    BlocModule,
     PatientModule,
     HospitalisationModule,
+    AuthModule,
     SignatureModule,
   ],
 })

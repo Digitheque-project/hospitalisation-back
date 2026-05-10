@@ -27,7 +27,13 @@ let BlocService = class BlocService {
         this.hospitalisationService = hospitalisationService;
     }
     async planifier(input) {
-        await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
+        const hospitalisation = await this.hospitalisationService.findHospitalisationById(input.hospitalisationId);
+        if (!hospitalisation) {
+            throw new common_1.NotFoundException('Hospitalisation introuvable');
+        }
+        if (hospitalisation.idPatient !== input.patientId) {
+            throw new common_1.UnprocessableEntityException('Le patient du bloc doit correspondre au patient de hospitalisation');
+        }
         const vpa = await this.vpaService.findById(input.vpaId);
         if (!vpa) {
             throw new common_1.NotFoundException('VPA referencee introuvable');
@@ -35,9 +41,21 @@ let BlocService = class BlocService {
         if (vpa.status !== vpa_entity_1.VpaStatus.VALIDEE) {
             throw new common_1.UnprocessableEntityException('Planification Bloc interdite tant que la VPA n\'est pas VALIDEE');
         }
+        if (vpa.hospitalisationId !== input.hospitalisationId) {
+            throw new common_1.UnprocessableEntityException('La VPA referencee doit appartenir a la meme hospitalisation');
+        }
+        if (vpa.patientId !== input.patientId) {
+            throw new common_1.UnprocessableEntityException('La VPA referencee doit appartenir au meme patient');
+        }
+        if (!input.checklistAvantInduction ||
+            !input.checklistAvantIncision ||
+            !input.checklistSortieBloc) {
+            throw new common_1.UnprocessableEntityException('Checklist OMS bloquante: 3 moments obligatoires');
+        }
         const bloc = this.blocRepository.create({
             ...input,
             hospitalisationId: input.hospitalisationId,
+            sortieSalleReveilAutorisee: input.scoreSccre >= 9,
         });
         return this.blocRepository.save(bloc);
     }

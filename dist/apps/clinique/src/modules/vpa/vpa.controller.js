@@ -19,6 +19,7 @@ const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const create_vpa_input_1 = require("./create-vpa.input");
+const vpa_entity_1 = require("./vpa.entity");
 const vpa_service_1 = require("./vpa.service");
 let VpaController = class VpaController {
     constructor(vpaService) {
@@ -26,6 +27,12 @@ let VpaController = class VpaController {
     }
     create(body) {
         return this.vpaService.create(body);
+    }
+    getById(id) {
+        return this.vpaService.findById(id);
+    }
+    getLatestByPatient(patientId) {
+        return this.vpaService.findLatestByPatient(patientId);
     }
     validate(id) {
         return this.vpaService.validate(id);
@@ -36,17 +43,40 @@ __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM'),
     (0, swagger_1.ApiOperation)({ summary: 'Creer une VPA' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'VPA creee' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'VPA creee', type: vpa_entity_1.VpaEntity }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_vpa_input_1.CreateVpaInput]),
     __metadata("design:returntype", void 0)
 ], VpaController.prototype, "create", null);
 __decorate([
+    (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer une VPA par identifiant' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant de la VPA' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'VPA retournee', type: vpa_entity_1.VpaEntity }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], VpaController.prototype, "getById", null);
+__decorate([
+    (0, common_1.Get)('patient/:patientId/latest'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer la derniere VPA dun patient' }),
+    (0, swagger_1.ApiParam)({ name: 'patientId', description: 'Identifiant patient' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Derniere VPA retournee', type: vpa_entity_1.VpaEntity }),
+    __param(0, (0, common_1.Param)('patientId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], VpaController.prototype, "getLatestByPatient", null);
+__decorate([
     (0, common_1.Patch)(':id/validate'),
     (0, roles_decorator_1.Roles)('ONM'),
     (0, swagger_1.ApiOperation)({ summary: 'Valider la VPA' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'VPA validee' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant de la VPA' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'VPA validee', type: vpa_entity_1.VpaEntity }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -54,6 +84,7 @@ __decorate([
 ], VpaController.prototype, "validate", null);
 exports.VpaController = VpaController = __decorate([
     (0, swagger_1.ApiTags)('VPA'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('vpa'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [vpa_service_1.VpaService])

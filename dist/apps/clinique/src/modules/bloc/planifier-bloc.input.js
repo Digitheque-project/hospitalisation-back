@@ -36,10 +36,48 @@ __decorate([
 ], PlanifierBlocInput.prototype, "vpaId", void 0);
 __decorate([
     (0, graphql_1.Field)(),
-    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Checklist OMS validee', required: true }),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Checklist OMS avant induction', required: true }),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
-], PlanifierBlocInput.prototype, "checklistOmsValidee", void 0);
+], PlanifierBlocInput.prototype, "checklistAvantInduction", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Checklist OMS avant incision', required: true }),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], PlanifierBlocInput.prototype, "checklistAvantIncision", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Checklist OMS en sortie bloc', required: true }),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], PlanifierBlocInput.prototype, "checklistSortieBloc", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Protocole operatoire', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlanifierBlocInput.prototype, "protocoleOperatoire", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Prescription post-operatoire', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlanifierBlocInput.prototype, "prescriptionPostOperatoire", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Reperes post-operatoires', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlanifierBlocInput.prototype, "reperesPostOperatoires", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Number, description: 'Score SCCRE (0-10)', required: true }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(10),
+    __metadata("design:type", Number)
+], PlanifierBlocInput.prototype, "scoreSccre", void 0);
 exports.PlanifierBlocInput = PlanifierBlocInput = __decorate([
     (0, graphql_1.InputType)()
 ], PlanifierBlocInput);

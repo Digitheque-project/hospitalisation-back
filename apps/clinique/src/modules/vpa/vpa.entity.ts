@@ -1,5 +1,6 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { CpaEntity } from '../cpa/cpa.entity';
 import { HospitalisationEntity } from '../hospitalisation/hospitalisation.entities';
 
 export enum VpaStatus {
@@ -31,6 +32,22 @@ export class VpaEntity {
   @Field()
   @Column()
   cpaId: string;
+
+  @ManyToOne(() => CpaEntity, { nullable: false })
+  @JoinColumn({ name: 'cpaId', referencedColumnName: 'id' })
+  cpa: CpaEntity;
+
+  @Field()
+  @Column({ type: 'boolean', default: false })
+  instructionsRespectees: boolean;
+
+  @Field()
+  @Column({ type: 'text' })
+  ordonnanceAnesthesie: string;
+
+  @Field(() => Date)
+  @Column({ type: 'timestamp' })
+  heureDepartBloc: Date;
 
   @Field(() => VpaStatus)
   @Column({ type: 'varchar', default: VpaStatus.EN_ATTENTE })

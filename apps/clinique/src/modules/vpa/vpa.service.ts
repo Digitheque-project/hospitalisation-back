@@ -17,10 +17,28 @@ export class VpaService {
   ) {}
 
   async create(input: CreateVpaInput): Promise<VpaEntity> {
-    await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
+    const hospitalisation = await this.hospitalisationService.findHospitalisationById(
+      input.hospitalisationId,
+    );
+    if (!hospitalisation) {
+      throw new NotFoundException('Hospitalisation introuvable');
+    }
+    if (hospitalisation.idPatient !== input.patientId) {
+      throw new UnprocessableEntityException(
+        'Le patient de la VPA doit correspondre au patient de hospitalisation',
+      );
+    }
     const cpa = await this.cpaService.findById(input.cpaId);
     if (!cpa) {
       throw new NotFoundException('CPA referencee introuvable');
+    }
+    if (cpa.hospitalisationId !== input.hospitalisationId) {
+      throw new UnprocessableEntityException(
+        'La CPA referencee doit appartenir a la meme hospitalisation',
+      );
+    }
+    if (cpa.patientId !== input.patientId) {
+      throw new UnprocessableEntityException('La CPA referencee doit appartenir au meme patient');
     }
 
     if (cpa.status !== CpaStatus.REALISE) {
@@ -33,6 +51,9 @@ export class VpaService {
       patientId: input.patientId,
       hospitalisationId: input.hospitalisationId,
       cpaId: input.cpaId,
+      instructionsRespectees: input.instructionsRespectees,
+      ordonnanceAnesthesie: input.ordonnanceAnesthesie,
+      heureDepartBloc: new Date(input.heureDepartBloc),
       status: VpaStatus.EN_ATTENTE,
     });
 

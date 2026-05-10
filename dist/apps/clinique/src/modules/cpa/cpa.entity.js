@@ -48,6 +48,41 @@ __decorate([
     __metadata("design:type", Number)
 ], CpaEntity.prototype, "asaScore", void 0);
 __decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 180 }),
+    __metadata("design:type", String)
+], CpaEntity.prototype, "typeChirurgie", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 180 }),
+    __metadata("design:type", String)
+], CpaEntity.prototype, "chirurgien", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    (0, typeorm_1.Column)({ type: 'int' }),
+    __metadata("design:type", Number)
+], CpaEntity.prototype, "dureePrevueMinutes", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], CpaEntity.prototype, "risqueHemorragique", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], CpaEntity.prototype, "urgence", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 180 }),
+    __metadata("design:type", String)
+], CpaEntity.prototype, "decisionAnesthesique", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ type: 'text' }),
+    __metadata("design:type", String)
+], CpaEntity.prototype, "protocoleInstructions", void 0);
+__decorate([
     (0, graphql_1.Field)(() => CpaStatus),
     (0, typeorm_1.Column)({ type: 'varchar', default: CpaStatus.PLANIFIE }),
     __metadata("design:type", String)

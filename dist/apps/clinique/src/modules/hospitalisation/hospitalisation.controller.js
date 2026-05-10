@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
+const hospitalisation_entities_1 = require("./hospitalisation.entities");
 const hospitalisation_service_1 = require("./hospitalisation.service");
 const hospitalisation_dto_1 = require("./hospitalisation.dto");
 let HospitalisationController = class HospitalisationController {
@@ -27,8 +28,35 @@ let HospitalisationController = class HospitalisationController {
     createHospitalisation(body) {
         return this.hospitalisationService.createHospitalisation(body);
     }
+    getHospitalisationById(id) {
+        return this.hospitalisationService.findHospitalisationById(id);
+    }
+    getAvailableLitsByService(serviceId) {
+        return this.hospitalisationService.findAvailableLitsByService(serviceId);
+    }
+    createChambre(body) {
+        return this.hospitalisationService.createChambre(body);
+    }
+    createLit(body) {
+        return this.hospitalisationService.createLit(body);
+    }
+    getLitById(id) {
+        return this.hospitalisationService.findLitById(id);
+    }
+    getLitsByChambre(idChambre) {
+        return this.hospitalisationService.findLitsByChambre(idChambre);
+    }
+    updateLitStatut(id, body) {
+        return this.hospitalisationService.updateLitStatut(id, body);
+    }
+    createAffectationLit(body) {
+        return this.hospitalisationService.createAffectationLit(body);
+    }
     createDemandeAvis(body) {
         return this.hospitalisationService.createDemandeAvis(body);
+    }
+    getDemandeAvisById(id) {
+        return this.hospitalisationService.findDemandeAvisById(id);
     }
     consulterDemandeAvis(id) {
         return this.hospitalisationService.consulterDemandeAvis(id);
@@ -39,28 +67,140 @@ let HospitalisationController = class HospitalisationController {
     createAvisMedical(body, req) {
         return this.hospitalisationService.createAvisMedical(body, req.user ?? null);
     }
+    createPrescription(body, req) {
+        return this.hospitalisationService.createPrescriptionMedicale(body, req.user ?? null);
+    }
+    createDemandeTransfert(body) {
+        return this.hospitalisationService.createDemandeTransfert(body);
+    }
+    getDemandeTransfertById(id) {
+        return this.hospitalisationService.findDemandeTransfertById(id);
+    }
+    traiterDemandeTransfert(id, body) {
+        return this.hospitalisationService.traiterDemandeTransfert(id, body);
+    }
+    cloturerHospitalisation(id, body) {
+        return this.hospitalisationService.cloturerHospitalisation(id, body);
+    }
 };
 exports.HospitalisationController = HospitalisationController;
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM'),
     (0, swagger_1.ApiOperation)({ summary: 'Creer une hospitalisation' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Hospitalisation creee' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Hospitalisation creee', type: hospitalisation_entities_1.HospitalisationEntity }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateHospitalisationDto]),
     __metadata("design:returntype", void 0)
 ], HospitalisationController.prototype, "createHospitalisation", null);
 __decorate([
+    (0, common_1.Get)('id/:id'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer une hospitalisation par identifiant' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant hospitalisation' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Hospitalisation retournee', type: hospitalisation_entities_1.HospitalisationEntity }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getHospitalisationById", null);
+__decorate([
+    (0, common_1.Get)('services/:serviceId/lits/disponibles'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Lister les lits disponibles dun service' }),
+    (0, swagger_1.ApiParam)({ name: 'serviceId', description: 'Identifiant service' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Liste des lits disponibles', type: hospitalisation_entities_1.LitEntity, isArray: true }),
+    __param(0, (0, common_1.Param)('serviceId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getAvailableLitsByService", null);
+__decorate([
+    (0, common_1.Post)('chambres'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une chambre' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Chambre creee', type: hospitalisation_entities_1.ChambreEntity }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateChambreDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createChambre", null);
+__decorate([
+    (0, common_1.Post)('lits'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer un lit' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Lit cree', type: hospitalisation_entities_1.LitEntity }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateLitDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createLit", null);
+__decorate([
+    (0, common_1.Get)('lits/:id'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer un lit par identifiant' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant du lit' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Lit retourne', type: hospitalisation_entities_1.LitEntity }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getLitById", null);
+__decorate([
+    (0, common_1.Get)('chambres/:idChambre/lits'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Lister les lits dune chambre' }),
+    (0, swagger_1.ApiParam)({ name: 'idChambre', description: 'Identifiant de la chambre' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Liste des lits de la chambre', type: hospitalisation_entities_1.LitEntity, isArray: true }),
+    __param(0, (0, common_1.Param)('idChambre')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getLitsByChambre", null);
+__decorate([
+    (0, common_1.Patch)('lits/:id/statut'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Mettre a jour le statut dun lit' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant du lit' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Statut du lit mis a jour', type: hospitalisation_entities_1.LitEntity }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, hospitalisation_dto_1.UpdateLitStatutDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "updateLitStatut", null);
+__decorate([
+    (0, common_1.Post)('affectations-lits'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Affecter un lit a une hospitalisation' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Affectation de lit creee', type: hospitalisation_entities_1.AffectationLitEntity }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateAffectationLitDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createAffectationLit", null);
+__decorate([
     (0, common_1.Post)('demandes-avis'),
     (0, roles_decorator_1.Roles)('ONM'),
     (0, swagger_1.ApiOperation)({ summary: "Creer une demande d'avis medical" }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: "Demande d'avis creee" }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: "Demande d'avis creee", type: hospitalisation_entities_1.DemandeAvisEntity }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateDemandeAvisDto]),
     __metadata("design:returntype", void 0)
 ], HospitalisationController.prototype, "createDemandeAvis", null);
+__decorate([
+    (0, common_1.Get)('demandes-avis/:id'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: "Recuperer une demande d'avis par identifiant" }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: "Identifiant de la demande d'avis" }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: "Demande d'avis retournee", type: hospitalisation_entities_1.DemandeAvisEntity }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getDemandeAvisById", null);
 __decorate([
     (0, common_1.Patch)('demandes-avis/:id/consulter'),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
@@ -75,7 +215,7 @@ __decorate([
     (0, common_1.Post)('diagnostics'),
     (0, roles_decorator_1.Roles)('ONM'),
     (0, swagger_1.ApiOperation)({ summary: 'Creer un diagnostic signe' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Diagnostic cree' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Diagnostic cree', type: hospitalisation_entities_1.DiagnosticsEntity }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -86,15 +226,74 @@ __decorate([
     (0, common_1.Post)('avis-medical'),
     (0, roles_decorator_1.Roles)('ONM'),
     (0, swagger_1.ApiOperation)({ summary: 'Creer un avis medical signe' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Avis medical cree' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Avis medical cree', type: hospitalisation_entities_1.AvisMedicalEntity }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateAvisMedicalDto, Object]),
     __metadata("design:returntype", void 0)
 ], HospitalisationController.prototype, "createAvisMedical", null);
+__decorate([
+    (0, common_1.Post)('prescriptions'),
+    (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une prescription medicale signee' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Prescription creee', type: hospitalisation_entities_1.PrescriptionMedicaleEntity }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreatePrescriptionMedicaleDto, Object]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createPrescription", null);
+__decorate([
+    (0, common_1.Post)('demandes-transfert'),
+    (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une demande de transfert' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Demande de transfert creee', type: hospitalisation_entities_1.DemandeTransfertEntity }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateDemandeTransfertDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createDemandeTransfert", null);
+__decorate([
+    (0, common_1.Get)('demandes-transfert/:id'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer une demande de transfert par identifiant' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant demande transfert' }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Demande de transfert retournee',
+        type: hospitalisation_entities_1.DemandeTransfertEntity,
+    }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getDemandeTransfertById", null);
+__decorate([
+    (0, common_1.Patch)('demandes-transfert/:id'),
+    (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Traiter une demande de transfert' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Demande de transfert traitee' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, hospitalisation_dto_1.TraiterDemandeTransfertDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "traiterDemandeTransfert", null);
+__decorate([
+    (0, common_1.Patch)(':id/cloture'),
+    (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Cloturer une hospitalisation' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Hospitalisation cloturee' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, hospitalisation_dto_1.CloturerHospitalisationDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "cloturerHospitalisation", null);
 exports.HospitalisationController = HospitalisationController = __decorate([
     (0, swagger_1.ApiTags)('Hospitalisation'),
+    (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('hospitalisations'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [hospitalisation_service_1.HospitalisationService])

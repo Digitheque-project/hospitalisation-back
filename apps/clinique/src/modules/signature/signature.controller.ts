@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -25,6 +25,7 @@ class SignatureDto {
 }
 
 @ApiTags('Signature')
+@ApiBearerAuth()
 @Controller('signatures')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SignatureController {
@@ -33,7 +34,7 @@ export class SignatureController {
   @Post()
   @Roles('ONM', 'ONIM')
   @ApiOperation({ summary: 'Signer un acte critique' })
-  @ApiResponse({ status: 200, description: 'Acte signe' })
+  @ApiResponse({ status: 201, description: 'Acte signe' })
   signer(@Body() body: SignatureDto) {
     this.signatureService.assertProfessionalOrderNumber({
       orderNumber: body.signerId,

@@ -36,6 +36,53 @@ __decorate([
     (0, class_validator_1.Max)(6),
     __metadata("design:type", Number)
 ], CreateCpaInput.prototype, "asaScore", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Type de chirurgie', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCpaInput.prototype, "typeChirurgie", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Nom du chirurgien', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCpaInput.prototype, "chirurgien", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.Int),
+    (0, swagger_1.ApiProperty)({ type: Number, description: 'Duree prevue en minutes', required: true }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(1),
+    __metadata("design:type", Number)
+], CreateCpaInput.prototype, "dureePrevueMinutes", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Risque hemorragique', required: true }),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateCpaInput.prototype, "risqueHemorragique", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Intervention en urgence', required: true }),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateCpaInput.prototype, "urgence", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Decision anesthesique', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCpaInput.prototype, "decisionAnesthesique", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({
+        type: String,
+        description: 'Protocole et instructions pre-anesthesiques',
+        required: true,
+    }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCpaInput.prototype, "protocoleInstructions", void 0);
 exports.CreateCpaInput = CreateCpaInput = __decorate([
     (0, graphql_1.InputType)()
 ], CreateCpaInput);

@@ -28,6 +28,9 @@ let HospitalisationResolver = class HospitalisationResolver {
     createHospitalisation(input) {
         return this.hospitalisationService.createHospitalisation(input);
     }
+    createAffectationLit(input) {
+        return this.hospitalisationService.createAffectationLit(input);
+    }
     hospitalisation(id) {
         return this.hospitalisationService.findHospitalisationById(id);
     }
@@ -43,6 +46,18 @@ let HospitalisationResolver = class HospitalisationResolver {
     createAvisMedical(input, context) {
         return this.hospitalisationService.createAvisMedical(input, context?.req?.user ?? null);
     }
+    createPrescriptionMedicale(input, context) {
+        return this.hospitalisationService.createPrescriptionMedicale(input, context?.req?.user ?? null);
+    }
+    createDemandeTransfert(input) {
+        return this.hospitalisationService.createDemandeTransfert(input);
+    }
+    traiterDemandeTransfert(id, input) {
+        return this.hospitalisationService.traiterDemandeTransfert(id, input);
+    }
+    cloturerHospitalisation(id, input) {
+        return this.hospitalisationService.cloturerHospitalisation(id, input);
+    }
 };
 exports.HospitalisationResolver = HospitalisationResolver;
 __decorate([
@@ -53,6 +68,14 @@ __decorate([
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateHospitalisationDto]),
     __metadata("design:returntype", void 0)
 ], HospitalisationResolver.prototype, "createHospitalisation", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => hospitalisation_entities_1.AffectationLitEntity),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateAffectationLitDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationResolver.prototype, "createAffectationLit", null);
 __decorate([
     (0, graphql_1.Query)(() => hospitalisation_entities_1.HospitalisationEntity, { nullable: true }),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
@@ -95,6 +118,41 @@ __decorate([
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateAvisMedicalDto, Object]),
     __metadata("design:returntype", void 0)
 ], HospitalisationResolver.prototype, "createAvisMedical", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => hospitalisation_entities_1.PrescriptionMedicaleEntity),
+    (0, roles_decorator_1.Roles)('ONM'),
+    __param(0, (0, graphql_1.Args)('input')),
+    __param(1, (0, graphql_1.Context)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreatePrescriptionMedicaleDto, Object]),
+    __metadata("design:returntype", void 0)
+], HospitalisationResolver.prototype, "createPrescriptionMedicale", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => hospitalisation_entities_1.DemandeTransfertEntity),
+    (0, roles_decorator_1.Roles)('ONM'),
+    __param(0, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateDemandeTransfertDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationResolver.prototype, "createDemandeTransfert", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => hospitalisation_entities_1.DemandeTransfertEntity),
+    (0, roles_decorator_1.Roles)('ONM'),
+    __param(0, (0, graphql_1.Args)('id', { type: () => graphql_1.ID })),
+    __param(1, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, hospitalisation_dto_1.TraiterDemandeTransfertDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationResolver.prototype, "traiterDemandeTransfert", null);
+__decorate([
+    (0, graphql_1.Mutation)(() => hospitalisation_entities_1.HospitalisationEntity),
+    (0, roles_decorator_1.Roles)('ONM'),
+    __param(0, (0, graphql_1.Args)('id', { type: () => graphql_1.ID })),
+    __param(1, (0, graphql_1.Args)('input')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, hospitalisation_dto_1.CloturerHospitalisationDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationResolver.prototype, "cloturerHospitalisation", null);
 exports.HospitalisationResolver = HospitalisationResolver = __decorate([
     (0, graphql_1.Resolver)(() => hospitalisation_entities_1.HospitalisationEntity),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

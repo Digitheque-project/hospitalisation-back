@@ -9,27 +9,83 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AvisMedicalEntity = exports.DemandeAvisEntity = exports.TransfertEntity = exports.DemandeTransfertEntity = exports.AffectationMedecinEntity = exports.AffectationLitEntity = exports.LitEntity = exports.ChambreEntity = exports.SoinsEntity = exports.DiagnosticsEntity = exports.ObservationMedicalEntity = exports.HospitalisationEntity = exports.ModeSortieEntity = exports.StatutDemande = exports.StatutLit = exports.StatutHospitalisation = void 0;
+exports.AvisMedicalEntity = exports.DemandeAvisEntity = exports.TransfertEntity = exports.DemandeTransfertEntity = exports.AffectationMedecinEntity = exports.AffectationLitEntity = exports.LitEntity = exports.ChambreEntity = exports.SoinsEntity = exports.DiagnosticsEntity = exports.ObservationMedicalEntity = exports.PrescriptionMedicaleEntity = exports.HospitalisationEntity = exports.ModeSortieEntity = exports.PersonnelRefEntity = exports.DemandeHospitalisationRefEntity = exports.ServiceRefEntity = exports.PatientRefEntity = exports.StatutDemandeTransfert = exports.StatutDemande = exports.StatutLit = exports.StatutHospitalisation = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const typeorm_1 = require("typeorm");
 var StatutHospitalisation;
 (function (StatutHospitalisation) {
     StatutHospitalisation["EN_COURS"] = "EN_COURS";
-    StatutHospitalisation["TERMINEE"] = "TERMINEE";
+    StatutHospitalisation["CLOTUREE"] = "CLOTUREE";
 })(StatutHospitalisation || (exports.StatutHospitalisation = StatutHospitalisation = {}));
 var StatutLit;
 (function (StatutLit) {
-    StatutLit["LIBRE"] = "LIBRE";
+    StatutLit["DISPONIBLE"] = "DISPONIBLE";
     StatutLit["OCCUPE"] = "OCCUPE";
+    StatutLit["MAINTENANCE"] = "MAINTENANCE";
 })(StatutLit || (exports.StatutLit = StatutLit = {}));
 var StatutDemande;
 (function (StatutDemande) {
     StatutDemande["EN_ATTENTE"] = "EN_ATTENTE";
     StatutDemande["CONSULTEE"] = "CONSULTEE";
 })(StatutDemande || (exports.StatutDemande = StatutDemande = {}));
+var StatutDemandeTransfert;
+(function (StatutDemandeTransfert) {
+    StatutDemandeTransfert["ACCEPTE"] = "ACCEPTE";
+    StatutDemandeTransfert["A_VOIR"] = "A_VOIR";
+    StatutDemandeTransfert["REFUSE"] = "REFUSE";
+})(StatutDemandeTransfert || (exports.StatutDemandeTransfert = StatutDemandeTransfert = {}));
 (0, graphql_1.registerEnumType)(StatutHospitalisation, { name: 'StatutHospitalisation' });
 (0, graphql_1.registerEnumType)(StatutLit, { name: 'StatutLit' });
 (0, graphql_1.registerEnumType)(StatutDemande, { name: 'StatutDemande' });
+(0, graphql_1.registerEnumType)(StatutDemandeTransfert, { name: 'StatutDemandeTransfert' });
+let PatientRefEntity = class PatientRefEntity {
+};
+exports.PatientRefEntity = PatientRefEntity;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.ID),
+    (0, typeorm_1.PrimaryColumn)({ name: 'id_patient', type: 'varchar', length: 120 }),
+    __metadata("design:type", String)
+], PatientRefEntity.prototype, "id", void 0);
+exports.PatientRefEntity = PatientRefEntity = __decorate([
+    (0, graphql_1.ObjectType)(),
+    (0, typeorm_1.Entity)('patient_ref')
+], PatientRefEntity);
+let ServiceRefEntity = class ServiceRefEntity {
+};
+exports.ServiceRefEntity = ServiceRefEntity;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.ID),
+    (0, typeorm_1.PrimaryColumn)({ name: 'id_service', type: 'varchar', length: 120 }),
+    __metadata("design:type", String)
+], ServiceRefEntity.prototype, "id", void 0);
+exports.ServiceRefEntity = ServiceRefEntity = __decorate([
+    (0, graphql_1.ObjectType)(),
+    (0, typeorm_1.Entity)('service_ref')
+], ServiceRefEntity);
+let DemandeHospitalisationRefEntity = class DemandeHospitalisationRefEntity {
+};
+exports.DemandeHospitalisationRefEntity = DemandeHospitalisationRefEntity;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.ID),
+    (0, typeorm_1.PrimaryColumn)({ name: 'id_demande_hospitalisation', type: 'varchar', length: 120 }),
+    __metadata("design:type", String)
+], DemandeHospitalisationRefEntity.prototype, "id", void 0);
+exports.DemandeHospitalisationRefEntity = DemandeHospitalisationRefEntity = __decorate([
+    (0, graphql_1.ObjectType)(),
+    (0, typeorm_1.Entity)('demande_hospitalisation_ref')
+], DemandeHospitalisationRefEntity);
+let PersonnelRefEntity = class PersonnelRefEntity {
+};
+exports.PersonnelRefEntity = PersonnelRefEntity;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.ID),
+    (0, typeorm_1.PrimaryColumn)({ name: 'id_personnel', type: 'varchar', length: 120 }),
+    __metadata("design:type", String)
+], PersonnelRefEntity.prototype, "id", void 0);
+exports.PersonnelRefEntity = PersonnelRefEntity = __decorate([
+    (0, graphql_1.ObjectType)(),
+    (0, typeorm_1.Entity)('personnel_ref')
+], PersonnelRefEntity);
 let ModeSortieEntity = class ModeSortieEntity {
 };
 exports.ModeSortieEntity = ModeSortieEntity;
@@ -65,15 +121,30 @@ __decorate([
     __metadata("design:type", String)
 ], HospitalisationEntity.prototype, "idPatient", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => PatientRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_patient', referencedColumnName: 'id' }),
+    __metadata("design:type", PatientRefEntity)
+], HospitalisationEntity.prototype, "patient", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'id_service', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], HospitalisationEntity.prototype, "idService", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => ServiceRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_service', referencedColumnName: 'id' }),
+    __metadata("design:type", ServiceRefEntity)
+], HospitalisationEntity.prototype, "service", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'id_demande_hospitalisation', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], HospitalisationEntity.prototype, "idDemandeHospitalisation", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => DemandeHospitalisationRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_demande_hospitalisation', referencedColumnName: 'id' }),
+    __metadata("design:type", DemandeHospitalisationRefEntity)
+], HospitalisationEntity.prototype, "demandeHospitalisation", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date),
     (0, typeorm_1.Column)({ name: 'date_entrer', type: 'timestamp' }),
@@ -113,6 +184,42 @@ exports.HospitalisationEntity = HospitalisationEntity = __decorate([
     (0, graphql_1.ObjectType)(),
     (0, typeorm_1.Entity)('hospitalisation')
 ], HospitalisationEntity);
+let PrescriptionMedicaleEntity = class PrescriptionMedicaleEntity {
+};
+exports.PrescriptionMedicaleEntity = PrescriptionMedicaleEntity;
+__decorate([
+    (0, graphql_1.Field)(() => graphql_1.ID),
+    (0, typeorm_1.PrimaryGeneratedColumn)('uuid', { name: 'id_prescription' }),
+    __metadata("design:type", String)
+], PrescriptionMedicaleEntity.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'id_hospitalisation', type: 'uuid' }),
+    __metadata("design:type", String)
+], PrescriptionMedicaleEntity.prototype, "idHospitalisation", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], PrescriptionMedicaleEntity.prototype, "hospitalisation", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ name: 'id_medecin', type: 'varchar', length: 120 }),
+    __metadata("design:type", String)
+], PrescriptionMedicaleEntity.prototype, "idMedecin", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ name: 'contenu_prescription', type: 'text' }),
+    __metadata("design:type", String)
+], PrescriptionMedicaleEntity.prototype, "contenuPrescription", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => Date),
+    (0, typeorm_1.Column)({ name: 'date_prescription', type: 'timestamp' }),
+    __metadata("design:type", Date)
+], PrescriptionMedicaleEntity.prototype, "datePrescription", void 0);
+exports.PrescriptionMedicaleEntity = PrescriptionMedicaleEntity = __decorate([
+    (0, graphql_1.ObjectType)(),
+    (0, typeorm_1.Entity)('prescription_medicale')
+], PrescriptionMedicaleEntity);
 let ObservationMedicalEntity = class ObservationMedicalEntity {
 };
 exports.ObservationMedicalEntity = ObservationMedicalEntity;
@@ -130,6 +237,11 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'id_personnel', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], ObservationMedicalEntity.prototype, "idPersonnel", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => PersonnelRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_personnel', referencedColumnName: 'id' }),
+    __metadata("design:type", PersonnelRefEntity)
+], ObservationMedicalEntity.prototype, "personnel", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date),
     (0, typeorm_1.Column)({ name: 'date_observation', type: 'timestamp' }),
@@ -157,10 +269,20 @@ __decorate([
     __metadata("design:type", String)
 ], DiagnosticsEntity.prototype, "idHospitalisation", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], DiagnosticsEntity.prototype, "hospitalisation", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'id_personnel', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], DiagnosticsEntity.prototype, "idPersonnel", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => PersonnelRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_personnel', referencedColumnName: 'id' }),
+    __metadata("design:type", PersonnelRefEntity)
+], DiagnosticsEntity.prototype, "personnel", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date),
     (0, typeorm_1.Column)({ name: 'date_diagnostics', type: 'timestamp' }),
@@ -188,10 +310,20 @@ __decorate([
     __metadata("design:type", String)
 ], SoinsEntity.prototype, "idHospitalisation", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], SoinsEntity.prototype, "hospitalisation", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'id_personnel', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], SoinsEntity.prototype, "idPersonnel", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => PersonnelRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_personnel', referencedColumnName: 'id' }),
+    __metadata("design:type", PersonnelRefEntity)
+], SoinsEntity.prototype, "personnel", void 0);
 __decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'type_soins', type: 'varchar', length: 120 }),
@@ -225,6 +357,11 @@ __decorate([
     __metadata("design:type", String)
 ], ChambreEntity.prototype, "idService", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => ServiceRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_service', referencedColumnName: 'id' }),
+    __metadata("design:type", ServiceRefEntity)
+], ChambreEntity.prototype, "service", void 0);
+__decorate([
     (0, graphql_1.Field)(() => graphql_1.Int),
     (0, typeorm_1.Column)({ name: 'numero_chambre', type: 'int' }),
     __metadata("design:type", Number)
@@ -251,13 +388,19 @@ __decorate([
     __metadata("design:type", String)
 ], LitEntity.prototype, "idChambre", void 0);
 __decorate([
+    (0, graphql_1.Field)(() => ChambreEntity),
+    (0, typeorm_1.ManyToOne)(() => ChambreEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_chambre' }),
+    __metadata("design:type", ChambreEntity)
+], LitEntity.prototype, "chambre", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'code_lit', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], LitEntity.prototype, "codeLit", void 0);
 __decorate([
     (0, graphql_1.Field)(() => StatutLit),
-    (0, typeorm_1.Column)({ name: 'statut', type: 'varchar', default: StatutLit.LIBRE }),
+    (0, typeorm_1.Column)({ name: 'statut', type: 'varchar', default: StatutLit.DISPONIBLE }),
     __metadata("design:type", String)
 ], LitEntity.prototype, "statut", void 0);
 exports.LitEntity = LitEntity = __decorate([
@@ -277,9 +420,21 @@ __decorate([
     __metadata("design:type", String)
 ], AffectationLitEntity.prototype, "idHospitalisation", void 0);
 __decorate([
+    (0, graphql_1.Field)(() => HospitalisationEntity),
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], AffectationLitEntity.prototype, "hospitalisation", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'id_lit', type: 'uuid' }),
     __metadata("design:type", String)
 ], AffectationLitEntity.prototype, "idLit", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => LitEntity),
+    (0, typeorm_1.ManyToOne)(() => LitEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_lit' }),
+    __metadata("design:type", LitEntity)
+], AffectationLitEntity.prototype, "lit", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date),
     (0, typeorm_1.Column)({ name: 'date_debut_affectation', type: 'timestamp' }),
@@ -307,10 +462,22 @@ __decorate([
     __metadata("design:type", String)
 ], AffectationMedecinEntity.prototype, "idHospitalisation", void 0);
 __decorate([
+    (0, graphql_1.Field)(() => HospitalisationEntity),
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], AffectationMedecinEntity.prototype, "hospitalisation", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'id_personnel', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
 ], AffectationMedecinEntity.prototype, "idPersonnel", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => PersonnelRefEntity),
+    (0, typeorm_1.ManyToOne)(() => PersonnelRefEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_personnel', referencedColumnName: 'id' }),
+    __metadata("design:type", PersonnelRefEntity)
+], AffectationMedecinEntity.prototype, "personnel", void 0);
 __decorate([
     (0, graphql_1.Field)(() => Date),
     (0, typeorm_1.Column)({ name: 'date_debut', type: 'timestamp' }),
@@ -343,6 +510,12 @@ __decorate([
     __metadata("design:type", String)
 ], DemandeTransfertEntity.prototype, "idHospitalisation", void 0);
 __decorate([
+    (0, graphql_1.Field)(() => HospitalisationEntity),
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], DemandeTransfertEntity.prototype, "hospitalisation", void 0);
+__decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'service_source', type: 'varchar', length: 120 }),
     __metadata("design:type", String)
@@ -363,10 +536,15 @@ __decorate([
     __metadata("design:type", String)
 ], DemandeTransfertEntity.prototype, "motifDemandeTransfert", void 0);
 __decorate([
-    (0, graphql_1.Field)(() => StatutDemande),
-    (0, typeorm_1.Column)({ name: 'statut', type: 'varchar', default: StatutDemande.EN_ATTENTE }),
+    (0, graphql_1.Field)(() => StatutDemandeTransfert),
+    (0, typeorm_1.Column)({ name: 'statut', type: 'varchar', default: StatutDemandeTransfert.A_VOIR }),
     __metadata("design:type", String)
 ], DemandeTransfertEntity.prototype, "statut", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => String, { nullable: true }),
+    (0, typeorm_1.Column)({ name: 'justification', type: 'text', nullable: true }),
+    __metadata("design:type", Object)
+], DemandeTransfertEntity.prototype, "justification", void 0);
 exports.DemandeTransfertEntity = DemandeTransfertEntity = __decorate([
     (0, graphql_1.ObjectType)(),
     (0, typeorm_1.Entity)('demande_transfert')
@@ -410,6 +588,12 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'id_hospitalisation', type: 'uuid' }),
     __metadata("design:type", String)
 ], DemandeAvisEntity.prototype, "idHospitalisation", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => HospitalisationEntity),
+    (0, typeorm_1.ManyToOne)(() => HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'id_hospitalisation' }),
+    __metadata("design:type", HospitalisationEntity)
+], DemandeAvisEntity.prototype, "hospitalisation", void 0);
 __decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)({ name: 'id_medecin_demandeur', type: 'varchar', length: 120 }),
