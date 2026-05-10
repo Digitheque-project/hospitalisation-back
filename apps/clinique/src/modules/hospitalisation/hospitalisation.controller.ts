@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -29,6 +29,8 @@ import {
   CreatePrescriptionMedicaleDto,
   TraiterDemandeTransfertDto,
   UpdateLitStatutDto,
+  ActiveHospitalisationItem,
+  HospitalisationStatsResponse,
 } from './hospitalisation.dto';
 
 @ApiTags('Hospitalisation')
@@ -37,6 +39,23 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class HospitalisationController {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
+
+  @Get('stats')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Recuperer les indicateurs hospitalisation' })
+  @ApiResponse({ status: 200, description: 'Indicateurs hospitalisation retournes', type: HospitalisationStatsResponse })
+  getHospitalisationStats() {
+    return this.hospitalisationService.getHospitalisationStats();
+  }
+
+  @Get('actives')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Lister les hospitalisations actives' })
+  @ApiQuery({ name: 'limit', required: false, example: 6 })
+  @ApiResponse({ status: 200, description: 'Liste des hospitalisations actives', type: ActiveHospitalisationItem, isArray: true })
+  getActiveHospitalisations(@Query('limit') limit?: string) {
+    return this.hospitalisationService.getActiveHospitalisations(this.parseLimit(limit));
+  }
 
   @Post()
   @Roles('ONM')
@@ -220,5 +239,15 @@ export class HospitalisationController {
   @ApiResponse({ status: 200, description: 'Hospitalisation cloturee' })
   cloturerHospitalisation(@Param('id') id: string, @Body() body: CloturerHospitalisationDto) {
     return this.hospitalisationService.cloturerHospitalisation(id, body);
+  }
+
+  private parseLimit(raw?: string): number {
+    if (!raw) {
+      return Number.NaN;
+    }
+
+    const parsed = Number.parseInt(raw, 10);
+
+    return Number.isNaN(parsed) ? Number.NaN : parsed;
   }
 }

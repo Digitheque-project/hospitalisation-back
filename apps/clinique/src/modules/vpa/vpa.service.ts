@@ -80,4 +80,8 @@ export class VpaService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async getPendingCount(): Promise<number> {
+    return this.vpaRepository.count({ where: { status: VpaStatus.EN_ATTENTE } });
+  }
 }

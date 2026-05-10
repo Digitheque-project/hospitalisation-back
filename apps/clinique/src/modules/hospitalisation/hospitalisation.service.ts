@@ -25,6 +25,7 @@ import {
   StatutLit,
   TransfertEntity,
 } from './hospitalisation.entities';
+import { ActiveHospitalisationItem, HospitalisationStatsResponse } from './hospitalisation.dto';
 import {
   CloturerHospitalisationDto,
   CreateChambreDto,
@@ -44,6 +45,9 @@ import {
 export class HospitalisationService implements OnModuleDestroy {
   private readonly logger = new Logger(HospitalisationService.name);
   private readonly demandeAvisIntervals = new Map<string, NodeJS.Timeout>();
+
+  private static readonly DEFAULT_LIMIT = 6;
+  private static readonly MAX_LIMIT = 50;
 
   constructor(
     @InjectRepository(HospitalisationEntity)
@@ -260,6 +264,67 @@ export class HospitalisationService implements OnModuleDestroy {
 
   async findHospitalisationById(id: string): Promise<HospitalisationEntity | null> {
     return this.hospitalisationRepository.findOne({ where: { id } });
+  }
+
+  async getHospitalisationStats(): Promise<HospitalisationStatsResponse> {
+    const hospitalizedTotal = await this.hospitalisationRepository.count({
+      where: { statutHospitalisation: StatutHospitalisation.EN_COURS },
+    });
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const hospitalizedNewToday = await this.hospitalisationRepository
+      .createQueryBuilder('hospitalisation')
+      .where('hospitalisation.statut_hospitalisation = :status', {
+        status: StatutHospitalisation.EN_COURS,
+      })
+      .andWhere('hospitalisation.date_entrer >= :startOfToday', {
+        startOfToday,
+      })
+      .getCount();
+
+    return {
+      hospitalizedTotal,
+      hospitalizedNewToday,
+    };
+  }
+
+  async getActiveHospitalisations(limit: number): Promise<ActiveHospitalisationItem[]> {
+    const normalizedLimit = this.normalizeLimit(limit);
+
+    const rows = await this.hospitalisationRepository
+      .createQueryBuilder('hospitalisation')
+      .leftJoin(
+        AffectationLitEntity,
+        'affectation',
+        'affectation.id_hospitalisation = hospitalisation.id_hospitalisation AND affectation.date_fin_affectation IS NULL',
+      )
+      .leftJoin(LitEntity, 'lit', 'lit.id_lit = affectation.id_lit')
+      .leftJoin(ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
+      .where('hospitalisation.statut_hospitalisation = :status', {
+        status: StatutHospitalisation.EN_COURS,
+      })
+      .orderBy('hospitalisation.date_entrer', 'DESC')
+      .limit(normalizedLimit)
+      .select([
+        'hospitalisation.id_hospitalisation AS id',
+        'hospitalisation.id_patient AS "patientId"',
+        'hospitalisation.date_entrer AS "dateEntrer"',
+        'hospitalisation.motif_hospitalisation AS "motifHospitalisation"',
+        'hospitalisation.id_service AS "serviceId"',
+        'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
+        'lit.code_lit AS "litCode"',
+        'chambre.numero_chambre AS "chambreNumero"',
+      ])
+      .getRawMany<ActiveHospitalisationItem>();
+
+    return rows.map((row) => ({
+      ...row,
+      dateEntrer: new Date(row.dateEntrer).toISOString(),
+      litCode: row.litCode ?? null,
+      chambreNumero: row.chambreNumero ?? null,
+    }));
   }
 
   async findDemandeAvisById(id: string): Promise<DemandeAvisEntity | null> {
@@ -498,5 +563,13 @@ export class HospitalisationService implements OnModuleDestroy {
     for (const demandeId of this.demandeAvisIntervals.keys()) {
       this.stopAvisNotification(demandeId);
     }
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit) || limit <= 0) {
+      return HospitalisationService.DEFAULT_LIMIT;
+    }
+
+    return Math.min(limit, HospitalisationService.MAX_LIMIT);
   }
 }

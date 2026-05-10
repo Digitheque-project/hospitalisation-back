@@ -7,6 +7,9 @@ import { CreateCpaInput } from './create-cpa.input';
 
 @Injectable()
 export class CpaService {
+  private static readonly DEFAULT_LIMIT = 6;
+  private static readonly MAX_LIMIT = 50;
+
   constructor(
     @InjectRepository(CpaEntity)
     private readonly cpaRepository: Repository<CpaEntity>,
@@ -60,5 +63,27 @@ export class CpaService {
 
   async findById(id: string): Promise<CpaEntity | null> {
     return this.cpaRepository.findOne({ where: { id } });
+  }
+
+  async getStats(): Promise<{ total: number; urgent: number }> {
+    const total = await this.cpaRepository.count();
+    const urgent = await this.cpaRepository.count({ where: { urgence: true } });
+    return { total, urgent };
+  }
+
+  async getRecent(limit: number): Promise<CpaEntity[]> {
+    const normalizedLimit = this.normalizeLimit(limit);
+    return this.cpaRepository.find({
+      order: { createdAt: 'DESC' },
+      take: normalizedLimit,
+    });
+  }
+
+  private normalizeLimit(limit: number): number {
+    if (!Number.isFinite(limit) || limit <= 0) {
+      return CpaService.DEFAULT_LIMIT;
+    }
+
+    return Math.min(limit, CpaService.MAX_LIMIT);
   }
 }

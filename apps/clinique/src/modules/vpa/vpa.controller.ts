@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags, ApiProperty } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -8,12 +8,26 @@ import { CreateVpaInput } from './create-vpa.input';
 import { VpaEntity } from './vpa.entity';
 import { VpaService } from './vpa.service';
 
+class VpaStatsResponse {
+  @ApiProperty({ example: 32 })
+  pending: number;
+}
+
 @ApiTags('VPA')
 @ApiBearerAuth()
 @Controller('vpa')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class VpaController {
   constructor(private readonly vpaService: VpaService) {}
+
+  @Get('stats')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Recuperer les indicateurs VPA' })
+  @ApiResponse({ status: 200, description: 'Indicateurs VPA retournes', type: VpaStatsResponse })
+  async getStats(): Promise<VpaStatsResponse> {
+    const pending = await this.vpaService.getPendingCount();
+    return { pending };
+  }
 
   @Post()
   @Roles('ONM')

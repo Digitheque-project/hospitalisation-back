@@ -1,7 +1,7 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
-import { StatutDemandeTransfert, StatutLit } from './hospitalisation.entities';
+import { StatutDemandeTransfert, StatutHospitalisation, StatutLit } from './hospitalisation.entities';
 
 @InputType()
 export class CreateHospitalisationDto {
@@ -243,4 +243,38 @@ export class UpdateLitStatutDto {
   @ApiProperty({ enum: StatutLit, description: 'Nouveau statut du lit', required: true })
   @IsEnum(StatutLit)
   statut: StatutLit;
+}
+
+export class HospitalisationStatsResponse {
+  @ApiProperty({ example: 12 })
+  hospitalizedTotal: number;
+
+  @ApiProperty({ example: 3 })
+  hospitalizedNewToday: number;
+}
+
+export class ActiveHospitalisationItem {
+  @ApiProperty({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' })
+  id: string;
+
+  @ApiProperty({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' })
+  patientId: string;
+
+  @ApiProperty({ example: '2026-05-11T08:15:00.000Z' })
+  dateEntrer: string;
+
+  @ApiProperty({ example: 'Appendicectomie laparoscopique' })
+  motifHospitalisation: string;
+
+  @ApiProperty({ example: 'service-123' })
+  serviceId: string;
+
+  @ApiProperty({ enum: StatutHospitalisation })
+  statutHospitalisation: StatutHospitalisation;
+
+  @ApiProperty({ example: 'A1', required: false, nullable: true })
+  litCode?: string | null;
+
+  @ApiProperty({ example: 12, required: false, nullable: true })
+  chambreNumero?: number | null;
 }
