@@ -9,12 +9,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SignatureModule = void 0;
 const common_1 = require("@nestjs/common");
 const signature_controller_1 = require("./signature.controller");
+const signature_service_1 = require("./signature.service");
 let SignatureModule = class SignatureModule {
 };
 exports.SignatureModule = SignatureModule;
 exports.SignatureModule = SignatureModule = __decorate([
     (0, common_1.Module)({
         controllers: [signature_controller_1.SignatureController],
+        providers: [signature_service_1.SignatureService],
+        exports: [signature_service_1.SignatureService],
     })
 ], SignatureModule);
 //# sourceMappingURL=signature.module.js.map

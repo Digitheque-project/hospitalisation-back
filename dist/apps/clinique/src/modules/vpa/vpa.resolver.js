@@ -13,7 +13,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VpaResolver = void 0;
+const common_1 = require("@nestjs/common");
 const graphql_1 = require("@nestjs/graphql");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
 const create_vpa_input_1 = require("./create-vpa.input");
 const vpa_entity_1 = require("./vpa.entity");
 const vpa_service_1 = require("./vpa.service");
@@ -31,6 +35,7 @@ let VpaResolver = class VpaResolver {
 exports.VpaResolver = VpaResolver;
 __decorate([
     (0, graphql_1.Mutation)(() => vpa_entity_1.VpaEntity),
+    (0, roles_decorator_1.Roles)('ONM'),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_vpa_input_1.CreateVpaInput]),
@@ -38,6 +43,7 @@ __decorate([
 ], VpaResolver.prototype, "createVpa", null);
 __decorate([
     (0, graphql_1.Query)(() => vpa_entity_1.VpaEntity, { nullable: true }),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
     __param(0, (0, graphql_1.Args)('patientId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -45,6 +51,7 @@ __decorate([
 ], VpaResolver.prototype, "latestVpa", null);
 exports.VpaResolver = VpaResolver = __decorate([
     (0, graphql_1.Resolver)(() => vpa_entity_1.VpaEntity),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [vpa_service_1.VpaService])
 ], VpaResolver);
 //# sourceMappingURL=vpa.resolver.js.map

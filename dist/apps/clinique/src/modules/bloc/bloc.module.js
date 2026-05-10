@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BlocModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const hospitalisation_module_1 = require("../hospitalisation/hospitalisation.module");
 const vpa_module_1 = require("../vpa/vpa.module");
 const bloc_entity_1 = require("./bloc.entity");
 const bloc_service_1 = require("./bloc.service");
@@ -19,7 +20,7 @@ let BlocModule = class BlocModule {
 exports.BlocModule = BlocModule;
 exports.BlocModule = BlocModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([bloc_entity_1.BlocOperatoireEntity]), vpa_module_1.VpaModule],
+        imports: [typeorm_1.TypeOrmModule.forFeature([bloc_entity_1.BlocOperatoireEntity]), vpa_module_1.VpaModule, hospitalisation_module_1.HospitalisationModule],
         providers: [bloc_service_1.BlocService, bloc_resolver_1.BlocResolver],
         controllers: [bloc_controller_1.BlocController],
         exports: [bloc_service_1.BlocService],

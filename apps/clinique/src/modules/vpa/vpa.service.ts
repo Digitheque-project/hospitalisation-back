@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CpaService } from '../cpa/cpa.service';
 import { CpaStatus } from '../cpa/cpa.entity';
+import { HospitalisationService } from '../hospitalisation/hospitalisation.service';
 import { CreateVpaInput } from './create-vpa.input';
 import { VpaEntity, VpaStatus } from './vpa.entity';
 
@@ -12,9 +13,11 @@ export class VpaService {
     @InjectRepository(VpaEntity)
     private readonly vpaRepository: Repository<VpaEntity>,
     private readonly cpaService: CpaService,
+    private readonly hospitalisationService: HospitalisationService,
   ) {}
 
   async create(input: CreateVpaInput): Promise<VpaEntity> {
+    await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
     const cpa = await this.cpaService.findById(input.cpaId);
     if (!cpa) {
       throw new NotFoundException('CPA referencee introuvable');
@@ -28,6 +31,7 @@ export class VpaService {
 
     const vpa = this.vpaRepository.create({
       patientId: input.patientId,
+      hospitalisationId: input.hospitalisationId,
       cpaId: input.cpaId,
       status: VpaStatus.EN_ATTENTE,
     });

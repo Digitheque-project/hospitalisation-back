@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { HospitalisationService } from '../hospitalisation/hospitalisation.service';
 import { CpaEntity, CpaStatus } from './cpa.entity';
 import { CreateCpaInput } from './create-cpa.input';
 
@@ -9,11 +10,14 @@ export class CpaService {
   constructor(
     @InjectRepository(CpaEntity)
     private readonly cpaRepository: Repository<CpaEntity>,
+    private readonly hospitalisationService: HospitalisationService,
   ) {}
 
   async create(input: CreateCpaInput): Promise<CpaEntity> {
+    await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
     const cpa = this.cpaRepository.create({
       patientId: input.patientId,
+      hospitalisationId: input.hospitalisationId,
       asaScore: input.asaScore,
       status: CpaStatus.PLANIFIE,
     });

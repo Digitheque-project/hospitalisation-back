@@ -16,14 +16,18 @@ exports.CpaService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const hospitalisation_service_1 = require("../hospitalisation/hospitalisation.service");
 const cpa_entity_1 = require("./cpa.entity");
 let CpaService = class CpaService {
-    constructor(cpaRepository) {
+    constructor(cpaRepository, hospitalisationService) {
         this.cpaRepository = cpaRepository;
+        this.hospitalisationService = hospitalisationService;
     }
     async create(input) {
+        await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
         const cpa = this.cpaRepository.create({
             patientId: input.patientId,
+            hospitalisationId: input.hospitalisationId,
             asaScore: input.asaScore,
             status: cpa_entity_1.CpaStatus.PLANIFIE,
         });
@@ -51,6 +55,7 @@ exports.CpaService = CpaService;
 exports.CpaService = CpaService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(cpa_entity_1.CpaEntity)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        hospitalisation_service_1.HospitalisationService])
 ], CpaService);
 //# sourceMappingURL=cpa.service.js.map

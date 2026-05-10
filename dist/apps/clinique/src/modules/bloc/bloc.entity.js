@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BlocOperatoireEntity = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const typeorm_1 = require("typeorm");
+const hospitalisation_entities_1 = require("../hospitalisation/hospitalisation.entities");
 let BlocOperatoireEntity = class BlocOperatoireEntity {
 };
 exports.BlocOperatoireEntity = BlocOperatoireEntity;
@@ -25,6 +26,16 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], BlocOperatoireEntity.prototype, "patientId", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ name: 'hospitalisation_id', type: 'uuid' }),
+    __metadata("design:type", String)
+], BlocOperatoireEntity.prototype, "hospitalisationId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => hospitalisation_entities_1.HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'hospitalisation_id' }),
+    __metadata("design:type", hospitalisation_entities_1.HospitalisationEntity)
+], BlocOperatoireEntity.prototype, "hospitalisation", void 0);
 __decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)(),

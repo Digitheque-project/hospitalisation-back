@@ -1,5 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { HospitalisationEntity } from '../hospitalisation/hospitalisation.entities';
 
 @ObjectType()
 @Entity('bloc_operatoire')
@@ -11,6 +12,14 @@ export class BlocOperatoireEntity {
   @Field()
   @Column()
   patientId: string;
+
+  @Field()
+  @Column({ name: 'hospitalisation_id', type: 'uuid' })
+  hospitalisationId: string;
+
+  @ManyToOne(() => HospitalisationEntity, { nullable: false })
+  @JoinColumn({ name: 'hospitalisation_id' })
+  hospitalisation: HospitalisationEntity;
 
   @Field()
   @Column()

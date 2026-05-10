@@ -14,7 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CpaController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const cpa_service_1 = require("./cpa.service");
 const create_cpa_input_1 = require("./create-cpa.input");
@@ -33,6 +35,8 @@ exports.CpaController = CpaController;
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une CPA' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'CPA creee' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_cpa_input_1.CreateCpaInput]),
@@ -41,14 +45,17 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id/realise'),
     (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Marquer la CPA comme REALISEE' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'CPA mise a jour' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], CpaController.prototype, "markRealise", null);
 exports.CpaController = CpaController = __decorate([
+    (0, swagger_1.ApiTags)('CPA'),
     (0, common_1.Controller)('cpa'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [cpa_service_1.CpaService])
 ], CpaController);
 //# sourceMappingURL=cpa.controller.js.map

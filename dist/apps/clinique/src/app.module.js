@@ -11,12 +11,14 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const graphql_1 = require("@nestjs/graphql");
 const apollo_1 = require("@nestjs/apollo");
+const schedule_1 = require("@nestjs/schedule");
 const typeorm_1 = require("@nestjs/typeorm");
 const path_1 = require("path");
 const cpa_module_1 = require("./modules/cpa/cpa.module");
 const vpa_module_1 = require("./modules/vpa/vpa.module");
 const bloc_module_1 = require("./modules/bloc/bloc.module");
 const patient_module_1 = require("./modules/patient/patient.module");
+const hospitalisation_module_1 = require("./modules/hospitalisation/hospitalisation.module");
 const signature_module_1 = require("./modules/signature/signature.module");
 let AppModule = class AppModule {
 };
@@ -25,6 +27,7 @@ exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
             config_1.ConfigModule.forRoot({ isGlobal: true }),
+            schedule_1.ScheduleModule.forRoot(),
             typeorm_1.TypeOrmModule.forRootAsync({
                 inject: [config_1.ConfigService],
                 useFactory: (configService) => ({
@@ -55,6 +58,7 @@ exports.AppModule = AppModule = __decorate([
             vpa_module_1.VpaModule,
             bloc_module_1.BlocModule,
             patient_module_1.PatientModule,
+            hospitalisation_module_1.HospitalisationModule,
             signature_module_1.SignatureModule,
         ],
     })

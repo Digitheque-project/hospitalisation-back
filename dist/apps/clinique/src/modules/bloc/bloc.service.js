@@ -16,15 +16,18 @@ exports.BlocService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const hospitalisation_service_1 = require("../hospitalisation/hospitalisation.service");
 const vpa_service_1 = require("../vpa/vpa.service");
 const vpa_entity_1 = require("../vpa/vpa.entity");
 const bloc_entity_1 = require("./bloc.entity");
 let BlocService = class BlocService {
-    constructor(blocRepository, vpaService) {
+    constructor(blocRepository, vpaService, hospitalisationService) {
         this.blocRepository = blocRepository;
         this.vpaService = vpaService;
+        this.hospitalisationService = hospitalisationService;
     }
     async planifier(input) {
+        await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
         const vpa = await this.vpaService.findById(input.vpaId);
         if (!vpa) {
             throw new common_1.NotFoundException('VPA referencee introuvable');
@@ -32,7 +35,10 @@ let BlocService = class BlocService {
         if (vpa.status !== vpa_entity_1.VpaStatus.VALIDEE) {
             throw new common_1.UnprocessableEntityException('Planification Bloc interdite tant que la VPA n\'est pas VALIDEE');
         }
-        const bloc = this.blocRepository.create(input);
+        const bloc = this.blocRepository.create({
+            ...input,
+            hospitalisationId: input.hospitalisationId,
+        });
         return this.blocRepository.save(bloc);
     }
     async findLatestByPatient(patientId) {
@@ -47,6 +53,7 @@ exports.BlocService = BlocService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(bloc_entity_1.BlocOperatoireEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        vpa_service_1.VpaService])
+        vpa_service_1.VpaService,
+        hospitalisation_service_1.HospitalisationService])
 ], BlocService);
 //# sourceMappingURL=bloc.service.js.map

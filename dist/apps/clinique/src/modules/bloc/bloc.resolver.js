@@ -13,7 +13,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BlocResolver = void 0;
+const common_1 = require("@nestjs/common");
 const graphql_1 = require("@nestjs/graphql");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
 const bloc_entity_1 = require("./bloc.entity");
 const bloc_service_1 = require("./bloc.service");
 const planifier_bloc_input_1 = require("./planifier-bloc.input");
@@ -31,6 +35,7 @@ let BlocResolver = class BlocResolver {
 exports.BlocResolver = BlocResolver;
 __decorate([
     (0, graphql_1.Mutation)(() => bloc_entity_1.BlocOperatoireEntity),
+    (0, roles_decorator_1.Roles)('ONM'),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [planifier_bloc_input_1.PlanifierBlocInput]),
@@ -38,6 +43,7 @@ __decorate([
 ], BlocResolver.prototype, "planifierBloc", null);
 __decorate([
     (0, graphql_1.Query)(() => bloc_entity_1.BlocOperatoireEntity, { nullable: true }),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
     __param(0, (0, graphql_1.Args)('patientId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -45,6 +51,7 @@ __decorate([
 ], BlocResolver.prototype, "latestBloc", null);
 exports.BlocResolver = BlocResolver = __decorate([
     (0, graphql_1.Resolver)(() => bloc_entity_1.BlocOperatoireEntity),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [bloc_service_1.BlocService])
 ], BlocResolver);
 //# sourceMappingURL=bloc.resolver.js.map

@@ -1,0 +1,66 @@
+import { UseGuards } from '@nestjs/common';
+import { Args, Context, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import {
+  AvisMedicalEntity,
+  DemandeAvisEntity,
+  DiagnosticsEntity,
+  HospitalisationEntity,
+} from './hospitalisation.entities';
+import { HospitalisationService } from './hospitalisation.service';
+import {
+  CreateAvisMedicalDto,
+  CreateDemandeAvisDto,
+  CreateDiagnosticsDto,
+  CreateHospitalisationDto,
+} from './hospitalisation.dto';
+
+@Resolver(() => HospitalisationEntity)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class HospitalisationResolver {
+  constructor(private readonly hospitalisationService: HospitalisationService) {}
+
+  @Mutation(() => HospitalisationEntity)
+  @Roles('ONM')
+  createHospitalisation(@Args('input') input: CreateHospitalisationDto) {
+    return this.hospitalisationService.createHospitalisation(input);
+  }
+
+  @Query(() => HospitalisationEntity, { nullable: true })
+  @Roles('ONM', 'ONIM')
+  hospitalisation(@Args('id', { type: () => ID }) id: string) {
+    return this.hospitalisationService.findHospitalisationById(id);
+  }
+
+  @Mutation(() => DemandeAvisEntity)
+  @Roles('ONM')
+  createDemandeAvis(@Args('input') input: CreateDemandeAvisDto) {
+    return this.hospitalisationService.createDemandeAvis(input);
+  }
+
+  @Mutation(() => DemandeAvisEntity)
+  @Roles('ONM', 'ONIM')
+  consulterDemandeAvis(@Args('id', { type: () => ID }) id: string) {
+    return this.hospitalisationService.consulterDemandeAvis(id);
+  }
+
+  @Mutation(() => DiagnosticsEntity)
+  @Roles('ONM')
+  createDiagnostic(
+    @Args('input') input: CreateDiagnosticsDto,
+    @Context() context: { req?: { user?: { orderNumber?: string } } },
+  ) {
+    return this.hospitalisationService.createDiagnostics(input, context?.req?.user ?? null);
+  }
+
+  @Mutation(() => AvisMedicalEntity)
+  @Roles('ONM')
+  createAvisMedical(
+    @Args('input') input: CreateAvisMedicalDto,
+    @Context() context: { req?: { user?: { orderNumber?: string } } },
+  ) {
+    return this.hospitalisationService.createAvisMedical(input, context?.req?.user ?? null);
+  }
+}

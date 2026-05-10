@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VpaEntity = exports.VpaStatus = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const typeorm_1 = require("typeorm");
+const hospitalisation_entities_1 = require("../hospitalisation/hospitalisation.entities");
 var VpaStatus;
 (function (VpaStatus) {
     VpaStatus["EN_ATTENTE"] = "EN_ATTENTE";
@@ -31,6 +32,16 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], VpaEntity.prototype, "patientId", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, typeorm_1.Column)({ name: 'hospitalisation_id', type: 'uuid' }),
+    __metadata("design:type", String)
+], VpaEntity.prototype, "hospitalisationId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => hospitalisation_entities_1.HospitalisationEntity, { nullable: false }),
+    (0, typeorm_1.JoinColumn)({ name: 'hospitalisation_id' }),
+    __metadata("design:type", hospitalisation_entities_1.HospitalisationEntity)
+], VpaEntity.prototype, "hospitalisation", void 0);
 __decorate([
     (0, graphql_1.Field)(),
     (0, typeorm_1.Column)(),

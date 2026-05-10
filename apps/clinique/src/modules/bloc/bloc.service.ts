@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { HospitalisationService } from '../hospitalisation/hospitalisation.service';
 import { VpaService } from '../vpa/vpa.service';
 import { VpaStatus } from '../vpa/vpa.entity';
 import { BlocOperatoireEntity } from './bloc.entity';
@@ -12,9 +13,11 @@ export class BlocService {
     @InjectRepository(BlocOperatoireEntity)
     private readonly blocRepository: Repository<BlocOperatoireEntity>,
     private readonly vpaService: VpaService,
+    private readonly hospitalisationService: HospitalisationService,
   ) {}
 
   async planifier(input: PlanifierBlocInput): Promise<BlocOperatoireEntity> {
+    await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
     const vpa = await this.vpaService.findById(input.vpaId);
     if (!vpa) {
       throw new NotFoundException('VPA referencee introuvable');
@@ -26,7 +29,10 @@ export class BlocService {
       );
     }
 
-    const bloc = this.blocRepository.create(input);
+    const bloc = this.blocRepository.create({
+      ...input,
+      hospitalisationId: input.hospitalisationId,
+    });
     return this.blocRepository.save(bloc);
   }
 

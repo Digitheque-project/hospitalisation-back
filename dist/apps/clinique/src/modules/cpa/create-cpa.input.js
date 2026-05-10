@@ -11,17 +11,26 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateCpaInput = void 0;
 const graphql_1 = require("@nestjs/graphql");
+const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 let CreateCpaInput = class CreateCpaInput {
 };
 exports.CreateCpaInput = CreateCpaInput;
 __decorate([
     (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Identifiant patient', required: true }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateCpaInput.prototype, "patientId", void 0);
 __decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Identifiant hospitalisation', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCpaInput.prototype, "hospitalisationId", void 0);
+__decorate([
     (0, graphql_1.Field)(() => graphql_1.Int),
+    (0, swagger_1.ApiProperty)({ type: Number, description: 'Score ASA', required: true }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
     (0, class_validator_1.Max)(6),

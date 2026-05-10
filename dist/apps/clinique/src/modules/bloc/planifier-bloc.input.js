@@ -11,22 +11,32 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PlanifierBlocInput = void 0;
 const graphql_1 = require("@nestjs/graphql");
+const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 let PlanifierBlocInput = class PlanifierBlocInput {
 };
 exports.PlanifierBlocInput = PlanifierBlocInput;
 __decorate([
     (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Identifiant patient', required: true }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], PlanifierBlocInput.prototype, "patientId", void 0);
 __decorate([
     (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Identifiant hospitalisation', required: true }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlanifierBlocInput.prototype, "hospitalisationId", void 0);
+__decorate([
+    (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Identifiant VPA', required: true }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], PlanifierBlocInput.prototype, "vpaId", void 0);
 __decorate([
     (0, graphql_1.Field)(),
+    (0, swagger_1.ApiProperty)({ type: Boolean, description: 'Checklist OMS validee', required: true }),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], PlanifierBlocInput.prototype, "checklistOmsValidee", void 0);

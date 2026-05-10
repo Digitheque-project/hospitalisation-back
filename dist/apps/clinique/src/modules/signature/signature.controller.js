@@ -14,25 +14,41 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SignatureController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const roles_guard_1 = require("../../common/guards/roles.guard");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const signature_service_1 = require("./signature.service");
 class SignatureDto {
 }
 __decorate([
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Acte a signer', required: true }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignatureDto.prototype, "acte", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ type: String, description: 'Identifiant patient', required: true }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignatureDto.prototype, "patientId", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({
+        type: String,
+        description: "Numero d'Ordre professionnel du signataire",
+        required: true,
+    }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], SignatureDto.prototype, "signerId", void 0);
 let SignatureController = class SignatureController {
+    constructor(signatureService) {
+        this.signatureService = signatureService;
+    }
     signer(body) {
+        this.signatureService.assertProfessionalOrderNumber({
+            orderNumber: body.signerId,
+        });
         return {
             status: 'SIGNE',
             timestamp: new Date().toISOString(),
@@ -44,13 +60,17 @@ exports.SignatureController = SignatureController;
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Signer un acte critique' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Acte signe' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [SignatureDto]),
     __metadata("design:returntype", void 0)
 ], SignatureController.prototype, "signer", null);
 exports.SignatureController = SignatureController = __decorate([
+    (0, swagger_1.ApiTags)('Signature'),
     (0, common_1.Controller)('signatures'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard)
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    __metadata("design:paramtypes", [signature_service_1.SignatureService])
 ], SignatureController);
 //# sourceMappingURL=signature.controller.js.map

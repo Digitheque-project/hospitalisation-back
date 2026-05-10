@@ -14,7 +14,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VpaController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const create_vpa_input_1 = require("./create-vpa.input");
 const vpa_service_1 = require("./vpa.service");
@@ -33,6 +35,8 @@ exports.VpaController = VpaController;
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une VPA' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'VPA creee' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_vpa_input_1.CreateVpaInput]),
@@ -41,14 +45,17 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id/validate'),
     (0, roles_decorator_1.Roles)('ONM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Valider la VPA' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'VPA validee' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], VpaController.prototype, "validate", null);
 exports.VpaController = VpaController = __decorate([
+    (0, swagger_1.ApiTags)('VPA'),
     (0, common_1.Controller)('vpa'),
-    (0, common_1.UseGuards)(roles_guard_1.RolesGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [vpa_service_1.VpaService])
 ], VpaController);
 //# sourceMappingURL=vpa.controller.js.map

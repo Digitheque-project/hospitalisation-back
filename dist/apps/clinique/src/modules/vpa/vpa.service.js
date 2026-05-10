@@ -18,13 +18,16 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cpa_service_1 = require("../cpa/cpa.service");
 const cpa_entity_1 = require("../cpa/cpa.entity");
+const hospitalisation_service_1 = require("../hospitalisation/hospitalisation.service");
 const vpa_entity_1 = require("./vpa.entity");
 let VpaService = class VpaService {
-    constructor(vpaRepository, cpaService) {
+    constructor(vpaRepository, cpaService, hospitalisationService) {
         this.vpaRepository = vpaRepository;
         this.cpaService = cpaService;
+        this.hospitalisationService = hospitalisationService;
     }
     async create(input) {
+        await this.hospitalisationService.assertHospitalisationExists(input.hospitalisationId);
         const cpa = await this.cpaService.findById(input.cpaId);
         if (!cpa) {
             throw new common_1.NotFoundException('CPA referencee introuvable');
@@ -34,6 +37,7 @@ let VpaService = class VpaService {
         }
         const vpa = this.vpaRepository.create({
             patientId: input.patientId,
+            hospitalisationId: input.hospitalisationId,
             cpaId: input.cpaId,
             status: vpa_entity_1.VpaStatus.EN_ATTENTE,
         });
@@ -62,6 +66,7 @@ exports.VpaService = VpaService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(vpa_entity_1.VpaEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        cpa_service_1.CpaService])
+        cpa_service_1.CpaService,
+        hospitalisation_service_1.HospitalisationService])
 ], VpaService);
 //# sourceMappingURL=vpa.service.js.map
