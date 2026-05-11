@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var CpaService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CpaService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,7 +19,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const hospitalisation_service_1 = require("../hospitalisation/hospitalisation.service");
 const cpa_entity_1 = require("./cpa.entity");
-let CpaService = class CpaService {
+let CpaService = CpaService_1 = class CpaService {
     constructor(cpaRepository, hospitalisationService) {
         this.cpaRepository = cpaRepository;
         this.hospitalisationService = hospitalisationService;
@@ -28,7 +29,7 @@ let CpaService = class CpaService {
         if (!hospitalisation) {
             throw new common_1.NotFoundException('Hospitalisation introuvable');
         }
-        if (hospitalisation.idPatient !== input.patientId) {
+        if (hospitalisation.patientId !== input.patientId) {
             throw new common_1.UnprocessableEntityException('Le patient de la CPA doit correspondre au patient de hospitalisation');
         }
         const cpa = this.cpaRepository.create({
@@ -63,9 +64,29 @@ let CpaService = class CpaService {
     async findById(id) {
         return this.cpaRepository.findOne({ where: { id } });
     }
+    async getStats() {
+        const total = await this.cpaRepository.count();
+        const urgent = await this.cpaRepository.count({ where: { urgence: true } });
+        return { total, urgent };
+    }
+    async getRecent(limit) {
+        const normalizedLimit = this.normalizeLimit(limit);
+        return this.cpaRepository.find({
+            order: { createdAt: 'DESC' },
+            take: normalizedLimit,
+        });
+    }
+    normalizeLimit(limit) {
+        if (!Number.isFinite(limit) || limit <= 0) {
+            return CpaService_1.DEFAULT_LIMIT;
+        }
+        return Math.min(limit, CpaService_1.MAX_LIMIT);
+    }
 };
 exports.CpaService = CpaService;
-exports.CpaService = CpaService = __decorate([
+CpaService.DEFAULT_LIMIT = 6;
+CpaService.MAX_LIMIT = 50;
+exports.CpaService = CpaService = CpaService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(cpa_entity_1.CpaEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,

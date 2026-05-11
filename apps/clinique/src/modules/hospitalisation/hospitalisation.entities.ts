@@ -37,14 +37,6 @@ registerEnumType(StatutDemande, { name: 'StatutDemande' });
 registerEnumType(StatutDemandeTransfert, { name: 'StatutDemandeTransfert' });
 
 @ObjectType()
-@Entity('patient_ref')
-export class PatientRefEntity {
-  @Field(() => ID)
-  @PrimaryColumn({ name: 'id_patient', type: 'varchar', length: 120 })
-  id: string;
-}
-
-@ObjectType()
 @Entity('service_ref')
 export class ServiceRefEntity {
   @Field(() => ID)
@@ -86,10 +78,6 @@ export class HospitalisationEntity {
   @Field()
   @Column({ name: 'id_patient', type: 'varchar', length: 120 })
   patientId: string;
-
-  @ManyToOne(() => PatientRefEntity, { nullable: false })
-  @JoinColumn({ name: 'id_patient', referencedColumnName: 'id' })
-  patient: PatientRefEntity;
 
   @Field()
   @Column({ name: 'id_service', type: 'varchar', length: 120 })

@@ -31,7 +31,7 @@ let VpaService = class VpaService {
         if (!hospitalisation) {
             throw new common_1.NotFoundException('Hospitalisation introuvable');
         }
-        if (hospitalisation.idPatient !== input.patientId) {
+        if (hospitalisation.patientId !== input.patientId) {
             throw new common_1.UnprocessableEntityException('Le patient de la VPA doit correspondre au patient de hospitalisation');
         }
         const cpa = await this.cpaService.findById(input.cpaId);
@@ -74,6 +74,9 @@ let VpaService = class VpaService {
             where: { patientId },
             order: { createdAt: 'DESC' },
         });
+    }
+    async getPendingCount() {
+        return this.vpaRepository.count({ where: { status: vpa_entity_1.VpaStatus.EN_ATTENTE } });
     }
 };
 exports.VpaService = VpaService;

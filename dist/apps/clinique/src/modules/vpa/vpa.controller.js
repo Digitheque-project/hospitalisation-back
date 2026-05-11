@@ -18,27 +18,53 @@ const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
+const uuid_1 = require("../../common/utils/uuid");
 const create_vpa_input_1 = require("./create-vpa.input");
 const vpa_entity_1 = require("./vpa.entity");
 const vpa_service_1 = require("./vpa.service");
+class VpaStatsResponse {
+}
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 32 }),
+    __metadata("design:type", Number)
+], VpaStatsResponse.prototype, "pending", void 0);
 let VpaController = class VpaController {
     constructor(vpaService) {
         this.vpaService = vpaService;
     }
+    async getStats() {
+        const pending = await this.vpaService.getPendingCount();
+        return { pending };
+    }
     create(body) {
         return this.vpaService.create(body);
     }
-    getById(id) {
-        return this.vpaService.findById(id);
+    async getById(id) {
+        if (!(0, uuid_1.isUuidV4)(id)) {
+            return {};
+        }
+        return (await this.vpaService.findById(id)) ?? {};
     }
-    getLatestByPatient(patientId) {
-        return this.vpaService.findLatestByPatient(patientId);
+    async getLatestByPatient(patientId) {
+        if (!(0, uuid_1.isUuidV4)(patientId)) {
+            return {};
+        }
+        return (await this.vpaService.findLatestByPatient(patientId)) ?? {};
     }
     validate(id) {
         return this.vpaService.validate(id);
     }
 };
 exports.VpaController = VpaController;
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer les indicateurs VPA' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Indicateurs VPA retournes', type: VpaStatsResponse }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], VpaController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM'),
@@ -58,7 +84,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], VpaController.prototype, "getById", null);
 __decorate([
     (0, common_1.Get)('patient/:patientId/latest'),
@@ -69,7 +95,7 @@ __decorate([
     __param(0, (0, common_1.Param)('patientId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], VpaController.prototype, "getLatestByPatient", null);
 __decorate([
     (0, common_1.Patch)(':id/validate'),

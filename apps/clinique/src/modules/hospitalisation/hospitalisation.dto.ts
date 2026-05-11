@@ -63,8 +63,14 @@ export class CreateHospitalisationDto {
   @IsString()
   commentaire?: string;
 
-  @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Lit cible (optionnel)', required: false })
+  @Field(() => String, { nullable: true })
+  @ApiProperty({
+    type: String,
+    description:
+      "Identifiant du lit à affecter à la création. Si omis ou null, aucune affectation de lit n'est créée.",
+    required: false,
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   idLit?: string;

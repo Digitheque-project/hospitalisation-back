@@ -31,7 +31,7 @@ exports.PatientResolver = PatientResolver;
 __decorate([
     (0, graphql_1.Query)(() => dossier_patient_type_1.DossierPatientUnique),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
-    __param(0, (0, graphql_1.Args)('patientId')),
+    __param(0, (0, graphql_1.Args)('patientId', new common_1.ParseUUIDPipe({ version: '4' }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)

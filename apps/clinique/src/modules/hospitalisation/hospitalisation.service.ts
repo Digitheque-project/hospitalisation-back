@@ -19,7 +19,6 @@ import {
   HospitalisationEntity,
   LitEntity,
   ModeSortieEntity,
-  PatientRefEntity,
   PersonnelRefEntity,
   PrescriptionMedicaleEntity,
   ServiceRefEntity,
@@ -46,6 +45,7 @@ import {
   UpdateLitStatutDto,
 } from './hospitalisation.dto';
 import { HospitalisationGateway } from './hospitalisation.gateway';
+import { AccueilPatientApiService } from '../accueil/accueil-patient-api.service';
 
 @Injectable()
 export class HospitalisationService implements OnModuleDestroy {
@@ -86,6 +86,7 @@ export class HospitalisationService implements OnModuleDestroy {
     private readonly serviceRefRepository: Repository<ServiceRefEntity>,
     private readonly signatureService: SignatureService,
     private readonly hospitalisationGateway: HospitalisationGateway,
+    private readonly accueilPatientApi: AccueilPatientApiService,
   ) {}
 
   // --- Ref Seed Methods ---
@@ -101,6 +102,7 @@ export class HospitalisationService implements OnModuleDestroy {
   }
 
   async createHospitalisation(input: CreateHospitalisationDto): Promise<HospitalisationEntity> {
+    await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
     await this.assertServiceRefExists(input.serviceId);
     let modeSortie: ModeSortieEntity | null = null;
     if (input.idModeSortie) {
@@ -113,7 +115,6 @@ export class HospitalisationService implements OnModuleDestroy {
       }
     }
 
-    const litDisponible = await this.findAvailableLitForService(input.serviceId, input.idLit);
     const entity = this.hospitalisationRepository.create({
       patientId: input.patientId,
       serviceId: input.serviceId,
@@ -126,7 +127,10 @@ export class HospitalisationService implements OnModuleDestroy {
       statutHospitalisation: StatutHospitalisation.EN_COURS,
     });
     const saved = await this.hospitalisationRepository.save(entity);
-    await this.affecterLit(saved.id, litDisponible.id);
+    if (input.idLit) {
+      const litDisponible = await this.findAvailableLitForService(input.serviceId, input.idLit);
+      await this.affecterLit(saved.id, litDisponible.id);
+    }
     this.hospitalisationGateway.emitHospitalisationCreated(saved);
     return saved;
   }

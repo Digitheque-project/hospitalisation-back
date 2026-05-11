@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccueilApiModule } from '../accueil/accueil-api.module';
 import { SignatureModule } from '../signature/signature.module';
 import { HospitalisationController } from './hospitalisation.controller';
 import {
@@ -14,7 +15,6 @@ import {
   LitEntity,
   ModeSortieEntity,
   ObservationMedicalEntity,
-  PatientRefEntity,
   PersonnelRefEntity,
   PrescriptionMedicaleEntity,
   ServiceRefEntity,
@@ -27,9 +27,9 @@ import { HospitalisationGateway } from './hospitalisation.gateway';
 
 @Module({
   imports: [
+    AccueilApiModule,
     TypeOrmModule.forFeature([
       HospitalisationEntity,
-      PatientRefEntity,
       ServiceRefEntity,
       PersonnelRefEntity,
       ObservationMedicalEntity,

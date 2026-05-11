@@ -9,22 +9,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HospitalisationModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const accueil_api_module_1 = require("../accueil/accueil-api.module");
 const signature_module_1 = require("../signature/signature.module");
 const hospitalisation_controller_1 = require("./hospitalisation.controller");
 const hospitalisation_entities_1 = require("./hospitalisation.entities");
 const hospitalisation_resolver_1 = require("./hospitalisation.resolver");
 const hospitalisation_service_1 = require("./hospitalisation.service");
+const hospitalisation_gateway_1 = require("./hospitalisation.gateway");
 let HospitalisationModule = class HospitalisationModule {
 };
 exports.HospitalisationModule = HospitalisationModule;
 exports.HospitalisationModule = HospitalisationModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            accueil_api_module_1.AccueilApiModule,
             typeorm_1.TypeOrmModule.forFeature([
                 hospitalisation_entities_1.HospitalisationEntity,
-                hospitalisation_entities_1.PatientRefEntity,
                 hospitalisation_entities_1.ServiceRefEntity,
-                hospitalisation_entities_1.DemandeHospitalisationRefEntity,
                 hospitalisation_entities_1.PersonnelRefEntity,
                 hospitalisation_entities_1.ObservationMedicalEntity,
                 hospitalisation_entities_1.DiagnosticsEntity,
@@ -43,7 +44,7 @@ exports.HospitalisationModule = HospitalisationModule = __decorate([
             signature_module_1.SignatureModule,
         ],
         controllers: [hospitalisation_controller_1.HospitalisationController],
-        providers: [hospitalisation_service_1.HospitalisationService, hospitalisation_resolver_1.HospitalisationResolver],
+        providers: [hospitalisation_service_1.HospitalisationService, hospitalisation_resolver_1.HospitalisationResolver, hospitalisation_gateway_1.HospitalisationGateway],
         exports: [hospitalisation_service_1.HospitalisationService],
     })
 ], HospitalisationModule);

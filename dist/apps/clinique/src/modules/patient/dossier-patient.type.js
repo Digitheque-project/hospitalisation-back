@@ -13,6 +13,7 @@ exports.DossierPatientUnique = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const cpa_entity_1 = require("../cpa/cpa.entity");
 const vpa_entity_1 = require("../vpa/vpa.entity");
+const patient_informations_accueil_type_1 = require("./patient-informations-accueil.type");
 let DossierPatientUnique = class DossierPatientUnique {
 };
 exports.DossierPatientUnique = DossierPatientUnique;
@@ -20,6 +21,10 @@ __decorate([
     (0, graphql_1.Field)(),
     __metadata("design:type", String)
 ], DossierPatientUnique.prototype, "patientId", void 0);
+__decorate([
+    (0, graphql_1.Field)(() => patient_informations_accueil_type_1.PatientInformationsAccueil, { nullable: true }),
+    __metadata("design:type", Object)
+], DossierPatientUnique.prototype, "informationsPatient", void 0);
 __decorate([
     (0, graphql_1.Field)(() => cpa_entity_1.CpaEntity, { nullable: true }),
     __metadata("design:type", Object)

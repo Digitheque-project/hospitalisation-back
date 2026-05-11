@@ -18,9 +18,12 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const signature_service_1 = require("../signature/signature.service");
+const uuid_1 = require("../../common/utils/uuid");
 const hospitalisation_entities_1 = require("./hospitalisation.entities");
+const hospitalisation_gateway_1 = require("./hospitalisation.gateway");
+const accueil_patient_api_service_1 = require("../accueil/accueil-patient-api.service");
 let HospitalisationService = HospitalisationService_1 = class HospitalisationService {
-    constructor(hospitalisationRepository, modeSortieRepository, demandeAvisRepository, avisMedicalRepository, diagnosticsRepository, prescriptionRepository, demandeTransfertRepository, litRepository, chambreRepository, affectationLitRepository, transfertRepository, signatureService) {
+    constructor(hospitalisationRepository, modeSortieRepository, demandeAvisRepository, avisMedicalRepository, diagnosticsRepository, prescriptionRepository, demandeTransfertRepository, litRepository, chambreRepository, affectationLitRepository, transfertRepository, soinsRepository, personnelRefRepository, serviceRefRepository, signatureService, hospitalisationGateway, accueilPatientApi) {
         this.hospitalisationRepository = hospitalisationRepository;
         this.modeSortieRepository = modeSortieRepository;
         this.demandeAvisRepository = demandeAvisRepository;
@@ -32,24 +35,41 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
         this.chambreRepository = chambreRepository;
         this.affectationLitRepository = affectationLitRepository;
         this.transfertRepository = transfertRepository;
+        this.soinsRepository = soinsRepository;
+        this.personnelRefRepository = personnelRefRepository;
+        this.serviceRefRepository = serviceRefRepository;
         this.signatureService = signatureService;
+        this.hospitalisationGateway = hospitalisationGateway;
+        this.accueilPatientApi = accueilPatientApi;
         this.logger = new common_1.Logger(HospitalisationService_1.name);
         this.demandeAvisIntervals = new Map();
     }
+    async createPersonnelRef(id) {
+        const entity = this.personnelRefRepository.create({ id });
+        return this.personnelRefRepository.save(entity);
+    }
+    async createServiceRef(id) {
+        const entity = this.serviceRefRepository.create({ id });
+        return this.serviceRefRepository.save(entity);
+    }
     async createHospitalisation(input) {
+        await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
+        await this.assertServiceRefExists(input.serviceId);
         let modeSortie = null;
         if (input.idModeSortie) {
+            if (!(0, uuid_1.isUuidV4)(input.idModeSortie)) {
+                throw new common_1.UnprocessableEntityException('Identifiant mode sortie invalide');
+            }
             modeSortie = await this.modeSortieRepository.findOne({ where: { id: input.idModeSortie } });
             if (!modeSortie) {
                 throw new common_1.NotFoundException('Mode de sortie introuvable');
             }
         }
-        const litDisponible = await this.findAvailableLitForService(input.idService, input.idLit);
         const entity = this.hospitalisationRepository.create({
-            idPatient: input.idPatient,
-            idService: input.idService,
-            idDemandeHospitalisation: input.idDemandeHospitalisation,
+            patientId: input.patientId,
+            serviceId: input.serviceId,
             motifHospitalisation: input.motifHospitalisation,
+            type: input.type ?? 'Hospitalisation',
             commentaire: input.commentaire ?? null,
             dateEntrer: new Date(input.dateEntrer),
             modeSortie,
@@ -57,7 +77,11 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             statutHospitalisation: hospitalisation_entities_1.StatutHospitalisation.EN_COURS,
         });
         const saved = await this.hospitalisationRepository.save(entity);
-        await this.affecterLit(saved.id, litDisponible.id);
+        if (input.idLit) {
+            const litDisponible = await this.findAvailableLitForService(input.serviceId, input.idLit);
+            await this.affecterLit(saved.id, litDisponible.id);
+        }
+        this.hospitalisationGateway.emitHospitalisationCreated(saved);
         return saved;
     }
     async createDemandeAvis(input) {
@@ -120,7 +144,7 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
         if (!hospitalisation) {
             throw new common_1.NotFoundException('Hospitalisation introuvable');
         }
-        if (hospitalisation.idService !== input.serviceSource) {
+        if (hospitalisation.serviceId !== input.serviceSource) {
             throw new common_1.UnprocessableEntityException('Le service source doit correspondre au service courant de hospitalisation');
         }
         const demande = this.demandeTransfertRepository.create({
@@ -183,6 +207,123 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
     async findHospitalisationById(id) {
         return this.hospitalisationRepository.findOne({ where: { id } });
     }
+    async getHospitalisationStats() {
+        const hospitalizedTotal = await this.hospitalisationRepository.count({
+            where: { statutHospitalisation: hospitalisation_entities_1.StatutHospitalisation.EN_COURS },
+        });
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const hospitalizedNewToday = await this.hospitalisationRepository
+            .createQueryBuilder('hospitalisation')
+            .where('hospitalisation.statut_hospitalisation = :status', {
+            status: hospitalisation_entities_1.StatutHospitalisation.EN_COURS,
+        })
+            .andWhere('hospitalisation.date_entrer >= :startOfToday', {
+            startOfToday,
+        })
+            .getCount();
+        return {
+            hospitalizedTotal,
+            hospitalizedNewToday,
+        };
+    }
+    async getActiveHospitalisations(limit) {
+        const normalizedLimit = this.normalizeLimit(limit);
+        const rows = await this.hospitalisationRepository
+            .createQueryBuilder('hospitalisation')
+            .leftJoin(hospitalisation_entities_1.AffectationLitEntity, 'affectation', 'affectation.id_hospitalisation = hospitalisation.id_hospitalisation AND affectation.date_fin_affectation IS NULL')
+            .leftJoin(hospitalisation_entities_1.LitEntity, 'lit', 'lit.id_lit = affectation.id_lit')
+            .leftJoin(hospitalisation_entities_1.ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
+            .where('hospitalisation.statut_hospitalisation = :status', {
+            status: hospitalisation_entities_1.StatutHospitalisation.EN_COURS,
+        })
+            .orderBy('hospitalisation.date_entrer', 'DESC')
+            .limit(normalizedLimit)
+            .select([
+            'hospitalisation.id_hospitalisation AS id',
+            'hospitalisation.id_patient AS "patientId"',
+            'hospitalisation.date_entrer AS "dateEntrer"',
+            'hospitalisation.motif_hospitalisation AS "motifHospitalisation"',
+            'hospitalisation.id_service AS "serviceId"',
+            'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
+            'lit.code_lit AS "litCode"',
+            'chambre.numero_chambre AS "chambreNumero"',
+        ])
+            .getRawMany();
+        return rows.map((row) => ({
+            ...row,
+            dateEntrer: new Date(row.dateEntrer).toISOString(),
+            litCode: row.litCode ?? null,
+            chambreNumero: row.chambreNumero ?? null,
+        }));
+    }
+    async getPlanLitsByService(serviceId) {
+        const chambres = await this.chambreRepository.find({
+            where: { serviceId: serviceId },
+            order: { numeroChambre: 'ASC' },
+        });
+        let totalLits = 0;
+        let litsOccupes = 0;
+        let totalPatients = 0;
+        const chambreResults = [];
+        for (const chambre of chambres) {
+            const lits = await this.litRepository.find({
+                where: { idChambre: chambre.id },
+                order: { codeLit: 'ASC' },
+            });
+            const litItems = [];
+            for (const lit of lits) {
+                totalLits++;
+                const activeAffectation = await this.affectationLitRepository.findOne({
+                    where: { idLit: lit.id, dateFinAffectation: (0, typeorm_2.IsNull)() },
+                    order: { dateDebutAffectation: 'DESC' },
+                });
+                let hospitalisation = null;
+                if (activeAffectation) {
+                    litsOccupes++;
+                    totalPatients++;
+                    const hosp = await this.hospitalisationRepository.findOne({
+                        where: { id: activeAffectation.idHospitalisation },
+                    });
+                    if (hosp) {
+                        const latestDiag = await this.diagnosticsRepository.findOne({
+                            where: { idHospitalisation: hosp.id },
+                            order: { dateDiagnostics: 'DESC' },
+                        });
+                        const soinsCount = await this.soinsRepository.count({
+                            where: { idHospitalisation: hosp.id },
+                        });
+                        hospitalisation = {
+                            id: hosp.id,
+                            patientId: hosp.patientId,
+                            dateEntrer: new Date(hosp.dateEntrer).toISOString(),
+                            motifHospitalisation: hosp.motifHospitalisation,
+                            statutHospitalisation: hosp.statutHospitalisation,
+                            diagnostic: latestDiag?.descriptionDiagnostic ?? null,
+                            soinsCount,
+                        };
+                    }
+                }
+                litItems.push({
+                    litId: lit.id,
+                    codeLit: lit.codeLit,
+                    statut: lit.statut,
+                    hospitalisation,
+                });
+            }
+            chambreResults.push({
+                chambreId: chambre.id,
+                numeroChambre: chambre.numeroChambre,
+                type: chambre.type,
+                lits: litItems,
+            });
+        }
+        return {
+            serviceId,
+            chambres: chambreResults,
+            stats: { totalLits, litsOccupes, totalPatients },
+        };
+    }
     async findDemandeAvisById(id) {
         return this.demandeAvisRepository.findOne({ where: { id } });
     }
@@ -199,8 +340,9 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             .getMany();
     }
     async createChambre(input) {
+        await this.assertServiceRefExists(input.serviceId);
         const exists = await this.chambreRepository.findOne({
-            where: { idService: input.idService, numeroChambre: input.numeroChambre },
+            where: { serviceId: input.serviceId, numeroChambre: input.numeroChambre },
         });
         if (exists) {
             throw new common_1.UnprocessableEntityException('Une chambre avec ce numero existe deja pour ce service');
@@ -250,6 +392,12 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             throw new common_1.NotFoundException('Hospitalisation introuvable');
         }
     }
+    async assertServiceRefExists(id) {
+        const service = await this.serviceRefRepository.findOne({ where: { id } });
+        if (!service) {
+            throw new common_1.NotFoundException("Service introuvable. Creez d'abord la reference via POST /hospitalisations/seed/service-ref.");
+        }
+    }
     async createAffectationLit(input) {
         const hospitalisation = await this.hospitalisationRepository.findOne({
             where: { id: input.idHospitalisation },
@@ -262,7 +410,7 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             throw new common_1.NotFoundException('Lit introuvable');
         }
         const chambre = await this.chambreRepository.findOne({ where: { id: lit.idChambre } });
-        if (!chambre || chambre.idService !== hospitalisation.idService) {
+        if (!chambre || chambre.serviceId !== hospitalisation.serviceId) {
             throw new common_1.UnprocessableEntityException('Le lit doit appartenir au service courant de hospitalisation');
         }
         const activeAffectation = await this.affectationLitRepository.findOne({
@@ -295,7 +443,7 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
                 throw new common_1.NotFoundException('Lit cible introuvable');
             }
             const chambre = await this.chambreRepository.findOne({ where: { id: lit.idChambre } });
-            if (!chambre || chambre.idService !== serviceId) {
+            if (!chambre || chambre.serviceId !== serviceId) {
                 throw new common_1.UnprocessableEntityException('Le lit cible ne correspond pas au service cible');
             }
             if (lit.statut !== hospitalisation_entities_1.StatutLit.DISPONIBLE) {
@@ -351,7 +499,7 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             }
         }
         await this.affecterLit(demande.idHospitalisation, idLitDestination);
-        hospitalisation.idService = demande.serviceDestination;
+        hospitalisation.serviceId = demande.serviceDestination;
         await this.hospitalisationRepository.save(hospitalisation);
         const transfert = this.transfertRepository.create({
             idDemande: demande.id,
@@ -385,8 +533,16 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             this.stopAvisNotification(demandeId);
         }
     }
+    normalizeLimit(limit) {
+        if (!Number.isFinite(limit) || limit <= 0) {
+            return HospitalisationService_1.DEFAULT_LIMIT;
+        }
+        return Math.min(limit, HospitalisationService_1.MAX_LIMIT);
+    }
 };
 exports.HospitalisationService = HospitalisationService;
+HospitalisationService.DEFAULT_LIMIT = 6;
+HospitalisationService.MAX_LIMIT = 50;
 exports.HospitalisationService = HospitalisationService = HospitalisationService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.HospitalisationEntity)),
@@ -400,6 +556,9 @@ exports.HospitalisationService = HospitalisationService = HospitalisationService
     __param(8, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.ChambreEntity)),
     __param(9, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.AffectationLitEntity)),
     __param(10, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.TransfertEntity)),
+    __param(11, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.SoinsEntity)),
+    __param(12, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.PersonnelRefEntity)),
+    __param(13, (0, typeorm_1.InjectRepository)(hospitalisation_entities_1.ServiceRefEntity)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
@@ -411,6 +570,11 @@ exports.HospitalisationService = HospitalisationService = HospitalisationService
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        signature_service_1.SignatureService])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        signature_service_1.SignatureService,
+        hospitalisation_gateway_1.HospitalisationGateway,
+        accueil_patient_api_service_1.AccueilPatientApiService])
 ], HospitalisationService);
 //# sourceMappingURL=hospitalisation.service.js.map

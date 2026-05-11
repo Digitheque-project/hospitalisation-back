@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
+const uuid_1 = require("../../common/utils/uuid");
 const hospitalisation_entities_1 = require("./hospitalisation.entities");
 const hospitalisation_service_1 = require("./hospitalisation.service");
 const hospitalisation_dto_1 = require("./hospitalisation.dto");
@@ -25,13 +26,37 @@ let HospitalisationController = class HospitalisationController {
     constructor(hospitalisationService) {
         this.hospitalisationService = hospitalisationService;
     }
+    createPersonnelRef(body) {
+        return this.hospitalisationService.createPersonnelRef(body.id);
+    }
+    createServiceRef(body) {
+        return this.hospitalisationService.createServiceRef(body.id);
+    }
+    getHospitalisationStats() {
+        return this.hospitalisationService.getHospitalisationStats();
+    }
+    getActiveHospitalisations(limit) {
+        return this.hospitalisationService.getActiveHospitalisations(this.parseLimit(limit));
+    }
+    getPlanLits(serviceId) {
+        if (!(0, uuid_1.isUuidV4)(serviceId)) {
+            return { serviceId, chambres: [], stats: { totalLits: 0, litsOccupes: 0, totalPatients: 0 } };
+        }
+        return this.hospitalisationService.getPlanLitsByService(serviceId);
+    }
     createHospitalisation(body) {
         return this.hospitalisationService.createHospitalisation(body);
     }
-    getHospitalisationById(id) {
-        return this.hospitalisationService.findHospitalisationById(id);
+    async getHospitalisationById(id) {
+        if (!(0, uuid_1.isUuidV4)(id)) {
+            return {};
+        }
+        return (await this.hospitalisationService.findHospitalisationById(id)) ?? {};
     }
     getAvailableLitsByService(serviceId) {
+        if (!(0, uuid_1.isUuidV4)(serviceId)) {
+            return [];
+        }
         return this.hospitalisationService.findAvailableLitsByService(serviceId);
     }
     createChambre(body) {
@@ -40,10 +65,16 @@ let HospitalisationController = class HospitalisationController {
     createLit(body) {
         return this.hospitalisationService.createLit(body);
     }
-    getLitById(id) {
-        return this.hospitalisationService.findLitById(id);
+    async getLitById(id) {
+        if (!(0, uuid_1.isUuidV4)(id)) {
+            return {};
+        }
+        return (await this.hospitalisationService.findLitById(id)) ?? {};
     }
     getLitsByChambre(idChambre) {
+        if (!(0, uuid_1.isUuidV4)(idChambre)) {
+            return [];
+        }
         return this.hospitalisationService.findLitsByChambre(idChambre);
     }
     updateLitStatut(id, body) {
@@ -55,8 +86,11 @@ let HospitalisationController = class HospitalisationController {
     createDemandeAvis(body) {
         return this.hospitalisationService.createDemandeAvis(body);
     }
-    getDemandeAvisById(id) {
-        return this.hospitalisationService.findDemandeAvisById(id);
+    async getDemandeAvisById(id) {
+        if (!(0, uuid_1.isUuidV4)(id)) {
+            return {};
+        }
+        return (await this.hospitalisationService.findDemandeAvisById(id)) ?? {};
     }
     consulterDemandeAvis(id) {
         return this.hospitalisationService.consulterDemandeAvis(id);
@@ -73,8 +107,11 @@ let HospitalisationController = class HospitalisationController {
     createDemandeTransfert(body) {
         return this.hospitalisationService.createDemandeTransfert(body);
     }
-    getDemandeTransfertById(id) {
-        return this.hospitalisationService.findDemandeTransfertById(id);
+    async getDemandeTransfertById(id) {
+        if (!(0, uuid_1.isUuidV4)(id)) {
+            return {};
+        }
+        return (await this.hospitalisationService.findDemandeTransfertById(id)) ?? {};
     }
     traiterDemandeTransfert(id, body) {
         return this.hospitalisationService.traiterDemandeTransfert(id, body);
@@ -82,8 +119,66 @@ let HospitalisationController = class HospitalisationController {
     cloturerHospitalisation(id, body) {
         return this.hospitalisationService.cloturerHospitalisation(id, body);
     }
+    parseLimit(raw) {
+        if (!raw) {
+            return Number.NaN;
+        }
+        const parsed = Number.parseInt(raw, 10);
+        return Number.isNaN(parsed) ? Number.NaN : parsed;
+    }
 };
 exports.HospitalisationController = HospitalisationController;
+__decorate([
+    (0, common_1.Post)('seed/personnel-ref'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une reference de personnel (seed)' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Personnel reference cree', type: hospitalisation_entities_1.PersonnelRefEntity }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreatePersonnelRefDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createPersonnelRef", null);
+__decorate([
+    (0, common_1.Post)('seed/service-ref'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Creer une reference de service (seed)' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Service reference cree', type: hospitalisation_entities_1.ServiceRefEntity }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [hospitalisation_dto_1.CreateServiceRefDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "createServiceRef", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer les indicateurs hospitalisation' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Indicateurs hospitalisation retournes', type: hospitalisation_dto_1.HospitalisationStatsResponse }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getHospitalisationStats", null);
+__decorate([
+    (0, common_1.Get)('actives'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Lister les hospitalisations actives' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, example: 6 }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Liste des hospitalisations actives', type: hospitalisation_dto_1.ActiveHospitalisationItem, isArray: true }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getActiveHospitalisations", null);
+__decorate([
+    (0, common_1.Get)('plan-lits/:serviceId'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recuperer le plan des lits dun service' }),
+    (0, swagger_1.ApiParam)({ name: 'serviceId', description: 'Identifiant du service' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Plan des lits du service', type: hospitalisation_dto_1.PlanLitsResponse }),
+    __param(0, (0, common_1.Param)('serviceId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getPlanLits", null);
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('ONM'),
@@ -103,7 +198,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], HospitalisationController.prototype, "getHospitalisationById", null);
 __decorate([
     (0, common_1.Get)('services/:serviceId/lits/disponibles'),
@@ -145,7 +240,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], HospitalisationController.prototype, "getLitById", null);
 __decorate([
     (0, common_1.Get)('chambres/:idChambre/lits'),
@@ -199,7 +294,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], HospitalisationController.prototype, "getDemandeAvisById", null);
 __decorate([
     (0, common_1.Patch)('demandes-avis/:id/consulter'),
@@ -267,7 +362,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], HospitalisationController.prototype, "getDemandeTransfertById", null);
 __decorate([
     (0, common_1.Patch)('demandes-transfert/:id'),
