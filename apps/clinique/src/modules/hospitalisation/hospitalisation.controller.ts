@@ -13,7 +13,9 @@ import {
   DiagnosticsEntity,
   HospitalisationEntity,
   LitEntity,
+  PersonnelRefEntity,
   PrescriptionMedicaleEntity,
+  ServiceRefEntity,
 } from './hospitalisation.entities';
 import { HospitalisationService } from './hospitalisation.service';
 import {
@@ -31,6 +33,9 @@ import {
   UpdateLitStatutDto,
   ActiveHospitalisationItem,
   HospitalisationStatsResponse,
+  PlanLitsResponse,
+  CreatePersonnelRefDto,
+  CreateServiceRefDto,
 } from './hospitalisation.dto';
 
 @ApiTags('Hospitalisation')
@@ -39,6 +44,26 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class HospitalisationController {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
+
+  // --- Reference Seed Endpoints ---
+
+  @Post('seed/personnel-ref')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Creer une reference de personnel (seed)' })
+  @ApiResponse({ status: 201, description: 'Personnel reference cree', type: PersonnelRefEntity })
+  createPersonnelRef(@Body() body: CreatePersonnelRefDto) {
+    return this.hospitalisationService.createPersonnelRef(body.id);
+  }
+
+  @Post('seed/service-ref')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Creer une reference de service (seed)' })
+  @ApiResponse({ status: 201, description: 'Service reference cree', type: ServiceRefEntity })
+  createServiceRef(@Body() body: CreateServiceRefDto) {
+    return this.hospitalisationService.createServiceRef(body.id);
+  }
+
+  // --- Stats & Queries ---
 
   @Get('stats')
   @Roles('ONM', 'ONIM')
@@ -55,6 +80,18 @@ export class HospitalisationController {
   @ApiResponse({ status: 200, description: 'Liste des hospitalisations actives', type: ActiveHospitalisationItem, isArray: true })
   getActiveHospitalisations(@Query('limit') limit?: string) {
     return this.hospitalisationService.getActiveHospitalisations(this.parseLimit(limit));
+  }
+
+  @Get('plan-lits/:serviceId')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Recuperer le plan des lits dun service' })
+  @ApiParam({ name: 'serviceId', description: 'Identifiant du service' })
+  @ApiResponse({ status: 200, description: 'Plan des lits du service', type: PlanLitsResponse })
+  getPlanLits(@Param('serviceId') serviceId: string) {
+    if (!isUuidV4(serviceId)) {
+      return { serviceId, chambres: [], stats: { totalLits: 0, litsOccupes: 0, totalPatients: 0 } };
+    }
+    return this.hospitalisationService.getPlanLitsByService(serviceId);
   }
 
   @Post()

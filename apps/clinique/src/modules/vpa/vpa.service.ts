@@ -23,7 +23,7 @@ export class VpaService {
     if (!hospitalisation) {
       throw new NotFoundException('Hospitalisation introuvable');
     }
-    if (hospitalisation.idPatient !== input.patientId) {
+    if (hospitalisation.patientId !== input.patientId) {
       throw new UnprocessableEntityException(
         'Le patient de la VPA doit correspondre au patient de hospitalisation',
       );

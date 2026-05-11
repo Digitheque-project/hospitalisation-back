@@ -133,3 +133,33 @@ npm run build
 ```
 
 Si le build passe, le service est cohérent côté TypeScript.
+
+## Déploiement Render
+
+Pour Render, utilise un **Web Service** + une **PostgreSQL** Render.
+
+### Variables Render
+
+Renseigne au minimum :
+- `DB_HOST`
+- `DB_PORT`
+- `DB_USERNAME`
+- `DB_PASSWORD`
+- `DB_NAME`
+- `JWT_SECRET`
+- `SECURITY_CORS_ORIGINS` (ex: l'URL de ton frontend Render)
+
+### Commandes Render
+
+- Build: `npm install && npm run build`
+- Start: `npm start`
+
+### Point important
+
+L'application écoute maintenant sur `PORT` si Render le fournit, sinon sur `CLINIQUE_PORT` en local.
+
+### URLs exposées
+
+- REST: `/`
+- Swagger: `/api/docs`
+- GraphQL: `/graphql`

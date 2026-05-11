@@ -52,13 +52,6 @@ export class ServiceRefEntity {
   id: string;
 }
 
-@ObjectType()
-@Entity('demande_hospitalisation_ref')
-export class DemandeHospitalisationRefEntity {
-  @Field(() => ID)
-  @PrimaryColumn({ name: 'id_demande_hospitalisation', type: 'varchar', length: 120 })
-  id: string;
-}
 
 @ObjectType()
 @Entity('personnel_ref')
@@ -92,7 +85,7 @@ export class HospitalisationEntity {
 
   @Field()
   @Column({ name: 'id_patient', type: 'varchar', length: 120 })
-  idPatient: string;
+  patientId: string;
 
   @ManyToOne(() => PatientRefEntity, { nullable: false })
   @JoinColumn({ name: 'id_patient', referencedColumnName: 'id' })
@@ -100,19 +93,11 @@ export class HospitalisationEntity {
 
   @Field()
   @Column({ name: 'id_service', type: 'varchar', length: 120 })
-  idService: string;
+  serviceId: string;
 
   @ManyToOne(() => ServiceRefEntity, { nullable: false })
   @JoinColumn({ name: 'id_service', referencedColumnName: 'id' })
   service: ServiceRefEntity;
-
-  @Field()
-  @Column({ name: 'id_demande_hospitalisation', type: 'varchar', length: 120 })
-  idDemandeHospitalisation: string;
-
-  @ManyToOne(() => DemandeHospitalisationRefEntity, { nullable: false })
-  @JoinColumn({ name: 'id_demande_hospitalisation', referencedColumnName: 'id' })
-  demandeHospitalisation: DemandeHospitalisationRefEntity;
 
   @Field(() => Date)
   @Column({ name: 'date_entrer', type: 'timestamp' })
@@ -126,9 +111,17 @@ export class HospitalisationEntity {
   @Column({ name: 'motif_hospitalisation', type: 'text' })
   motifHospitalisation: string;
 
+  @Field()
+  @Column({ name: 'type_hospitalisation', type: 'varchar', length: 40, default: 'Hospitalisation' })
+  type: string;
+
   @Field(() => StatutHospitalisation)
   @Column({ name: 'statut_hospitalisation', type: 'varchar', default: StatutHospitalisation.EN_COURS })
   statutHospitalisation: StatutHospitalisation;
+
+  @Field(() => StatutDemande)
+  @Column({ name: 'status_demande', type: 'varchar', default: StatutDemande.EN_ATTENTE })
+  statusDemande: StatutDemande;
 
   @Field(() => String, { nullable: true })
   @Column({ name: 'commentaire', type: 'text', nullable: true })
@@ -272,7 +265,7 @@ export class ChambreEntity {
 
   @Field()
   @Column({ name: 'id_service', type: 'varchar', length: 120 })
-  idService: string;
+  serviceId: string;
 
   @ManyToOne(() => ServiceRefEntity, { nullable: false })
   @JoinColumn({ name: 'id_service', referencedColumnName: 'id' })

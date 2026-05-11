@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { SignatureService } from '../signature/signature.service';
+import { isUuidV4 } from '../../common/utils/uuid';
 import {
   AffectationLitEntity,
   AvisMedicalEntity,
@@ -18,14 +19,18 @@ import {
   HospitalisationEntity,
   LitEntity,
   ModeSortieEntity,
+  PatientRefEntity,
+  PersonnelRefEntity,
   PrescriptionMedicaleEntity,
+  ServiceRefEntity,
+  SoinsEntity,
   StatutDemandeTransfert,
   StatutDemande,
   StatutHospitalisation,
   StatutLit,
   TransfertEntity,
 } from './hospitalisation.entities';
-import { ActiveHospitalisationItem, HospitalisationStatsResponse } from './hospitalisation.dto';
+import { ActiveHospitalisationItem, HospitalisationStatsResponse, PlanLitsResponse, PlanLitRoomItem, PlanLitBedItem } from './hospitalisation.dto';
 import {
   CloturerHospitalisationDto,
   CreateChambreDto,
@@ -40,6 +45,7 @@ import {
   TraiterDemandeTransfertDto,
   UpdateLitStatutDto,
 } from './hospitalisation.dto';
+import { HospitalisationGateway } from './hospitalisation.gateway';
 
 @Injectable()
 export class HospitalisationService implements OnModuleDestroy {
@@ -72,24 +78,47 @@ export class HospitalisationService implements OnModuleDestroy {
     private readonly affectationLitRepository: Repository<AffectationLitEntity>,
     @InjectRepository(TransfertEntity)
     private readonly transfertRepository: Repository<TransfertEntity>,
+    @InjectRepository(SoinsEntity)
+    private readonly soinsRepository: Repository<SoinsEntity>,
+    @InjectRepository(PersonnelRefEntity)
+    private readonly personnelRefRepository: Repository<PersonnelRefEntity>,
+    @InjectRepository(ServiceRefEntity)
+    private readonly serviceRefRepository: Repository<ServiceRefEntity>,
     private readonly signatureService: SignatureService,
+    private readonly hospitalisationGateway: HospitalisationGateway,
   ) {}
 
+  // --- Ref Seed Methods ---
+
+  async createPersonnelRef(id: string): Promise<PersonnelRefEntity> {
+    const entity = this.personnelRefRepository.create({ id });
+    return this.personnelRefRepository.save(entity);
+  }
+
+  async createServiceRef(id: string): Promise<ServiceRefEntity> {
+    const entity = this.serviceRefRepository.create({ id });
+    return this.serviceRefRepository.save(entity);
+  }
+
   async createHospitalisation(input: CreateHospitalisationDto): Promise<HospitalisationEntity> {
+    await this.assertServiceRefExists(input.serviceId);
     let modeSortie: ModeSortieEntity | null = null;
     if (input.idModeSortie) {
+      if (!isUuidV4(input.idModeSortie)) {
+        throw new UnprocessableEntityException('Identifiant mode sortie invalide');
+      }
       modeSortie = await this.modeSortieRepository.findOne({ where: { id: input.idModeSortie } });
       if (!modeSortie) {
         throw new NotFoundException('Mode de sortie introuvable');
       }
     }
 
-    const litDisponible = await this.findAvailableLitForService(input.idService, input.idLit);
+    const litDisponible = await this.findAvailableLitForService(input.serviceId, input.idLit);
     const entity = this.hospitalisationRepository.create({
-      idPatient: input.idPatient,
-      idService: input.idService,
-      idDemandeHospitalisation: input.idDemandeHospitalisation,
+      patientId: input.patientId,
+      serviceId: input.serviceId,
       motifHospitalisation: input.motifHospitalisation,
+      type: input.type ?? 'Hospitalisation',
       commentaire: input.commentaire ?? null,
       dateEntrer: new Date(input.dateEntrer),
       modeSortie,
@@ -98,6 +127,7 @@ export class HospitalisationService implements OnModuleDestroy {
     });
     const saved = await this.hospitalisationRepository.save(entity);
     await this.affecterLit(saved.id, litDisponible.id);
+    this.hospitalisationGateway.emitHospitalisationCreated(saved);
     return saved;
   }
 
@@ -181,7 +211,7 @@ export class HospitalisationService implements OnModuleDestroy {
     if (!hospitalisation) {
       throw new NotFoundException('Hospitalisation introuvable');
     }
-    if (hospitalisation.idService !== input.serviceSource) {
+    if (hospitalisation.serviceId !== input.serviceSource) {
       throw new UnprocessableEntityException(
         'Le service source doit correspondre au service courant de hospitalisation',
       );
@@ -327,6 +357,89 @@ export class HospitalisationService implements OnModuleDestroy {
     }));
   }
 
+  async getPlanLitsByService(serviceId: string): Promise<PlanLitsResponse> {
+    const chambres = await this.chambreRepository.find({
+      where: { serviceId: serviceId },
+      order: { numeroChambre: 'ASC' },
+    });
+
+    let totalLits = 0;
+    let litsOccupes = 0;
+    let totalPatients = 0;
+
+    const chambreResults: PlanLitRoomItem[] = [];
+
+    for (const chambre of chambres) {
+      const lits = await this.litRepository.find({
+        where: { idChambre: chambre.id },
+        order: { codeLit: 'ASC' },
+      });
+
+      const litItems: PlanLitBedItem[] = [];
+
+      for (const lit of lits) {
+        totalLits++;
+
+        const activeAffectation = await this.affectationLitRepository.findOne({
+          where: { idLit: lit.id, dateFinAffectation: IsNull() },
+          order: { dateDebutAffectation: 'DESC' },
+        });
+
+        let hospitalisation: PlanLitBedItem['hospitalisation'] = null;
+
+        if (activeAffectation) {
+          litsOccupes++;
+          totalPatients++;
+
+          const hosp = await this.hospitalisationRepository.findOne({
+            where: { id: activeAffectation.idHospitalisation },
+          });
+
+          if (hosp) {
+            const latestDiag = await this.diagnosticsRepository.findOne({
+              where: { idHospitalisation: hosp.id },
+              order: { dateDiagnostics: 'DESC' },
+            });
+
+            const soinsCount = await this.soinsRepository.count({
+              where: { idHospitalisation: hosp.id },
+            });
+
+            hospitalisation = {
+              id: hosp.id,
+              patientId: hosp.patientId,
+              dateEntrer: new Date(hosp.dateEntrer).toISOString(),
+              motifHospitalisation: hosp.motifHospitalisation,
+              statutHospitalisation: hosp.statutHospitalisation,
+              diagnostic: latestDiag?.descriptionDiagnostic ?? null,
+              soinsCount,
+            };
+          }
+        }
+
+        litItems.push({
+          litId: lit.id,
+          codeLit: lit.codeLit,
+          statut: lit.statut,
+          hospitalisation,
+        });
+      }
+
+      chambreResults.push({
+        chambreId: chambre.id,
+        numeroChambre: chambre.numeroChambre,
+        type: chambre.type,
+        lits: litItems,
+      });
+    }
+
+    return {
+      serviceId,
+      chambres: chambreResults,
+      stats: { totalLits, litsOccupes, totalPatients },
+    };
+  }
+
   async findDemandeAvisById(id: string): Promise<DemandeAvisEntity | null> {
     return this.demandeAvisRepository.findOne({ where: { id } });
   }
@@ -346,8 +459,9 @@ export class HospitalisationService implements OnModuleDestroy {
   }
 
   async createChambre(input: CreateChambreDto): Promise<ChambreEntity> {
+    await this.assertServiceRefExists(input.serviceId);
     const exists = await this.chambreRepository.findOne({
-      where: { idService: input.idService, numeroChambre: input.numeroChambre },
+      where: { serviceId: input.serviceId, numeroChambre: input.numeroChambre },
     });
     if (exists) {
       throw new UnprocessableEntityException('Une chambre avec ce numero existe deja pour ce service');
@@ -409,6 +523,15 @@ export class HospitalisationService implements OnModuleDestroy {
     }
   }
 
+  private async assertServiceRefExists(id: string): Promise<void> {
+    const service = await this.serviceRefRepository.findOne({ where: { id } });
+    if (!service) {
+      throw new NotFoundException(
+        "Service introuvable. Creez d'abord la reference via POST /hospitalisations/seed/service-ref.",
+      );
+    }
+  }
+
   async createAffectationLit(input: CreateAffectationLitDto): Promise<AffectationLitEntity> {
     const hospitalisation = await this.hospitalisationRepository.findOne({
       where: { id: input.idHospitalisation },
@@ -422,7 +545,7 @@ export class HospitalisationService implements OnModuleDestroy {
       throw new NotFoundException('Lit introuvable');
     }
     const chambre = await this.chambreRepository.findOne({ where: { id: lit.idChambre } });
-    if (!chambre || chambre.idService !== hospitalisation.idService) {
+    if (!chambre || chambre.serviceId !== hospitalisation.serviceId) {
       throw new UnprocessableEntityException('Le lit doit appartenir au service courant de hospitalisation');
     }
 
@@ -459,7 +582,7 @@ export class HospitalisationService implements OnModuleDestroy {
         throw new NotFoundException('Lit cible introuvable');
       }
       const chambre = await this.chambreRepository.findOne({ where: { id: lit.idChambre } });
-      if (!chambre || chambre.idService !== serviceId) {
+      if (!chambre || chambre.serviceId !== serviceId) {
         throw new UnprocessableEntityException('Le lit cible ne correspond pas au service cible');
       }
       if (lit.statut !== StatutLit.DISPONIBLE) {
@@ -526,7 +649,7 @@ export class HospitalisationService implements OnModuleDestroy {
 
     await this.affecterLit(demande.idHospitalisation, idLitDestination);
 
-    hospitalisation.idService = demande.serviceDestination;
+    hospitalisation.serviceId = demande.serviceDestination;
     await this.hospitalisationRepository.save(hospitalisation);
 
     const transfert = this.transfertRepository.create({

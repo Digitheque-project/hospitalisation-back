@@ -1,24 +1,32 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { StatutDemandeTransfert, StatutHospitalisation, StatutLit } from './hospitalisation.entities';
+
+
+export class CreatePersonnelRefDto {
+  @ApiProperty({ example: 'dr-jean-pierre', description: 'Identifiant du personnel' })
+  @IsString()
+  id: string;
+}
+
+export class CreateServiceRefDto {
+  @ApiProperty({ example: 'chirurgie', description: 'Identifiant du service' })
+  @IsString()
+  id: string;
+}
 
 @InputType()
 export class CreateHospitalisationDto {
   @Field()
   @ApiProperty({ type: String, description: 'Identifiant patient', required: true })
   @IsString()
-  idPatient: string;
+  patientId: string;
 
   @Field()
   @ApiProperty({ type: String, description: 'Identifiant service', required: true })
   @IsString()
-  idService: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Identifiant demande hospitalisation', required: true })
-  @IsString()
-  idDemandeHospitalisation: string;
+  serviceId: string;
 
   @Field()
   @ApiProperty({ type: String, description: "Date d'entree ISO", required: true })
@@ -31,9 +39,22 @@ export class CreateHospitalisationDto {
   motifHospitalisation: string;
 
   @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Identifiant mode sortie', required: false })
+  @ApiProperty({
+    type: String,
+    description: "Type d'hospitalisation",
+    required: false,
+    default: 'Hospitalisation',
+    enum: ['Hospitalisation'],
+  })
   @IsOptional()
   @IsString()
+  @IsIn(['Hospitalisation'])
+  type?: string;
+
+  @Field({ nullable: true })
+  @ApiProperty({ type: String, description: 'Identifiant mode sortie', required: false })
+  @IsOptional()
+  @IsUUID()
   idModeSortie?: string;
 
   @Field({ nullable: true })
@@ -210,7 +231,7 @@ export class CreateChambreDto {
   @Field()
   @ApiProperty({ type: String, description: 'Service de rattachement', required: true })
   @IsString()
-  idService: string;
+  serviceId: string;
 
   @Field()
   @ApiProperty({ type: Number, description: 'Numero de chambre', required: true })
@@ -277,4 +298,79 @@ export class ActiveHospitalisationItem {
 
   @ApiProperty({ example: 12, required: false, nullable: true })
   chambreNumero?: number | null;
+}
+
+// --- Plan des Lits DTOs ---
+
+export class PlanLitBedHospitalisation {
+  @ApiProperty({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' })
+  id: string;
+
+  @ApiProperty({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' })
+  patientId: string;
+
+  @ApiProperty({ example: '2026-05-11T08:15:00.000Z' })
+  dateEntrer: string;
+
+  @ApiProperty({ example: 'Appendicectomie laparoscopique' })
+  motifHospitalisation: string;
+
+  @ApiProperty({ enum: StatutHospitalisation })
+  statutHospitalisation: StatutHospitalisation;
+
+  @ApiProperty({ example: 'Cholécystite lithiasique', required: false, nullable: true })
+  diagnostic?: string | null;
+
+  @ApiProperty({ example: 3 })
+  soinsCount: number;
+}
+
+export class PlanLitBedItem {
+  @ApiProperty({ example: '9a1b2c3d-4e5f-6789-abcd-ef0123456789' })
+  litId: string;
+
+  @ApiProperty({ example: 'A1' })
+  codeLit: string;
+
+  @ApiProperty({ enum: StatutLit })
+  statut: StatutLit;
+
+  @ApiProperty({ type: PlanLitBedHospitalisation, required: false, nullable: true })
+  hospitalisation?: PlanLitBedHospitalisation | null;
+}
+
+export class PlanLitRoomItem {
+  @ApiProperty({ example: '1a2b3c4d-5e6f-7890-abcd-ef0123456789' })
+  chambreId: string;
+
+  @ApiProperty({ example: 101 })
+  numeroChambre: number;
+
+  @ApiProperty({ example: 'Standard' })
+  type: string;
+
+  @ApiProperty({ type: [PlanLitBedItem] })
+  lits: PlanLitBedItem[];
+}
+
+export class PlanLitsStats {
+  @ApiProperty({ example: 24 })
+  totalLits: number;
+
+  @ApiProperty({ example: 18 })
+  litsOccupes: number;
+
+  @ApiProperty({ example: 18 })
+  totalPatients: number;
+}
+
+export class PlanLitsResponse {
+  @ApiProperty({ example: 'service-123' })
+  serviceId: string;
+
+  @ApiProperty({ type: [PlanLitRoomItem] })
+  chambres: PlanLitRoomItem[];
+
+  @ApiProperty({ type: PlanLitsStats })
+  stats: PlanLitsStats;
 }

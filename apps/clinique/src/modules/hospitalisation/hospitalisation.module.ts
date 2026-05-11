@@ -17,13 +17,13 @@ import {
   PatientRefEntity,
   PersonnelRefEntity,
   PrescriptionMedicaleEntity,
-  DemandeHospitalisationRefEntity,
   ServiceRefEntity,
   SoinsEntity,
   TransfertEntity,
 } from './hospitalisation.entities';
 import { HospitalisationResolver } from './hospitalisation.resolver';
 import { HospitalisationService } from './hospitalisation.service';
+import { HospitalisationGateway } from './hospitalisation.gateway';
 
 @Module({
   imports: [
@@ -31,7 +31,6 @@ import { HospitalisationService } from './hospitalisation.service';
       HospitalisationEntity,
       PatientRefEntity,
       ServiceRefEntity,
-      DemandeHospitalisationRefEntity,
       PersonnelRefEntity,
       ObservationMedicalEntity,
       DiagnosticsEntity,
@@ -50,7 +49,7 @@ import { HospitalisationService } from './hospitalisation.service';
     SignatureModule,
   ],
   controllers: [HospitalisationController],
-  providers: [HospitalisationService, HospitalisationResolver],
+  providers: [HospitalisationService, HospitalisationResolver, HospitalisationGateway],
   exports: [HospitalisationService],
 })
 export class HospitalisationModule {}
