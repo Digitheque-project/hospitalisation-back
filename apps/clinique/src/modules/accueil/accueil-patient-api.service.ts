@@ -37,7 +37,7 @@ export class AccueilPatientApiService {
   private readonly logger = new Logger(AccueilPatientApiService.name);
 
   private patientUrl(patientId: string): string {
-    return accueilEndpoint(`/api/patients/${encodeURIComponent(patientId)}`);
+    return accueilEndpoint(`/patients/${encodeURIComponent(patientId)}`);
   }
 
   private async fetchPatient(patientId: string): Promise<Response> {
@@ -48,7 +48,7 @@ export class AccueilPatientApiService {
   }
 
   /**
-   * Vérifie que le patient existe côté accueil (GET /api/patients/{patientId} → 2xx).
+   * Vérifie que le patient existe côté accueil (GET /patients/{patientId} → 2xx).
    * Utilisé avant la création d’hospitalisation.
    */
   async ensurePatientExistsAtAccueil(patientId: string): Promise<void> {
@@ -77,7 +77,7 @@ export class AccueilPatientApiService {
   }
 
   /**
-   * GET {API_BASE_URL}/api/patients/{patientId}
+   * GET {API_BASE_URL}/patients/{patientId}
    */
   async getPatientById(patientId: string): Promise<PatientInformationsAccueil | null> {
     const url = this.patientUrl(patientId);
