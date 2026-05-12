@@ -311,7 +311,7 @@ export class HospitalisationService implements OnModuleDestroy {
 
   async getHospitalisationStats(): Promise<HospitalisationStatsResponse> {
     const hospitalizedTotal = await this.hospitalisationRepository.count({
-      where: { statutHospitalisation: StatutHospitalisation.EN_COURS },
+      where: { statusDemande: StatutDemande.ACCEPTE },
     });
 
     const startOfToday = new Date();
@@ -319,8 +319,8 @@ export class HospitalisationService implements OnModuleDestroy {
 
     const hospitalizedNewToday = await this.hospitalisationRepository
       .createQueryBuilder('hospitalisation')
-      .where('hospitalisation.statut_hospitalisation = :status', {
-        status: StatutHospitalisation.EN_COURS,
+      .where('hospitalisation.status_demande = :status', {
+        status: StatutDemande.ACCEPTE,
       })
       .andWhere('hospitalisation.date_entrer >= :startOfToday', {
         startOfToday,
@@ -345,8 +345,8 @@ export class HospitalisationService implements OnModuleDestroy {
       )
       .leftJoin(LitEntity, 'lit', 'lit.id_lit = affectation.id_lit')
       .leftJoin(ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
-      .where('hospitalisation.statut_hospitalisation = :status', {
-        status: StatutHospitalisation.EN_COURS,
+      .where('hospitalisation.status_demande = :statusDemande', {
+        statusDemande: StatutDemande.ACCEPTE,
       })
       .orderBy('hospitalisation.date_entrer', 'DESC')
       .limit(normalizedLimit)
