@@ -10,4 +10,10 @@ export class PatientInformationsAccueil {
 
   @Field({ nullable: true })
   prenom?: string;
+
+  @Field({ nullable: true })
+  dateNaissance?: string;
+
+  @Field({ nullable: true })
+  sexe?: string;
 }

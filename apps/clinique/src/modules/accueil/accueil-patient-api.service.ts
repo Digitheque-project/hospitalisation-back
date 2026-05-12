@@ -25,10 +25,14 @@ function mapAccueilPatientPayload(raw: unknown): PatientInformationsAccueil | nu
   const nom = pickStr(o, 'nom', 'lastName', 'lastname', 'familyName', 'name');
   const prenom = pickStr(o, 'prenom', 'firstName', 'firstname', 'givenName');
   const id = pickStr(o, 'id', 'patientId', 'uuid');
+  const dateNaissance = pickStr(o, 'dateNaissance', 'birthDate', 'birthdate');
+  const sexe = pickStr(o, 'sexe', 'gender', 'sex');
   return {
     id: id ?? undefined,
     nom,
     prenom,
+    dateNaissance,
+    sexe,
   };
 }
 

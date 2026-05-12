@@ -223,7 +223,7 @@ export class HospitalisationService implements OnModuleDestroy {
     const demande = this.demandeTransfertRepository.create({
       ...input,
       dateDemande: new Date(),
-      statut: StatutDemandeTransfert.A_VOIR,
+      statut: StatutDemandeTransfert.EN_ATTENTE,
     });
     return this.demandeTransfertRepository.save(demande);
   }
@@ -255,6 +255,15 @@ export class HospitalisationService implements OnModuleDestroy {
     }
 
     return savedDemande;
+  }
+  
+  async updateStatus(id: string, newStatus: StatutDemande): Promise<HospitalisationEntity> {
+    const hospitalisation = await this.hospitalisationRepository.findOne({ where: { id } });
+    if (!hospitalisation) {
+      throw new NotFoundException('Hospitalisation introuvable');
+    }
+    hospitalisation.statusDemande = newStatus;
+    return this.hospitalisationRepository.save(hospitalisation);
   }
 
   async cloturerHospitalisation(
@@ -347,7 +356,9 @@ export class HospitalisationService implements OnModuleDestroy {
         'hospitalisation.date_entrer AS "dateEntrer"',
         'hospitalisation.motif_hospitalisation AS "motifHospitalisation"',
         'hospitalisation.id_service AS "serviceId"',
+        'hospitalisation.type_hospitalisation AS type',
         'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
+        'hospitalisation.status_demande AS "statusDemande"',
         'lit.code_lit AS "litCode"',
         'chambre.numero_chambre AS "chambreNumero"',
       ])

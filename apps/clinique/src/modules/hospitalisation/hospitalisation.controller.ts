@@ -36,6 +36,7 @@ import {
   PlanLitsResponse,
   CreatePersonnelRefDto,
   CreateServiceRefDto,
+  UpdateHospitalisationStatusDto,
 } from './hospitalisation.dto';
 
 @ApiTags('Hospitalisation')
@@ -100,6 +101,15 @@ export class HospitalisationController {
   @ApiResponse({ status: 201, description: 'Hospitalisation creee', type: HospitalisationEntity })
   createHospitalisation(@Body() body: CreateHospitalisationDto) {
     return this.hospitalisationService.createHospitalisation(body);
+  }
+
+  @Patch(':id/status')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Mettre a jour le statut de la demande hospitalisation' })
+  @ApiParam({ name: 'id', description: 'Identifiant hospitalisation' })
+  @ApiResponse({ status: 200, description: 'Statut hospitalisation mis a jour', type: HospitalisationEntity })
+  updateStatus(@Param('id') id: string, @Body() body: UpdateHospitalisationStatusDto) {
+    return this.hospitalisationService.updateStatus(id, body.status);
   }
 
   @Get('id/:id')

@@ -1,7 +1,7 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { StatutDemandeTransfert, StatutHospitalisation, StatutLit } from './hospitalisation.entities';
+import { StatutDemande, StatutDemandeTransfert, StatutHospitalisation, StatutLit } from './hospitalisation.entities';
 
 
 export class CreatePersonnelRefDto {
@@ -272,6 +272,14 @@ export class UpdateLitStatutDto {
   statut: StatutLit;
 }
 
+@InputType()
+export class UpdateHospitalisationStatusDto {
+  @Field(() => StatutDemande)
+  @ApiProperty({ enum: StatutDemande, description: 'Nouveau statut de la demande', required: true })
+  @IsEnum(StatutDemande)
+  status: StatutDemande;
+}
+
 export class HospitalisationStatsResponse {
   @ApiProperty({ example: 12 })
   hospitalizedTotal: number;
@@ -296,8 +304,14 @@ export class ActiveHospitalisationItem {
   @ApiProperty({ example: 'service-123' })
   serviceId: string;
 
+  @ApiProperty({ example: 'Hospitalisation' })
+  type: string;
+
   @ApiProperty({ enum: StatutHospitalisation })
   statutHospitalisation: StatutHospitalisation;
+
+  @ApiProperty({ enum: StatutDemande })
+  statusDemande: StatutDemande;
 
   @ApiProperty({ example: 'A1', required: false, nullable: true })
   litCode?: string | null;

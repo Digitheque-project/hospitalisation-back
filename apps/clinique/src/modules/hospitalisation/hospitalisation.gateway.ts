@@ -29,6 +29,7 @@ export class HospitalisationGateway {
           : hospitalisation.dateEntrer,
       motifHospitalisation: hospitalisation.motifHospitalisation,
       statutHospitalisation: hospitalisation.statutHospitalisation,
+      statusDemande: hospitalisation.statusDemande,
       type: hospitalisation.type,
     });
   }

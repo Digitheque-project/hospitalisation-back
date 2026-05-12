@@ -23,11 +23,13 @@ export enum StatutLit {
 export enum StatutDemande {
   EN_ATTENTE = 'EN_ATTENTE',
   CONSULTEE = 'CONSULTEE',
+  ACCEPTE = 'ACCEPTE',
+  REFUSE = 'REFUSE',
 }
 
 export enum StatutDemandeTransfert {
+  EN_ATTENTE = 'EN_ATTENTE',
   ACCEPTE = 'ACCEPTE',
-  A_VOIR = 'A_VOIR',
   REFUSE = 'REFUSE',
 }
 
@@ -393,7 +395,7 @@ export class DemandeTransfertEntity {
   motifDemandeTransfert: string;
 
   @Field(() => StatutDemandeTransfert)
-  @Column({ name: 'statut', type: 'varchar', default: StatutDemandeTransfert.A_VOIR })
+  @Column({ name: 'statut', type: 'varchar', default: StatutDemandeTransfert.EN_ATTENTE })
   statut: StatutDemandeTransfert;
 
   @Field(() => String, { nullable: true })
