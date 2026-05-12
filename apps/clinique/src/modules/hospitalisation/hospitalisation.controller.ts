@@ -32,6 +32,7 @@ import {
   TraiterDemandeTransfertDto,
   UpdateLitStatutDto,
   ActiveHospitalisationItem,
+  HospitalisationNotificationItem,
   HospitalisationStatsResponse,
   PlanLitsResponse,
   CreatePersonnelRefDto,
@@ -81,6 +82,20 @@ export class HospitalisationController {
   @ApiResponse({ status: 200, description: 'Liste des hospitalisations actives', type: ActiveHospitalisationItem, isArray: true })
   getActiveHospitalisations(@Query('limit') limit?: string) {
     return this.hospitalisationService.getActiveHospitalisations(this.parseLimit(limit));
+  }
+
+  @Get('notifications')
+  @Roles('ONM', 'ONIM')
+  @ApiOperation({ summary: 'Lister les notifications hospitalisation' })
+  @ApiQuery({ name: 'limit', required: false, example: 50 })
+  @ApiResponse({
+    status: 200,
+    description: 'Liste des notifications enrichies',
+    type: HospitalisationNotificationItem,
+    isArray: true,
+  })
+  getHospitalisationNotifications(@Query('limit') limit?: string) {
+    return this.hospitalisationService.getHospitalisationNotifications(this.parseLimit(limit));
   }
 
   @Get('plan-lits/:serviceId')

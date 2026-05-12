@@ -17,6 +17,23 @@ function pickStr(obj: Record<string, unknown>, ...keys: string[]): string | unde
   return undefined;
 }
 
+function mergePatientPayload(raw: Record<string, unknown>, fallbackId: string): Record<string, unknown> {
+  const nom = pickStr(raw, 'nom', 'lastName', 'lastname', 'familyName', 'name');
+  const prenom = pickStr(raw, 'prenom', 'firstName', 'firstname', 'givenName');
+  const id = pickStr(raw, 'id', 'patientId', 'uuid') ?? fallbackId;
+  const dateNaissance = pickStr(raw, 'dateNaissance', 'birthDate', 'birthdate');
+  const sexe = pickStr(raw, 'sexe', 'gender', 'sex');
+
+  return {
+    ...raw,
+    id,
+    nom,
+    prenom,
+    dateNaissance,
+    sexe,
+  };
+}
+
 function mapAccueilPatientPayload(raw: unknown): PatientInformationsAccueil | null {
   if (!raw || typeof raw !== 'object') {
     return null;
@@ -102,6 +119,38 @@ export class AccueilPatientApiService {
 
       const body: unknown = await response.json();
       return mapAccueilPatientPayload(body);
+    } catch (err) {
+      this.logger.warn(`Accueil patient API: échec pour ${patientId} — ${String(err)}`);
+      return null;
+    }
+  }
+
+  /**
+   * GET {API_BASE_URL}/patients/{patientId} — retourne toutes les informations disponibles.
+   */
+  async getPatientFullById(patientId: string): Promise<Record<string, unknown> | null> {
+    const url = this.patientUrl(patientId);
+
+    try {
+      const response = await this.fetchPatient(patientId);
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Accueil patient API: statut ${response.status} pour ${patientId} (${url})`,
+        );
+        return null;
+      }
+
+      const body: unknown = await response.json();
+      if (!body || typeof body !== 'object') {
+        return null;
+      }
+
+      return mergePatientPayload(body as Record<string, unknown>, patientId);
     } catch (err) {
       this.logger.warn(`Accueil patient API: échec pour ${patientId} — ${String(err)}`);
       return null;

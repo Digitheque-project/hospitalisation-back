@@ -18,7 +18,10 @@ export class HospitalisationGateway {
   @WebSocketServer()
   server: Server;
 
-  emitHospitalisationCreated(hospitalisation: HospitalisationEntity) {
+  emitHospitalisationCreated(
+    hospitalisation: HospitalisationEntity,
+    patient?: Record<string, unknown> | null,
+  ) {
     this.server?.emit('hospitalisation.created', {
       id: hospitalisation.id,
       patientId: hospitalisation.patientId,
@@ -31,6 +34,11 @@ export class HospitalisationGateway {
       statutHospitalisation: hospitalisation.statutHospitalisation,
       statusDemande: hospitalisation.statusDemande,
       type: hospitalisation.type,
+      receivedAt:
+        hospitalisation.dateEntrer instanceof Date
+          ? hospitalisation.dateEntrer.getTime()
+          : new Date(hospitalisation.dateEntrer).getTime(),
+      patient: patient ?? null,
     });
   }
 }

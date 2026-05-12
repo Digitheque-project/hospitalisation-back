@@ -320,6 +320,47 @@ export class ActiveHospitalisationItem {
   chambreNumero?: number | null;
 }
 
+export class HospitalisationNotificationItem {
+  @ApiProperty({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' })
+  id: string;
+
+  @ApiProperty({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' })
+  patientId: string;
+
+  @ApiProperty({ example: '2026-05-11T08:15:00.000Z' })
+  dateEntrer: string;
+
+  @ApiProperty({ example: 'Appendicectomie laparoscopique' })
+  motifHospitalisation: string;
+
+  @ApiProperty({ example: 'service-123' })
+  serviceId: string;
+
+  @ApiProperty({ example: 'Hospitalisation' })
+  type: string;
+
+  @ApiProperty({ enum: StatutHospitalisation })
+  statutHospitalisation: StatutHospitalisation;
+
+  @ApiProperty({ enum: StatutDemande })
+  statusDemande: StatutDemande;
+
+  @ApiProperty({ example: 'A1', required: false, nullable: true })
+  litCode?: string | null;
+
+  @ApiProperty({ example: 12, required: false, nullable: true })
+  chambreNumero?: number | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  commentaire?: string | null;
+
+  @ApiProperty({ nullable: true, required: false })
+  patient?: Record<string, unknown> | null;
+
+  @ApiProperty({ example: 1715492100000 })
+  receivedAt: number;
+}
+
 // --- Plan des Lits DTOs ---
 
 export class PlanLitBedHospitalisation {

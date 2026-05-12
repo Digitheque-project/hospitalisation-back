@@ -29,7 +29,14 @@ import {
   StatutLit,
   TransfertEntity,
 } from './hospitalisation.entities';
-import { ActiveHospitalisationItem, HospitalisationStatsResponse, PlanLitsResponse, PlanLitRoomItem, PlanLitBedItem } from './hospitalisation.dto';
+import {
+  ActiveHospitalisationItem,
+  HospitalisationNotificationItem,
+  HospitalisationStatsResponse,
+  PlanLitsResponse,
+  PlanLitRoomItem,
+  PlanLitBedItem,
+} from './hospitalisation.dto';
 import {
   CloturerHospitalisationDto,
   CreateChambreDto,
@@ -131,7 +138,8 @@ export class HospitalisationService implements OnModuleDestroy {
       const litDisponible = await this.findAvailableLitForService(input.serviceId, input.idLit);
       await this.affecterLit(saved.id, litDisponible.id);
     }
-    this.hospitalisationGateway.emitHospitalisationCreated(saved);
+    const patient = await this.accueilPatientApi.getPatientFullById(saved.patientId);
+    this.hospitalisationGateway.emitHospitalisationCreated(saved, patient);
     return saved;
   }
 
@@ -367,6 +375,54 @@ export class HospitalisationService implements OnModuleDestroy {
     return rows.map((row) => ({
       ...row,
       dateEntrer: new Date(row.dateEntrer).toISOString(),
+      litCode: row.litCode ?? null,
+      chambreNumero: row.chambreNumero ?? null,
+    }));
+  }
+
+  async getHospitalisationNotifications(limit: number): Promise<HospitalisationNotificationItem[]> {
+    const normalizedLimit = this.normalizeLimit(limit);
+
+    const rows = await this.hospitalisationRepository
+      .createQueryBuilder('hospitalisation')
+      .leftJoin(
+        AffectationLitEntity,
+        'affectation',
+        'affectation.id_hospitalisation = hospitalisation.id_hospitalisation AND affectation.date_fin_affectation IS NULL',
+      )
+      .leftJoin(LitEntity, 'lit', 'lit.id_lit = affectation.id_lit')
+      .leftJoin(ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
+      .orderBy('hospitalisation.date_entrer', 'DESC')
+      .limit(normalizedLimit)
+      .select([
+        'hospitalisation.id_hospitalisation AS id',
+        'hospitalisation.id_patient AS "patientId"',
+        'hospitalisation.date_entrer AS "dateEntrer"',
+        'hospitalisation.motif_hospitalisation AS "motifHospitalisation"',
+        'hospitalisation.id_service AS "serviceId"',
+        'hospitalisation.type_hospitalisation AS type',
+        'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
+        'hospitalisation.status_demande AS "statusDemande"',
+        'hospitalisation.commentaire AS commentaire',
+        'lit.code_lit AS "litCode"',
+        'chambre.numero_chambre AS "chambreNumero"',
+      ])
+      .getRawMany<HospitalisationNotificationItem>();
+
+    const patientIds = Array.from(new Set(rows.map((row) => row.patientId)));
+    const patientEntries = await Promise.all(
+      patientIds.map(async (patientId) => [
+        patientId,
+        await this.accueilPatientApi.getPatientFullById(patientId),
+      ] as const),
+    );
+    const patientMap = new Map(patientEntries);
+
+    return rows.map((row) => ({
+      ...row,
+      dateEntrer: new Date(row.dateEntrer).toISOString(),
+      receivedAt: new Date(row.dateEntrer).getTime(),
+      patient: patientMap.get(row.patientId) ?? null,
       litCode: row.litCode ?? null,
       chambreNumero: row.chambreNumero ?? null,
     }));
