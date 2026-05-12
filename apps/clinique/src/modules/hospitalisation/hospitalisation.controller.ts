@@ -43,7 +43,7 @@ import {
 @ApiTags('Hospitalisation')
 @ApiBearerAuth()
 @Controller('hospitalisations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 export class HospitalisationController {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
 
@@ -119,7 +119,6 @@ export class HospitalisationController {
   }
 
   @Patch(':id/status')
-  @Roles('ONM', 'ONIM')
   @ApiOperation({ summary: 'Mettre a jour le statut de la demande hospitalisation' })
   @ApiParam({ name: 'id', description: 'Identifiant hospitalisation' })
   @ApiResponse({ status: 200, description: 'Statut hospitalisation mis a jour', type: HospitalisationEntity })
