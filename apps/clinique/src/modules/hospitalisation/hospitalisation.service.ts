@@ -503,9 +503,41 @@ export class HospitalisationService implements OnModuleDestroy {
       });
     }
 
+    const patientIds = new Set<string>();
+    for (const chambre of chambreResults) {
+      for (const lit of chambre.lits) {
+        const pid = lit.hospitalisation?.patientId;
+        if (pid) {
+          patientIds.add(pid);
+        }
+      }
+    }
+
+    const patientEntries = await Promise.all(
+      Array.from(patientIds).map(
+        async (patientId) =>
+          [patientId, await this.accueilPatientApi.getPatientFullById(patientId)] as const,
+      ),
+    );
+    const patientMap = new Map(patientEntries);
+
+    const chambresAvecPatients = chambreResults.map((chambre) => ({
+      ...chambre,
+      lits: chambre.lits.map((lit) => {
+        if (!lit.hospitalisation) {
+          return lit;
+        }
+        const patient = patientMap.get(lit.hospitalisation.patientId) ?? null;
+        return {
+          ...lit,
+          hospitalisation: { ...lit.hospitalisation, patient },
+        };
+      }),
+    }));
+
     return {
       serviceId,
-      chambres: chambreResults,
+      chambres: chambresAvecPatients,
       stats: { totalLits, litsOccupes, totalPatients },
     };
   }

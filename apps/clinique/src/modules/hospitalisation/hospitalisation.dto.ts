@@ -384,6 +384,9 @@ export class PlanLitBedHospitalisation {
 
   @ApiProperty({ example: 3 })
   soinsCount: number;
+
+  @ApiProperty({ required: false, nullable: true })
+  patient?: Record<string, unknown> | null;
 }
 
 export class PlanLitBedItem {
