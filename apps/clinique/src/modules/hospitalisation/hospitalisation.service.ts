@@ -383,15 +383,16 @@ export class HospitalisationService implements OnModuleDestroy {
   async getHospitalisationNotifications(limit: number): Promise<HospitalisationNotificationItem[]> {
     const normalizedLimit = this.normalizeLimit(limit);
 
+    /** Pas de lit actif : sinon la carte « notification » reste affichée après affectation. */
     const rows = await this.hospitalisationRepository
       .createQueryBuilder('hospitalisation')
-      .leftJoin(
-        AffectationLitEntity,
-        'affectation',
-        'affectation.id_hospitalisation = hospitalisation.id_hospitalisation AND affectation.date_fin_affectation IS NULL',
+      .where(
+        `NOT EXISTS (
+          SELECT 1 FROM affectation_lit al
+          WHERE al.id_hospitalisation = hospitalisation.id_hospitalisation
+            AND al.date_fin_affectation IS NULL
+        )`,
       )
-      .leftJoin(LitEntity, 'lit', 'lit.id_lit = affectation.id_lit')
-      .leftJoin(ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
       .orderBy('hospitalisation.date_entrer', 'DESC')
       .limit(normalizedLimit)
       .select([
@@ -404,8 +405,6 @@ export class HospitalisationService implements OnModuleDestroy {
         'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
         'hospitalisation.status_demande AS "statusDemande"',
         'hospitalisation.commentaire AS commentaire',
-        'lit.code_lit AS "litCode"',
-        'chambre.numero_chambre AS "chambreNumero"',
       ])
       .getRawMany<HospitalisationNotificationItem>();
 

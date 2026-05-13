@@ -37,7 +37,6 @@ export class HospitalisationResolver {
   }
 
   @Mutation(() => AffectationLitEntity)
-  @Roles('ONM', 'ONIM')
   createAffectationLit(@Args('input') input: CreateAffectationLitDto) {
     return this.hospitalisationService.createAffectationLit(input);
   }

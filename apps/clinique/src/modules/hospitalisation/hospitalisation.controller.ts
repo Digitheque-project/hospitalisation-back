@@ -104,10 +104,11 @@ export class HospitalisationController {
   @ApiParam({ name: 'serviceId', description: 'Identifiant du service' })
   @ApiResponse({ status: 200, description: 'Plan des lits du service', type: PlanLitsResponse })
   getPlanLits(@Param('serviceId') serviceId: string) {
-    if (!isUuidV4(serviceId)) {
-      return { serviceId, chambres: [], stats: { totalLits: 0, litsOccupes: 0, totalPatients: 0 } };
+    const id = serviceId?.trim();
+    if (!id) {
+      return { serviceId: serviceId ?? '', chambres: [], stats: { totalLits: 0, litsOccupes: 0, totalPatients: 0 } };
     }
-    return this.hospitalisationService.getPlanLitsByService(serviceId);
+    return this.hospitalisationService.getPlanLitsByService(id);
   }
 
   @Post()
@@ -144,10 +145,11 @@ export class HospitalisationController {
   @ApiParam({ name: 'serviceId', description: 'Identifiant service' })
   @ApiResponse({ status: 200, description: 'Liste des lits disponibles', type: LitEntity, isArray: true })
   getAvailableLitsByService(@Param('serviceId') serviceId: string) {
-    if (!isUuidV4(serviceId)) {
+    const id = serviceId?.trim();
+    if (!id) {
       return [];
     }
-    return this.hospitalisationService.findAvailableLitsByService(serviceId);
+    return this.hospitalisationService.findAvailableLitsByService(id);
   }
 
   @Post('chambres')
@@ -200,7 +202,6 @@ export class HospitalisationController {
   }
 
   @Post('affectations-lits')
-  @Roles('ONM', 'ONIM')
   @ApiOperation({ summary: 'Affecter un lit a une hospitalisation' })
   @ApiResponse({ status: 201, description: 'Affectation de lit creee', type: AffectationLitEntity })
   createAffectationLit(@Body() body: CreateAffectationLitDto) {
