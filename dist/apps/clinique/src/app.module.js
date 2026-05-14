@@ -20,6 +20,7 @@ const patient_module_1 = require("./modules/patient/patient.module");
 const hospitalisation_module_1 = require("./modules/hospitalisation/hospitalisation.module");
 const auth_module_1 = require("./modules/auth/auth.module");
 const signature_module_1 = require("./modules/signature/signature.module");
+const dossier_patient_module_1 = require("./modules/dossier-patient/dossier-patient.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -60,6 +61,7 @@ exports.AppModule = AppModule = __decorate([
             hospitalisation_module_1.HospitalisationModule,
             auth_module_1.AuthModule,
             signature_module_1.SignatureModule,
+            dossier_patient_module_1.DossierPatientModule,
         ],
     })
 ], AppModule);

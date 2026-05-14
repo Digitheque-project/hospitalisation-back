@@ -81,7 +81,8 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             const litDisponible = await this.findAvailableLitForService(input.serviceId, input.idLit);
             await this.affecterLit(saved.id, litDisponible.id);
         }
-        this.hospitalisationGateway.emitHospitalisationCreated(saved);
+        const patient = await this.accueilPatientApi.getPatientFullById(saved.patientId);
+        this.hospitalisationGateway.emitHospitalisationCreated(saved, patient);
         return saved;
     }
     async createDemandeAvis(input) {
@@ -150,7 +151,7 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
         const demande = this.demandeTransfertRepository.create({
             ...input,
             dateDemande: new Date(),
-            statut: hospitalisation_entities_1.StatutDemandeTransfert.A_VOIR,
+            statut: hospitalisation_entities_1.StatutDemandeTransfert.EN_ATTENTE,
         });
         return this.demandeTransfertRepository.save(demande);
     }
@@ -171,6 +172,14 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             await this.effectuerTransfert(savedDemande, litDestination.id);
         }
         return savedDemande;
+    }
+    async updateStatus(id, newStatus) {
+        const hospitalisation = await this.hospitalisationRepository.findOne({ where: { id } });
+        if (!hospitalisation) {
+            throw new common_1.NotFoundException('Hospitalisation introuvable');
+        }
+        hospitalisation.statusDemande = newStatus;
+        return this.hospitalisationRepository.save(hospitalisation);
     }
     async cloturerHospitalisation(idHospitalisation, input) {
         const hospitalisation = await this.hospitalisationRepository.findOne({
@@ -209,14 +218,14 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
     }
     async getHospitalisationStats() {
         const hospitalizedTotal = await this.hospitalisationRepository.count({
-            where: { statutHospitalisation: hospitalisation_entities_1.StatutHospitalisation.EN_COURS },
+            where: { statusDemande: hospitalisation_entities_1.StatutDemande.ACCEPTE },
         });
         const startOfToday = new Date();
         startOfToday.setHours(0, 0, 0, 0);
         const hospitalizedNewToday = await this.hospitalisationRepository
             .createQueryBuilder('hospitalisation')
-            .where('hospitalisation.statut_hospitalisation = :status', {
-            status: hospitalisation_entities_1.StatutHospitalisation.EN_COURS,
+            .where('hospitalisation.status_demande = :status', {
+            status: hospitalisation_entities_1.StatutDemande.ACCEPTE,
         })
             .andWhere('hospitalisation.date_entrer >= :startOfToday', {
             startOfToday,
@@ -234,8 +243,8 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             .leftJoin(hospitalisation_entities_1.AffectationLitEntity, 'affectation', 'affectation.id_hospitalisation = hospitalisation.id_hospitalisation AND affectation.date_fin_affectation IS NULL')
             .leftJoin(hospitalisation_entities_1.LitEntity, 'lit', 'lit.id_lit = affectation.id_lit')
             .leftJoin(hospitalisation_entities_1.ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
-            .where('hospitalisation.statut_hospitalisation = :status', {
-            status: hospitalisation_entities_1.StatutHospitalisation.EN_COURS,
+            .where('hospitalisation.status_demande = :statusDemande', {
+            statusDemande: hospitalisation_entities_1.StatutDemande.ACCEPTE,
         })
             .orderBy('hospitalisation.date_entrer', 'DESC')
             .limit(normalizedLimit)
@@ -245,7 +254,9 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
             'hospitalisation.date_entrer AS "dateEntrer"',
             'hospitalisation.motif_hospitalisation AS "motifHospitalisation"',
             'hospitalisation.id_service AS "serviceId"',
+            'hospitalisation.type_hospitalisation AS type',
             'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
+            'hospitalisation.status_demande AS "statusDemande"',
             'lit.code_lit AS "litCode"',
             'chambre.numero_chambre AS "chambreNumero"',
         ])
@@ -253,6 +264,44 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
         return rows.map((row) => ({
             ...row,
             dateEntrer: new Date(row.dateEntrer).toISOString(),
+            litCode: row.litCode ?? null,
+            chambreNumero: row.chambreNumero ?? null,
+        }));
+    }
+    async getHospitalisationNotifications(limit) {
+        const normalizedLimit = this.normalizeLimit(limit);
+        const rows = await this.hospitalisationRepository
+            .createQueryBuilder('hospitalisation')
+            .where(`NOT EXISTS (
+          SELECT 1 FROM affectation_lit al
+          WHERE al.id_hospitalisation = hospitalisation.id_hospitalisation
+            AND al.date_fin_affectation IS NULL
+        )`)
+            .orderBy('hospitalisation.date_entrer', 'DESC')
+            .limit(normalizedLimit)
+            .select([
+            'hospitalisation.id_hospitalisation AS id',
+            'hospitalisation.id_patient AS "patientId"',
+            'hospitalisation.date_entrer AS "dateEntrer"',
+            'hospitalisation.motif_hospitalisation AS "motifHospitalisation"',
+            'hospitalisation.id_service AS "serviceId"',
+            'hospitalisation.type_hospitalisation AS type',
+            'hospitalisation.statut_hospitalisation AS "statutHospitalisation"',
+            'hospitalisation.status_demande AS "statusDemande"',
+            'hospitalisation.commentaire AS commentaire',
+        ])
+            .getRawMany();
+        const patientIds = Array.from(new Set(rows.map((row) => row.patientId)));
+        const patientEntries = await Promise.all(patientIds.map(async (patientId) => [
+            patientId,
+            await this.accueilPatientApi.getPatientFullById(patientId),
+        ]));
+        const patientMap = new Map(patientEntries);
+        return rows.map((row) => ({
+            ...row,
+            dateEntrer: new Date(row.dateEntrer).toISOString(),
+            receivedAt: new Date(row.dateEntrer).getTime(),
+            patient: patientMap.get(row.patientId) ?? null,
             litCode: row.litCode ?? null,
             chambreNumero: row.chambreNumero ?? null,
         }));
@@ -318,9 +367,33 @@ let HospitalisationService = HospitalisationService_1 = class HospitalisationSer
                 lits: litItems,
             });
         }
+        const patientIds = new Set();
+        for (const chambre of chambreResults) {
+            for (const lit of chambre.lits) {
+                const pid = lit.hospitalisation?.patientId;
+                if (pid) {
+                    patientIds.add(pid);
+                }
+            }
+        }
+        const patientEntries = await Promise.all(Array.from(patientIds).map(async (patientId) => [patientId, await this.accueilPatientApi.getPatientFullById(patientId)]));
+        const patientMap = new Map(patientEntries);
+        const chambresAvecPatients = chambreResults.map((chambre) => ({
+            ...chambre,
+            lits: chambre.lits.map((lit) => {
+                if (!lit.hospitalisation) {
+                    return lit;
+                }
+                const patient = patientMap.get(lit.hospitalisation.patientId) ?? null;
+                return {
+                    ...lit,
+                    hospitalisation: { ...lit.hospitalisation, patient },
+                };
+            }),
+        }));
         return {
             serviceId,
-            chambres: chambreResults,
+            chambres: chambresAvecPatients,
             stats: { totalLits, litsOccupes, totalPatients },
         };
     }

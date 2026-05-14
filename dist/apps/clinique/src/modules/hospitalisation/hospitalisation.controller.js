@@ -16,8 +16,6 @@ exports.HospitalisationController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
-const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
-const roles_guard_1 = require("../../common/guards/roles.guard");
 const uuid_1 = require("../../common/utils/uuid");
 const hospitalisation_entities_1 = require("./hospitalisation.entities");
 const hospitalisation_service_1 = require("./hospitalisation.service");
@@ -38,14 +36,21 @@ let HospitalisationController = class HospitalisationController {
     getActiveHospitalisations(limit) {
         return this.hospitalisationService.getActiveHospitalisations(this.parseLimit(limit));
     }
+    getHospitalisationNotifications(limit) {
+        return this.hospitalisationService.getHospitalisationNotifications(this.parseLimit(limit));
+    }
     getPlanLits(serviceId) {
-        if (!(0, uuid_1.isUuidV4)(serviceId)) {
-            return { serviceId, chambres: [], stats: { totalLits: 0, litsOccupes: 0, totalPatients: 0 } };
+        const id = serviceId?.trim();
+        if (!id) {
+            return { serviceId: serviceId ?? '', chambres: [], stats: { totalLits: 0, litsOccupes: 0, totalPatients: 0 } };
         }
-        return this.hospitalisationService.getPlanLitsByService(serviceId);
+        return this.hospitalisationService.getPlanLitsByService(id);
     }
     createHospitalisation(body) {
         return this.hospitalisationService.createHospitalisation(body);
+    }
+    updateStatus(id, body) {
+        return this.hospitalisationService.updateStatus(id, body.status);
     }
     async getHospitalisationById(id) {
         if (!(0, uuid_1.isUuidV4)(id)) {
@@ -54,10 +59,11 @@ let HospitalisationController = class HospitalisationController {
         return (await this.hospitalisationService.findHospitalisationById(id)) ?? {};
     }
     getAvailableLitsByService(serviceId) {
-        if (!(0, uuid_1.isUuidV4)(serviceId)) {
+        const id = serviceId?.trim();
+        if (!id) {
             return [];
         }
-        return this.hospitalisationService.findAvailableLitsByService(serviceId);
+        return this.hospitalisationService.findAvailableLitsByService(id);
     }
     createChambre(body) {
         return this.hospitalisationService.createChambre(body);
@@ -169,6 +175,22 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], HospitalisationController.prototype, "getActiveHospitalisations", null);
 __decorate([
+    (0, common_1.Get)('notifications'),
+    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
+    (0, swagger_1.ApiOperation)({ summary: 'Lister les notifications hospitalisation' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, example: 50 }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: 'Liste des notifications enrichies',
+        type: hospitalisation_dto_1.HospitalisationNotificationItem,
+        isArray: true,
+    }),
+    __param(0, (0, common_1.Query)('limit')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "getHospitalisationNotifications", null);
+__decorate([
     (0, common_1.Get)('plan-lits/:serviceId'),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
     (0, swagger_1.ApiOperation)({ summary: 'Recuperer le plan des lits dun service' }),
@@ -189,6 +211,17 @@ __decorate([
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateHospitalisationDto]),
     __metadata("design:returntype", void 0)
 ], HospitalisationController.prototype, "createHospitalisation", null);
+__decorate([
+    (0, common_1.Patch)(':id/status'),
+    (0, swagger_1.ApiOperation)({ summary: 'Mettre a jour le statut de la demande hospitalisation' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Identifiant hospitalisation' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Statut hospitalisation mis a jour', type: hospitalisation_entities_1.HospitalisationEntity }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, hospitalisation_dto_1.UpdateHospitalisationStatusDto]),
+    __metadata("design:returntype", void 0)
+], HospitalisationController.prototype, "updateStatus", null);
 __decorate([
     (0, common_1.Get)('id/:id'),
     (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
@@ -267,7 +300,6 @@ __decorate([
 ], HospitalisationController.prototype, "updateLitStatut", null);
 __decorate([
     (0, common_1.Post)('affectations-lits'),
-    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
     (0, swagger_1.ApiOperation)({ summary: 'Affecter un lit a une hospitalisation' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Affectation de lit creee', type: hospitalisation_entities_1.AffectationLitEntity }),
     __param(0, (0, common_1.Body)()),
@@ -390,7 +422,6 @@ exports.HospitalisationController = HospitalisationController = __decorate([
     (0, swagger_1.ApiTags)('Hospitalisation'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('hospitalisations'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [hospitalisation_service_1.HospitalisationService])
 ], HospitalisationController);
 //# sourceMappingURL=hospitalisation.controller.js.map

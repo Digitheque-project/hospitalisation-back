@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PlanLitsResponse = exports.PlanLitsStats = exports.PlanLitRoomItem = exports.PlanLitBedItem = exports.PlanLitBedHospitalisation = exports.ActiveHospitalisationItem = exports.HospitalisationStatsResponse = exports.UpdateLitStatutDto = exports.CreateLitDto = exports.CreateChambreDto = exports.CreateAffectationLitDto = exports.CloturerHospitalisationDto = exports.TraiterDemandeTransfertDto = exports.CreateDemandeTransfertDto = exports.CreatePrescriptionMedicaleDto = exports.CreateAvisMedicalDto = exports.CreateDiagnosticsDto = exports.CreateDemandeAvisDto = exports.CreateHospitalisationDto = exports.CreateServiceRefDto = exports.CreatePersonnelRefDto = void 0;
+exports.PlanLitsResponse = exports.PlanLitsStats = exports.PlanLitRoomItem = exports.PlanLitBedItem = exports.PlanLitBedHospitalisation = exports.HospitalisationNotificationItem = exports.ActiveHospitalisationItem = exports.HospitalisationStatsResponse = exports.UpdateHospitalisationStatusDto = exports.UpdateLitStatutDto = exports.CreateLitDto = exports.CreateChambreDto = exports.CreateAffectationLitDto = exports.CloturerHospitalisationDto = exports.TraiterDemandeTransfertDto = exports.CreateDemandeTransfertDto = exports.CreatePrescriptionMedicaleDto = exports.CreateAvisMedicalDto = exports.CreateDiagnosticsDto = exports.CreateDemandeAvisDto = exports.CreateHospitalisationDto = exports.CreateServiceRefDto = exports.CreatePersonnelRefDto = void 0;
 const graphql_1 = require("@nestjs/graphql");
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
@@ -360,6 +360,18 @@ __decorate([
 exports.UpdateLitStatutDto = UpdateLitStatutDto = __decorate([
     (0, graphql_1.InputType)()
 ], UpdateLitStatutDto);
+let UpdateHospitalisationStatusDto = class UpdateHospitalisationStatusDto {
+};
+exports.UpdateHospitalisationStatusDto = UpdateHospitalisationStatusDto;
+__decorate([
+    (0, graphql_1.Field)(() => hospitalisation_entities_1.StatutDemande),
+    (0, swagger_1.ApiProperty)({ enum: hospitalisation_entities_1.StatutDemande, description: 'Nouveau statut de la demande', required: true }),
+    (0, class_validator_1.IsEnum)(hospitalisation_entities_1.StatutDemande),
+    __metadata("design:type", String)
+], UpdateHospitalisationStatusDto.prototype, "status", void 0);
+exports.UpdateHospitalisationStatusDto = UpdateHospitalisationStatusDto = __decorate([
+    (0, graphql_1.InputType)()
+], UpdateHospitalisationStatusDto);
 class HospitalisationStatsResponse {
 }
 exports.HospitalisationStatsResponse = HospitalisationStatsResponse;
@@ -395,9 +407,17 @@ __decorate([
     __metadata("design:type", String)
 ], ActiveHospitalisationItem.prototype, "serviceId", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Hospitalisation' }),
+    __metadata("design:type", String)
+], ActiveHospitalisationItem.prototype, "type", void 0);
+__decorate([
     (0, swagger_1.ApiProperty)({ enum: hospitalisation_entities_1.StatutHospitalisation }),
     __metadata("design:type", String)
 ], ActiveHospitalisationItem.prototype, "statutHospitalisation", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: hospitalisation_entities_1.StatutDemande }),
+    __metadata("design:type", String)
+], ActiveHospitalisationItem.prototype, "statusDemande", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ example: 'A1', required: false, nullable: true }),
     __metadata("design:type", Object)
@@ -406,6 +426,61 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: 12, required: false, nullable: true }),
     __metadata("design:type", Object)
 ], ActiveHospitalisationItem.prototype, "chambreNumero", void 0);
+class HospitalisationNotificationItem {
+}
+exports.HospitalisationNotificationItem = HospitalisationNotificationItem;
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "patientId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: '2026-05-11T08:15:00.000Z' }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "dateEntrer", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Appendicectomie laparoscopique' }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "motifHospitalisation", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'service-123' }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "serviceId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Hospitalisation' }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "type", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: hospitalisation_entities_1.StatutHospitalisation }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "statutHospitalisation", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: hospitalisation_entities_1.StatutDemande }),
+    __metadata("design:type", String)
+], HospitalisationNotificationItem.prototype, "statusDemande", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 'A1', required: false, nullable: true }),
+    __metadata("design:type", Object)
+], HospitalisationNotificationItem.prototype, "litCode", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 12, required: false, nullable: true }),
+    __metadata("design:type", Object)
+], HospitalisationNotificationItem.prototype, "chambreNumero", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, nullable: true }),
+    __metadata("design:type", Object)
+], HospitalisationNotificationItem.prototype, "commentaire", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ nullable: true, required: false }),
+    __metadata("design:type", Object)
+], HospitalisationNotificationItem.prototype, "patient", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 1715492100000 }),
+    __metadata("design:type", Number)
+], HospitalisationNotificationItem.prototype, "receivedAt", void 0);
 class PlanLitBedHospitalisation {
 }
 exports.PlanLitBedHospitalisation = PlanLitBedHospitalisation;
@@ -437,6 +512,10 @@ __decorate([
     (0, swagger_1.ApiProperty)({ example: 3 }),
     __metadata("design:type", Number)
 ], PlanLitBedHospitalisation.prototype, "soinsCount", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ required: false, nullable: true }),
+    __metadata("design:type", Object)
+], PlanLitBedHospitalisation.prototype, "patient", void 0);
 class PlanLitBedItem {
 }
 exports.PlanLitBedItem = PlanLitBedItem;

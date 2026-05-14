@@ -11,7 +11,7 @@ import { PatientModule } from './modules/patient/patient.module';
 import { HospitalisationModule } from './modules/hospitalisation/hospitalisation.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SignatureModule } from './modules/signature/signature.module';
-
+import { DossierPatientModule } from './modules/dossier-patient/dossier-patient.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -49,6 +49,7 @@ import { SignatureModule } from './modules/signature/signature.module';
     HospitalisationModule,
     AuthModule,
     SignatureModule,
+    DossierPatientModule,
   ],
 })
 export class AppModule {}

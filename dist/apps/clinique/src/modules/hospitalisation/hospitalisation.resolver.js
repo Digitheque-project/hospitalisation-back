@@ -70,7 +70,6 @@ __decorate([
 ], HospitalisationResolver.prototype, "createHospitalisation", null);
 __decorate([
     (0, graphql_1.Mutation)(() => hospitalisation_entities_1.AffectationLitEntity),
-    (0, roles_decorator_1.Roles)('ONM', 'ONIM'),
     __param(0, (0, graphql_1.Args)('input')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [hospitalisation_dto_1.CreateAffectationLitDto]),

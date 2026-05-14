@@ -27,11 +27,13 @@ var StatutDemande;
 (function (StatutDemande) {
     StatutDemande["EN_ATTENTE"] = "EN_ATTENTE";
     StatutDemande["CONSULTEE"] = "CONSULTEE";
+    StatutDemande["ACCEPTE"] = "ACCEPTE";
+    StatutDemande["REFUSE"] = "REFUSE";
 })(StatutDemande || (exports.StatutDemande = StatutDemande = {}));
 var StatutDemandeTransfert;
 (function (StatutDemandeTransfert) {
+    StatutDemandeTransfert["EN_ATTENTE"] = "EN_ATTENTE";
     StatutDemandeTransfert["ACCEPTE"] = "ACCEPTE";
-    StatutDemandeTransfert["A_VOIR"] = "A_VOIR";
     StatutDemandeTransfert["REFUSE"] = "REFUSE";
 })(StatutDemandeTransfert || (exports.StatutDemandeTransfert = StatutDemandeTransfert = {}));
 (0, graphql_1.registerEnumType)(StatutHospitalisation, { name: 'StatutHospitalisation' });
@@ -508,7 +510,7 @@ __decorate([
 ], DemandeTransfertEntity.prototype, "motifDemandeTransfert", void 0);
 __decorate([
     (0, graphql_1.Field)(() => StatutDemandeTransfert),
-    (0, typeorm_1.Column)({ name: 'statut', type: 'varchar', default: StatutDemandeTransfert.A_VOIR }),
+    (0, typeorm_1.Column)({ name: 'statut', type: 'varchar', default: StatutDemandeTransfert.EN_ATTENTE }),
     __metadata("design:type", String)
 ], DemandeTransfertEntity.prototype, "statut", void 0);
 __decorate([
