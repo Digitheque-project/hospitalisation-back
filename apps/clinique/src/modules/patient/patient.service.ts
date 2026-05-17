@@ -21,4 +21,8 @@ export class PatientService {
 
     return { patientId, informationsPatient, cpa, vpa };
   }
+
+  async getPatientFull(patientId: string): Promise<Record<string, unknown> | null> {
+    return this.accueilPatientApi.getPatientFullById(patientId);
+  }
 }
