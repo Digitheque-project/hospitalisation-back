@@ -318,6 +318,9 @@ export class ActiveHospitalisationItem {
 
   @ApiProperty({ example: 12, required: false, nullable: true })
   chambreNumero?: number | null;
+
+  @ApiProperty({ nullable: true, required: false })
+  patient?: Record<string, unknown> | null;
 }
 
 export class HospitalisationNotificationItem {

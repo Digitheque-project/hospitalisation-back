@@ -372,11 +372,21 @@ export class HospitalisationService implements OnModuleDestroy {
       ])
       .getRawMany<ActiveHospitalisationItem>();
 
+    const patientIds = Array.from(new Set(rows.map((row) => row.patientId)));
+    const patientEntries = await Promise.all(
+      patientIds.map(async (patientId) => [
+        patientId,
+        await this.accueilPatientApi.getPatientFullById(patientId),
+      ] as const),
+    );
+    const patientMap = new Map(patientEntries);
+
     return rows.map((row) => ({
       ...row,
       dateEntrer: new Date(row.dateEntrer).toISOString(),
       litCode: row.litCode ?? null,
       chambreNumero: row.chambreNumero ?? null,
+      patient: patientMap.get(row.patientId) ?? null,
     }));
   }
 
@@ -553,7 +563,7 @@ export class HospitalisationService implements OnModuleDestroy {
   async findAvailableLitsByService(serviceId: string): Promise<LitEntity[]> {
     return this.litRepository
       .createQueryBuilder('lit')
-      .innerJoin(ChambreEntity, 'chambre', 'chambre.id_chambre = lit.id_chambre')
+      .innerJoinAndSelect('lit.chambre', 'chambre')
       .where('chambre.id_service = :serviceId', { serviceId })
       .andWhere('lit.statut = :statut', { statut: StatutLit.DISPONIBLE })
       .orderBy('lit.code_lit', 'ASC')
