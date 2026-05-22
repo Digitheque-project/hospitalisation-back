@@ -1,11 +1,27 @@
-# Hospitalisation Back
+# Hospitalisation Back (Minimal)
 
-Microservice NestJS (`apps/clinique`) pour le domaine **Clinique / Hospitalisation** du SIH.
+Microservice NestJS (`apps/clinique`) dedie a la **gestion basique des episodes d hospitalisation**.
 
-Architecture API hybride:
-- **REST** pour les commandes transactionnelles et actions à effet de bord.
-- **GraphQL** pour les lectures agrégées.
-- **Règle de conception**: controllers REST et resolvers GraphQL délèguent aux mêmes services (logique métier centralisée).
+Principes:
+- REST pour les commandes.
+- GraphQL pour les lectures.
+- Controllers REST et resolvers GraphQL deleguent aux memes services.
+
+## Perimetre
+
+Inclus:
+- Creation d un episode d hospitalisation
+- Mise a jour du statut global (ADMIS, EN_COURS, TRANSFERE, SORTIE, DECEDE, EVADE)
+- Liaison simple avec le patient via `patientId` (validation via Accueil)
+- Affectation basique de service / lit
+- Gestion des chambres et des lits
+- Plan de lits par service
+- Cloture d episode sans compte-rendu detaille
+- Evenements Kafka simples
+
+Exclus:
+- CPA, VPA, bloc operatoire, demandes d avis, prescriptions, historique clinique detaille
+- Dossier patient avance, observations, diagnostics, parcours clinique
 
 ## Stack technique
 
@@ -14,13 +30,7 @@ Architecture API hybride:
 - GraphQL (Apollo)
 - Swagger / OpenAPI
 - Validation `class-validator`
-
-## Prérequis
-
-- Node.js 20+ recommandé
-- npm 10+
-- PostgreSQL
-- (optionnel) Docker / Docker Compose
+- Kafka (events)
 
 ## Installation
 
@@ -32,84 +42,54 @@ npm install
 
 Copier `.env.example` vers `.env` et adapter les variables.
 
-Variables principales utilisées:
+Variables principales:
 - `DB_HOST`
 - `DB_PORT`
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `DB_NAME`
-- `CLINIQUE_PORT` (défaut: `3001`)
-- `GRAPHQL_PLAYGROUND_ENABLED` (`true`/`false`)
-- `SECURITY_PROFILE_HEADER` (défaut: `x-profile`)
-- `SECURITY_ALLOWED_PROFILES` (défaut: `ONM,ONIM`)
+- `CLINIQUE_PORT` (defaut: `3001`)
+- `ACCUEIL_API_BASE_URL`
+- `KAFKA_BROKERS`
+- `KAFKA_CLIENT_ID`
 
 ## Lancement
-
-### En local (dev)
 
 ```bash
 npm run start:dev
 ```
 
-### Build + run
+## Endpoints principaux (REST)
 
-```bash
-npm run build
-npm run start
-```
+- `POST /hospitalisations` : creer un episode
+- `PATCH /hospitalisations/:id/status` : mettre a jour le statut
+- `PATCH /hospitalisations/:id/close` : cloturer l episode
+- `GET /hospitalisations/:id` : recuperer un episode
+- `GET /hospitalisations` : lister (serviceId obligatoire, filtres: `patientId`, `statut`)
 
-### Avec Docker
+- `POST /chambres` : creer une chambre
+- `GET /chambres` : lister par serviceId (obligatoire)
+- `GET /chambres/:id` : detail d une chambre
+- `PATCH /chambres/:id` : modifier une chambre
 
-```bash
-docker compose up --build
-```
+- `POST /chambres/:chambreId/lits` : creer un ou plusieurs lits
+- `GET /lits` : lister par chambreId ou serviceId
+- `GET /lits/:id` : detail d un lit
+- `PATCH /lits/:id` : modifier un lit
 
-## Endpoints
+- `GET /plan-lits` : plan de lits par service (serviceId obligatoire)
 
-- API REST base: `http://localhost:3001`
-- Swagger: `http://localhost:3001/api/docs`
-- GraphQL: `http://localhost:3001/graphql`
+Swagger: `http://localhost:3001/api/docs`
+GraphQL: `http://localhost:3001/graphql`
 
-## Sécurité / Auth
+## Kafka (events)
 
-Les routes protégées utilisent `JwtAuthGuard` + `RolesGuard`.
+Topics emises:
+- `hospitalisation.episode.created`
+- `hospitalisation.episode.status.updated`
+- `hospitalisation.episode.closed`
 
-Headers attendus:
-- `Authorization: Bearer <token>`
-- `x-profile: <profil>` (ex: `ONM`, `ONIM`)
-- `x-user-id: <id utilisateur>`
-- `x-order-number: <numero ordre>` pour signatures critiques
-
-## Modules métier actuels
-
-- `hospitalisation`: admissions, affectations de lit, transferts, demandes d'avis, avis médicaux, diagnostics, prescriptions, sorties.
-- `cpa`: consultation pré-anesthésique.
-- `vpa`: visite pré-anesthésique.
-- `signature`: validation d'ordre professionnel.
-- `patient`: vue dossier patient agrégée (CPA/VPA).
-
-## Règles métier clés implémentées
-
-- Une admission/transfert doit cibler un **lit disponible** dans le service.
-- À l’affectation, le lit passe à `OCCUPE`; lors de sortie/changement, il repasse à `DISPONIBLE`.
-- VPA interdite si CPA associée non `REALISE`.
-- Demande d’avis: relance toutes les 5 minutes jusqu’à consultation.
-- Diagnostics / avis / prescriptions critiques vérifient le numéro d’ordre via le module `signature`.
-
-## Exemples REST utiles
-
-- Créer une hospitalisation: `POST /hospitalisations`
-- Affecter un lit: `POST /hospitalisations/affectations-lits`
-- Créer une demande de transfert: `POST /hospitalisations/demandes-transfert`
-- Traiter un transfert: `PATCH /hospitalisations/demandes-transfert/:id`
-- Créer une demande d'avis: `POST /hospitalisations/demandes-avis`
-- Marquer consultation avis: `PATCH /hospitalisations/demandes-avis/:id/consulter`
-- Créer diagnostic: `POST /hospitalisations/diagnostics`
-- Créer avis médical: `POST /hospitalisations/avis-medical`
-- Créer prescription: `POST /hospitalisations/prescriptions`
-- Clôturer hospitalisation: `PATCH /hospitalisations/:id/cloture`
-
-## Structure source (résumé)
+## Structure source (simplifiee)
 
 ```text
 apps/clinique/src/
@@ -118,48 +98,19 @@ apps/clinique/src/
   common/
     decorators/
     guards/
+  domain/
+    entities/
+  infrastructure/
+    http-clients/
+    kafka/
   modules/
-    cpa/
     hospitalisation/
-    patient/
-    signature/
-    vpa/
+    chambre/
+    lit/
 ```
 
-## Vérification rapide
+## Build
 
 ```bash
 npm run build
 ```
-
-Si le build passe, le service est cohérent côté TypeScript.
-
-## Déploiement Render
-
-Pour Render, utilise un **Web Service** + une **PostgreSQL** Render.
-
-### Variables Render
-
-Renseigne au minimum :
-- `DB_HOST`
-- `DB_PORT`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `DB_NAME`
-- `JWT_SECRET`
-- `SECURITY_CORS_ORIGINS` (ex: l'URL de ton frontend Render)
-
-### Commandes Render
-
-- Build: `npm install && npm run build`
-- Start: `npm start`
-
-### Point important
-
-L'application écoute maintenant sur `PORT` si Render le fournit, sinon sur `CLINIQUE_PORT` en local.
-
-### URLs exposées
-
-- REST: `/`
-- Swagger: `/api/docs`
-- GraphQL: `/graphql`

@@ -23,10 +23,9 @@ async function bootstrap() {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Clinique API')
-    .setDescription('Microservice clinique SIH')
+    .setTitle('Hospitalisation Episodes API')
+    .setDescription('Microservice de gestion des episodes d hospitalisation')
     .setVersion('1.0.0')
-    .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, swaggerDocument);

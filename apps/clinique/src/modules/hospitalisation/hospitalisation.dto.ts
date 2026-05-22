@@ -1,443 +1,99 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
-import { StatutDemande, StatutDemandeTransfert, StatutHospitalisation, StatutLit } from './hospitalisation.entities';
-
-
-export class CreatePersonnelRefDto {
-  @ApiProperty({ example: 'dr-jean-pierre', description: 'Identifiant du personnel' })
-  @IsString()
-  id: string;
-}
-
-export class CreateServiceRefDto {
-  @ApiProperty({ example: 'chirurgie', description: 'Identifiant du service' })
-  @IsString()
-  id: string;
-}
+import { IsDateString, IsEnum, IsOptional, IsString, Length } from 'class-validator';
+import { StatutHospitalisation } from '../../domain/entities/hospitalisation-episode.entity';
 
 @InputType()
-export class CreateHospitalisationDto {
+export class CreateHospitalisationEpisodeDto {
   @Field()
-  @ApiProperty({ type: String, description: 'Identifiant patient', required: true })
+  @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
   @IsString()
+  @Length(1, 120)
   patientId: string;
 
   @Field()
-  @ApiProperty({ type: String, description: 'Identifiant service', required: true })
+  @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
   @IsString()
+  @Length(1, 120)
   serviceId: string;
 
   @Field()
-  @ApiProperty({ type: String, description: "Date d'entree ISO", required: true })
+  @ApiProperty({ example: '2026-05-22T10:00:00.000Z', description: "Date d'admission ISO" })
   @IsDateString()
-  dateEntrer: string;
+  dateAdmission: string;
 
   @Field()
-  @ApiProperty({ type: String, description: 'Motif hospitalisation', required: true })
+  @ApiProperty({ example: 'Observation clinique', description: "Motif de l'admission" })
   @IsString()
-  motifHospitalisation: string;
+  motifAdmission: string;
+
+  @Field()
+  @ApiProperty({ example: 'agent-45', description: "Auteur de l'admission" })
+  @IsString()
+  createdBy: string;
 
   @Field({ nullable: true })
-  @ApiProperty({
-    type: String,
-    description: "Type d'hospitalisation",
-    required: false,
-    default: 'Hospitalisation',
-    enum: ['Hospitalisation'],
-  })
+  @ApiProperty({ example: 'lit-uuid', description: 'Identifiant lit', required: false })
   @IsOptional()
   @IsString()
-  @IsIn(['Hospitalisation'])
-  type?: string;
-
-  @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Identifiant mode sortie', required: false })
-  @IsOptional()
-  @IsUUID()
-  idModeSortie?: string;
-
-  @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Commentaire medical', required: false })
-  @IsOptional()
-  @IsString()
-  commentaire?: string;
-
-  @Field(() => String, { nullable: true })
-  @ApiProperty({
-    type: String,
-    description:
-      "Identifiant du lit à affecter à la création. Si omis ou null, aucune affectation de lit n'est créée.",
-    required: false,
-    nullable: true,
-  })
-  @IsOptional()
-  @IsString()
-  idLit?: string;
-}
-
-@InputType()
-export class CreateDemandeAvisDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Hospitalisation reference', required: true })
-  @IsString()
-  idHospitalisation: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Medecin demandeur', required: true })
-  @IsString()
-  idMedecinDemandeur: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Service cible', required: true })
-  @IsString()
-  idServiceCible: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Motif de la demande', required: true })
-  @IsString()
-  motif: string;
-}
-
-@InputType()
-export class CreateDiagnosticsDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Hospitalisation reference', required: true })
-  @IsString()
-  idHospitalisation: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Personnel signataire', required: true })
-  @IsString()
-  idPersonnel: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Description du diagnostic', required: true })
-  @IsString()
-  descriptionDiagnostic: string;
-}
-
-@InputType()
-export class CreateAvisMedicalDto {
-  @Field()
-  @ApiProperty({ type: String, description: "Demande d'avis reference", required: true })
-  @IsString()
-  idDemande: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Medecin signataire', required: true })
-  @IsString()
-  idMedecin: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: "Conclusion de l'avis", required: true })
-  @IsString()
-  conclusion: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Recommandation medicale', required: true })
-  @IsString()
-  recomandation: string;
-}
-
-@InputType()
-export class CreatePrescriptionMedicaleDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Hospitalisation reference', required: true })
-  @IsString()
-  idHospitalisation: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Medecin prescripteur', required: true })
-  @IsString()
-  idMedecin: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: "Contenu de l'ordonnance", required: true })
-  @IsString()
-  contenuPrescription: string;
-}
-
-@InputType()
-export class CreateDemandeTransfertDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Hospitalisation reference', required: true })
-  @IsString()
-  idHospitalisation: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Service source', required: true })
-  @IsString()
-  serviceSource: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Service destination', required: true })
-  @IsString()
-  serviceDestination: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Motif du transfert', required: true })
-  @IsString()
-  motifDemandeTransfert: string;
-}
-
-@InputType()
-export class TraiterDemandeTransfertDto {
-  @Field(() => StatutDemandeTransfert)
-  @ApiProperty({
-    enum: StatutDemandeTransfert,
-    description: 'Decision sur la demande de transfert',
-    required: true,
-  })
-  @IsEnum(StatutDemandeTransfert)
-  statut: StatutDemandeTransfert;
-
-  @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Justification de la decision', required: false })
-  @IsOptional()
-  @IsString()
-  justification?: string;
-
-  @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Lit destination specifique', required: false })
-  @IsOptional()
-  @IsString()
-  idLitDestination?: string;
-}
-
-@InputType()
-export class CloturerHospitalisationDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Mode de sortie', required: true })
-  @IsString()
-  idModeSortie: string;
-
-  @Field({ nullable: true })
-  @ApiProperty({ type: String, description: 'Commentaire de sortie', required: false })
-  @IsOptional()
-  @IsString()
-  commentaire?: string;
-}
-
-@InputType()
-export class CreateAffectationLitDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Hospitalisation reference', required: true })
-  @IsString()
-  idHospitalisation: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Lit a affecter', required: true })
-  @IsString()
-  idLit: string;
-}
-
-@InputType()
-export class CreateChambreDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Service de rattachement', required: true })
-  @IsString()
-  serviceId: string;
-
-  @Field()
-  @ApiProperty({ type: Number, description: 'Numero de chambre', required: true })
-  @IsInt()
-  @Min(1)
-  numeroChambre: number;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Type de chambre', required: true })
-  @IsString()
-  type: string;
-}
-
-@InputType()
-export class CreateLitDto {
-  @Field()
-  @ApiProperty({ type: String, description: 'Chambre de rattachement', required: true })
-  @IsString()
-  idChambre: string;
-
-  @Field()
-  @ApiProperty({ type: String, description: 'Code unique du lit', required: true })
-  @IsString()
-  codeLit: string;
-}
-
-@InputType()
-export class UpdateLitStatutDto {
-  @Field(() => StatutLit)
-  @ApiProperty({ enum: StatutLit, description: 'Nouveau statut du lit', required: true })
-  @IsEnum(StatutLit)
-  statut: StatutLit;
+  litId?: string;
 }
 
 @InputType()
 export class UpdateHospitalisationStatusDto {
-  @Field(() => StatutDemande)
-  @ApiProperty({ enum: StatutDemande, description: 'Nouveau statut de la demande', required: true })
-  @IsEnum(StatutDemande)
-  status: StatutDemande;
+  @Field(() => StatutHospitalisation)
+  @ApiProperty({ enum: StatutHospitalisation, description: 'Nouveau statut' })
+  @IsEnum(StatutHospitalisation)
+  statut: StatutHospitalisation;
+
+  @Field()
+  @ApiProperty({ example: 'agent-45', description: 'Auteur de la mise a jour' })
+  @IsString()
+  updatedBy: string;
 }
 
-export class HospitalisationStatsResponse {
-  @ApiProperty({ example: 12 })
-  hospitalizedTotal: number;
+@InputType()
+export class CloseHospitalisationEpisodeDto {
+  @Field({ nullable: true })
+  @ApiProperty({ example: '2026-05-23T09:00:00.000Z', description: 'Date de sortie ISO', required: false })
+  @IsOptional()
+  @IsDateString()
+  dateSortie?: string;
 
-  @ApiProperty({ example: 3 })
-  hospitalizedNewToday: number;
+  @Field({ nullable: true })
+  @ApiProperty({ example: 'Sortie reguliere', description: 'Commentaire de sortie', required: false })
+  @IsOptional()
+  @IsString()
+  commentaireSortie?: string;
+
+  @Field()
+  @ApiProperty({ example: 'agent-45', description: 'Auteur de la cloture' })
+  @IsString()
+  updatedBy: string;
+
+  @Field(() => StatutHospitalisation, { nullable: true })
+  @ApiProperty({
+    enum: StatutHospitalisation,
+    description: 'Statut final (optionnel, defaut SORTIE)',
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(StatutHospitalisation)
+  statutFinal?: StatutHospitalisation;
 }
 
-export class ActiveHospitalisationItem {
-  @ApiProperty({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' })
-  id: string;
-
-  @ApiProperty({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' })
-  patientId: string;
-
-  @ApiProperty({ example: '2026-05-11T08:15:00.000Z' })
-  dateEntrer: string;
-
-  @ApiProperty({ example: 'Appendicectomie laparoscopique' })
-  motifHospitalisation: string;
-
-  @ApiProperty({ example: 'service-123' })
+export class HospitalisationEpisodeQuery {
+  @ApiProperty({ example: 'service-123', description: 'Filtre obligatoire par service' })
+  @IsString()
   serviceId: string;
 
-  @ApiProperty({ example: 'Hospitalisation' })
-  type: string;
+  @ApiProperty({ example: 'patient-123', required: false })
+  @IsOptional()
+  @IsString()
+  patientId?: string;
 
-  @ApiProperty({ enum: StatutHospitalisation })
-  statutHospitalisation: StatutHospitalisation;
-
-  @ApiProperty({ enum: StatutDemande })
-  statusDemande: StatutDemande;
-
-  @ApiProperty({ example: 'A1', required: false, nullable: true })
-  litCode?: string | null;
-
-  @ApiProperty({ example: 12, required: false, nullable: true })
-  chambreNumero?: number | null;
-
-  @ApiProperty({ nullable: true, required: false })
-  patient?: Record<string, unknown> | null;
-}
-
-export class HospitalisationNotificationItem {
-  @ApiProperty({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' })
-  id: string;
-
-  @ApiProperty({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' })
-  patientId: string;
-
-  @ApiProperty({ example: '2026-05-11T08:15:00.000Z' })
-  dateEntrer: string;
-
-  @ApiProperty({ example: 'Appendicectomie laparoscopique' })
-  motifHospitalisation: string;
-
-  @ApiProperty({ example: 'service-123' })
-  serviceId: string;
-
-  @ApiProperty({ example: 'Hospitalisation' })
-  type: string;
-
-  @ApiProperty({ enum: StatutHospitalisation })
-  statutHospitalisation: StatutHospitalisation;
-
-  @ApiProperty({ enum: StatutDemande })
-  statusDemande: StatutDemande;
-
-  @ApiProperty({ example: 'A1', required: false, nullable: true })
-  litCode?: string | null;
-
-  @ApiProperty({ example: 12, required: false, nullable: true })
-  chambreNumero?: number | null;
-
-  @ApiProperty({ required: false, nullable: true })
-  commentaire?: string | null;
-
-  @ApiProperty({ nullable: true, required: false })
-  patient?: Record<string, unknown> | null;
-
-  @ApiProperty({ example: 1715492100000 })
-  receivedAt: number;
-}
-
-// --- Plan des Lits DTOs ---
-
-export class PlanLitBedHospitalisation {
-  @ApiProperty({ example: '5b2b1b80-0f71-4bb1-9f5b-8d521d3d0b33' })
-  id: string;
-
-  @ApiProperty({ example: '2f4fef1e-2f8b-4f90-b8a6-0ea2d8b3b6c8' })
-  patientId: string;
-
-  @ApiProperty({ example: '2026-05-11T08:15:00.000Z' })
-  dateEntrer: string;
-
-  @ApiProperty({ example: 'Appendicectomie laparoscopique' })
-  motifHospitalisation: string;
-
-  @ApiProperty({ enum: StatutHospitalisation })
-  statutHospitalisation: StatutHospitalisation;
-
-  @ApiProperty({ example: 'Cholécystite lithiasique', required: false, nullable: true })
-  diagnostic?: string | null;
-
-  @ApiProperty({ example: 3 })
-  soinsCount: number;
-
-  @ApiProperty({ required: false, nullable: true })
-  patient?: Record<string, unknown> | null;
-}
-
-export class PlanLitBedItem {
-  @ApiProperty({ example: '9a1b2c3d-4e5f-6789-abcd-ef0123456789' })
-  litId: string;
-
-  @ApiProperty({ example: 'A1' })
-  codeLit: string;
-
-  @ApiProperty({ enum: StatutLit })
-  statut: StatutLit;
-
-  @ApiProperty({ type: PlanLitBedHospitalisation, required: false, nullable: true })
-  hospitalisation?: PlanLitBedHospitalisation | null;
-}
-
-export class PlanLitRoomItem {
-  @ApiProperty({ example: '1a2b3c4d-5e6f-7890-abcd-ef0123456789' })
-  chambreId: string;
-
-  @ApiProperty({ example: 101 })
-  numeroChambre: number;
-
-  @ApiProperty({ example: 'Standard' })
-  type: string;
-
-  @ApiProperty({ type: [PlanLitBedItem] })
-  lits: PlanLitBedItem[];
-}
-
-export class PlanLitsStats {
-  @ApiProperty({ example: 24 })
-  totalLits: number;
-
-  @ApiProperty({ example: 18 })
-  litsOccupes: number;
-
-  @ApiProperty({ example: 18 })
-  totalPatients: number;
-}
-
-export class PlanLitsResponse {
-  @ApiProperty({ example: 'service-123' })
-  serviceId: string;
-
-  @ApiProperty({ type: [PlanLitRoomItem] })
-  chambres: PlanLitRoomItem[];
-
-  @ApiProperty({ type: PlanLitsStats })
-  stats: PlanLitsStats;
+  @ApiProperty({ enum: StatutHospitalisation, required: false })
+  @IsOptional()
+  @IsEnum(StatutHospitalisation)
+  statut?: StatutHospitalisation;
 }
