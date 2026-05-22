@@ -16,16 +16,18 @@ import { LitModule } from './modules/lit/lit.module';
         const isProduction =
           configService.get<string>('NODE_ENV', 'development') === 'production';
         const syncDefault = isProduction ? 'false' : 'true';
+        const syncEnabled =
+          configService.get<string>('DB_SYNC', syncDefault) === 'true' && !isProduction;
 
         return {
           type: 'postgres',
-          host: configService.get<string>('DB_HOST', 'localhost'),
-          port: configService.get<number>('DB_PORT', 5432),
-          username: configService.get<string>('DB_USERNAME', 'sih'),
-          password: configService.get<string>('DB_PASSWORD', 'sih'),
-          database: configService.get<string>('DB_NAME', 'clinique'),
+          host: configService.get<string>('DB_HOST'),
+          port: configService.get<number>('DB_PORT'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_NAME'),
           autoLoadEntities: true,
-          synchronize: configService.get<string>('DB_SYNC', syncDefault) === 'true',
+          synchronize: syncEnabled,
         };
       },
     }),
