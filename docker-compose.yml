@@ -21,6 +21,24 @@ services:
       - postgres
       - kafka
 
+  clinique-dev:
+    build:
+      context: .
+      dockerfile: apps/clinique/Dockerfile
+      target: builder
+    container_name: clinique-dev
+    environment:
+      NODE_ENV: development
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    volumes:
+      - ./apps/clinique/src/database/migrations:/app/apps/clinique/src/database/migrations
+    depends_on:
+      - postgres
+
   postgres:
     image: ${POSTGRES_IMAGE}
     container_name: ${POSTGRES_CONTAINER_NAME}

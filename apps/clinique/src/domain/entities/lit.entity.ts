@@ -29,6 +29,10 @@ export class LitEntity {
   @Column({ name: 'chambre_id', type: 'uuid' })
   chambreId: string;
 
+  @Field(() => String)
+  @Column({ name: 'chu_id', type: 'varchar', length: 120 })
+  chuId: string;
+
   @Field(() => ChambreEntity)
   @ManyToOne(() => ChambreEntity, (chambre) => chambre.lits, { nullable: false })
   @JoinColumn({ name: 'chambre_id' })

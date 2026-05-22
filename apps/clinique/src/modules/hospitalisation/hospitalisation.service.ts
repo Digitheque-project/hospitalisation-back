@@ -30,13 +30,14 @@ export class HospitalisationService {
 
     let lit: LitEntity | null = null;
     if (input.litId) {
-      lit = await this.findAvailableLit(input.litId, input.serviceId);
+      lit = await this.findAvailableLit(input.litId, input.serviceId, input.chuId);
       lit.statut = StatutLit.OCCUPE;
       await this.litRepository.save(lit);
     }
 
     const entity = this.hospitalisationRepository.create({
       patientId: input.patientId,
+      chuId: input.chuId,
       serviceId: input.serviceId,
       dateAdmission: new Date(input.dateAdmission),
       motifAdmission: input.motifAdmission,
@@ -51,6 +52,7 @@ export class HospitalisationService {
     await this.kafkaService.emit('hospitalisation.episode.created', {
       id: saved.id,
       patientId: saved.patientId,
+      chuId: saved.chuId,
       serviceId: saved.serviceId,
       dateAdmission: saved.dateAdmission.toISOString(),
       statut: saved.statut,
@@ -66,7 +68,7 @@ export class HospitalisationService {
     id: string,
     input: UpdateHospitalisationStatusDto,
   ): Promise<HospitalisationEpisodeEntity> {
-    const episode = await this.findEpisodeById(id);
+    const episode = await this.findEpisodeById(id, input.chuId);
     episode.statut = input.statut;
     episode.updatedBy = input.updatedBy;
 
@@ -79,6 +81,7 @@ export class HospitalisationService {
 
     await this.kafkaService.emit('hospitalisation.episode.status.updated', {
       id: saved.id,
+      chuId: saved.chuId,
       statut: saved.statut,
       updatedBy: saved.updatedBy ?? null,
       dateSortie: saved.dateSortie ? saved.dateSortie.toISOString() : null,
@@ -91,7 +94,7 @@ export class HospitalisationService {
     id: string,
     input: CloseHospitalisationEpisodeDto,
   ): Promise<HospitalisationEpisodeEntity> {
-    const episode = await this.findEpisodeById(id);
+    const episode = await this.findEpisodeById(id, input.chuId);
 
     const finalStatus = input.statutFinal ?? StatutHospitalisation.SORTIE;
     episode.statut = finalStatus;
@@ -105,6 +108,7 @@ export class HospitalisationService {
 
     await this.kafkaService.emit('hospitalisation.episode.closed', {
       id: saved.id,
+      chuId: saved.chuId,
       statut: saved.statut,
       updatedBy: saved.updatedBy ?? null,
       dateSortie: saved.dateSortie ? saved.dateSortie.toISOString() : null,
@@ -114,8 +118,11 @@ export class HospitalisationService {
     return saved;
   }
 
-  async findEpisodeById(id: string): Promise<HospitalisationEpisodeEntity> {
-    const episode = await this.hospitalisationRepository.findOne({ where: { id } });
+  async findEpisodeById(id: string, chuId?: string): Promise<HospitalisationEpisodeEntity> {
+    const where: FindOptionsWhere<HospitalisationEpisodeEntity> = chuId
+      ? { id, chuId }
+      : { id };
+    const episode = await this.hospitalisationRepository.findOne({ where });
     if (!episode) {
       throw new NotFoundException('Episode introuvable');
     }
@@ -125,6 +132,7 @@ export class HospitalisationService {
   async listEpisodes(query: HospitalisationEpisodeQuery): Promise<HospitalisationEpisodeEntity[]> {
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {};
     where.serviceId = query.serviceId;
+    where.chuId = query.chuId;
     if (query.patientId) {
       where.patientId = query.patientId;
     }
@@ -138,7 +146,11 @@ export class HospitalisationService {
     });
   }
 
-  private async findAvailableLit(litId: string, serviceId: string): Promise<LitEntity> {
+  private async findAvailableLit(
+    litId: string,
+    serviceId: string,
+    chuId: string,
+  ): Promise<LitEntity> {
     const lit = await this.litRepository.findOne({
       where: { id: litId },
       relations: ['chambre'],
@@ -148,6 +160,9 @@ export class HospitalisationService {
     }
     if (!lit.chambre) {
       throw new BadRequestException('Le lit doit etre rattache a une chambre');
+    }
+    if (lit.chambre.chuId !== chuId || lit.chuId !== chuId) {
+      throw new BadRequestException('Le lit ne correspond pas au CHU cible');
     }
     if (lit.chambre.serviceId !== serviceId) {
       throw new BadRequestException('Le lit ne correspond pas au service de l episode');

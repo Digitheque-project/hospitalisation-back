@@ -12,16 +12,22 @@ import { LitModule } from './modules/lit/lit.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME', 'sih'),
-        password: configService.get<string>('DB_PASSWORD', 'sih'),
-        database: configService.get<string>('DB_NAME', 'clinique'),
-        autoLoadEntities: true,
-        synchronize: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction =
+          configService.get<string>('NODE_ENV', 'development') === 'production';
+        const syncDefault = isProduction ? 'false' : 'true';
+
+        return {
+          type: 'postgres',
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get<string>('DB_USERNAME', 'sih'),
+          password: configService.get<string>('DB_PASSWORD', 'sih'),
+          database: configService.get<string>('DB_NAME', 'clinique'),
+          autoLoadEntities: true,
+          synchronize: configService.get<string>('DB_SYNC', syncDefault) === 'true',
+        };
+      },
     }),
     GraphQLModule.forRootAsync<ApolloDriverConfig>({
       driver: ApolloDriver,

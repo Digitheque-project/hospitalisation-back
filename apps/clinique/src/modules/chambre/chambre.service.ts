@@ -14,6 +14,7 @@ export class ChambreService {
   async createChambre(input: CreateChambreDto): Promise<ChambreEntity> {
     const chambre = this.chambreRepository.create({
       serviceId: input.serviceId,
+      chuId: input.chuId,
       numeroChambre: input.numeroChambre,
       type: input.type,
     });
@@ -21,16 +22,16 @@ export class ChambreService {
     return this.chambreRepository.save(chambre);
   }
 
-  async listChambres(serviceId: string): Promise<ChambreEntity[]> {
+  async listChambres(serviceId: string, chuId: string): Promise<ChambreEntity[]> {
     return this.chambreRepository.find({
-      where: { serviceId },
+      where: { serviceId, chuId },
       order: { numeroChambre: 'ASC' },
     });
   }
 
-  async getChambreById(id: string): Promise<ChambreEntity> {
+  async getChambreById(id: string, chuId: string): Promise<ChambreEntity> {
     const chambre = await this.chambreRepository.findOne({
-      where: { id },
+      where: { id, chuId },
       relations: ['lits'],
     });
     if (!chambre) {
@@ -40,7 +41,7 @@ export class ChambreService {
   }
 
   async updateChambre(id: string, input: UpdateChambreDto): Promise<ChambreEntity> {
-    const chambre = await this.getChambreById(id);
+    const chambre = await this.getChambreById(id, input.chuId);
     if (input.numeroChambre !== undefined) {
       chambre.numeroChambre = input.numeroChambre;
     }

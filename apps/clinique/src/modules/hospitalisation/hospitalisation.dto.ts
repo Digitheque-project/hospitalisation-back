@@ -12,6 +12,12 @@ export class CreateHospitalisationEpisodeDto {
   patientId: string;
 
   @Field()
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  @Length(1, 120)
+  chuId: string;
+
+  @Field()
   @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
   @IsString()
   @Length(1, 120)
@@ -47,6 +53,12 @@ export class UpdateHospitalisationStatusDto {
   statut: StatutHospitalisation;
 
   @Field()
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  @Length(1, 120)
+  chuId: string;
+
+  @Field()
   @ApiProperty({ example: 'agent-45', description: 'Auteur de la mise a jour' })
   @IsString()
   updatedBy: string;
@@ -59,6 +71,12 @@ export class CloseHospitalisationEpisodeDto {
   @IsOptional()
   @IsDateString()
   dateSortie?: string;
+
+  @Field()
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  @Length(1, 120)
+  chuId: string;
 
   @Field({ nullable: true })
   @ApiProperty({ example: 'Sortie reguliere', description: 'Commentaire de sortie', required: false })
@@ -86,6 +104,10 @@ export class HospitalisationEpisodeQuery {
   @ApiProperty({ example: 'service-123', description: 'Filtre obligatoire par service' })
   @IsString()
   serviceId: string;
+
+  @ApiProperty({ example: 'chu-01', description: 'Filtre obligatoire par CHU' })
+  @IsString()
+  chuId: string;
 
   @ApiProperty({ example: 'patient-123', required: false })
   @IsOptional()

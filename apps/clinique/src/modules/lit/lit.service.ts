@@ -22,10 +22,14 @@ export class LitService {
     if (!chambre) {
       throw new NotFoundException('Chambre introuvable');
     }
+    if (chambre.chuId !== input.chuId) {
+      throw new BadRequestException('La chambre ne correspond pas au CHU cible');
+    }
 
     const entities = input.lits.map((lit) =>
       this.litRepository.create({
         chambreId: chambre.id,
+        chuId: input.chuId,
         codeLit: lit.codeLit,
         statut: lit.statut ?? StatutLit.DISPONIBLE,
       }),
@@ -34,28 +38,31 @@ export class LitService {
     return this.litRepository.save(entities);
   }
 
-  async listLits(query: { chambreId?: string; serviceId?: string }): Promise<LitEntity[]> {
+  async listLits(query: { chambreId?: string; serviceId?: string; chuId: string }): Promise<LitEntity[]> {
     if (!query.chambreId && !query.serviceId) {
       throw new BadRequestException('chambreId ou serviceId obligatoire');
     }
 
     if (query.chambreId) {
       return this.litRepository.find({
-        where: { chambreId: query.chambreId },
+        where: { chambreId: query.chambreId, chuId: query.chuId },
         relations: ['chambre'],
         order: { codeLit: 'ASC' },
       });
     }
 
     return this.litRepository.find({
-      where: { chambre: { serviceId: query.serviceId } },
+      where: { chambre: { serviceId: query.serviceId, chuId: query.chuId } },
       relations: ['chambre'],
       order: { codeLit: 'ASC' },
     });
   }
 
-  async getLitById(id: string): Promise<LitEntity> {
-    const lit = await this.litRepository.findOne({ where: { id }, relations: ['chambre'] });
+  async getLitById(id: string, chuId: string): Promise<LitEntity> {
+    const lit = await this.litRepository.findOne({
+      where: { id, chuId },
+      relations: ['chambre'],
+    });
     if (!lit) {
       throw new NotFoundException('Lit introuvable');
     }
@@ -63,7 +70,7 @@ export class LitService {
   }
 
   async updateLit(id: string, input: UpdateLitDto): Promise<LitEntity> {
-    const lit = await this.getLitById(id);
+    const lit = await this.getLitById(id, input.chuId);
 
     if (input.codeLit !== undefined) {
       lit.codeLit = input.codeLit;
@@ -79,7 +86,7 @@ export class LitService {
 
   async planLits(query: PlanLitsQueryDto) {
     const chambres = await this.chambreRepository.find({
-      where: { serviceId: query.serviceId },
+      where: { serviceId: query.serviceId, chuId: query.chuId },
       relations: ['lits'],
       order: { numeroChambre: 'ASC' },
     });

@@ -21,9 +21,17 @@ export class CreateLitsDto {
   @IsArray()
   @ArrayMinSize(1)
   lits: CreateLitItemDto[];
+
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  chuId: string;
 }
 
 export class UpdateLitDto {
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  chuId: string;
+
   @ApiProperty({ example: 'B2', required: false })
   @IsOptional()
   @IsString()
@@ -36,6 +44,10 @@ export class UpdateLitDto {
 }
 
 export class LitQueryDto {
+  @ApiProperty({ description: 'Identifiant CHU' })
+  @IsString()
+  chuId: string;
+
   @ApiProperty({ required: false, description: 'Filtrer par chambre' })
   @IsOptional()
   @IsString()
@@ -51,6 +63,10 @@ export class PlanLitsQueryDto {
   @ApiProperty({ description: 'Service cible pour le plan de lits' })
   @IsString()
   serviceId: string;
+
+  @ApiProperty({ description: 'Identifiant CHU' })
+  @IsString()
+  chuId: string;
 
   @ApiProperty({ enum: StatutLit, required: false })
   @IsOptional()

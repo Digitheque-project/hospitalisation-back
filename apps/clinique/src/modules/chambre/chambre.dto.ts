@@ -9,6 +9,10 @@ export class CreateChambreDto {
   @IsString()
   serviceId: string;
 
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  chuId: string;
+
   @ApiProperty({ example: 101, description: 'Numero de chambre (>= 1)' })
   @IsInt()
   @Min(1)
@@ -20,6 +24,10 @@ export class CreateChambreDto {
 }
 
 export class UpdateChambreDto {
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  chuId: string;
+
   @ApiProperty({ example: 202, required: false })
   @IsOptional()
   @IsInt()
@@ -36,4 +44,8 @@ export class ChambreQueryDto {
   @ApiProperty({ example: 'service-123', description: 'Filtre obligatoire par service' })
   @IsString()
   serviceId: string;
+
+  @ApiProperty({ example: 'chu-01', description: 'Filtre obligatoire par CHU' })
+  @IsString()
+  chuId: string;
 }

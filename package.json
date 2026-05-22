@@ -7,7 +7,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/apps/clinique/src/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only apps/clinique/src/main.ts",
-    "test": "echo \"No tests configured yet\""
+    "test": "echo \"No tests configured yet\"",
+    "migration:generate": "typeorm-ts-node-commonjs -d apps/clinique/src/database/data-source.ts migration:generate apps/clinique/src/database/migrations/Auto",
+    "migration:run": "typeorm-ts-node-commonjs -d apps/clinique/src/database/data-source.ts migration:run",
+    "migration:revert": "typeorm-ts-node-commonjs -d apps/clinique/src/database/data-source.ts migration:revert"
   },
   "keywords": [],
   "author": "",

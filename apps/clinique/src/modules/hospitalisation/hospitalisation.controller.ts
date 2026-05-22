@@ -23,6 +23,7 @@ export class HospitalisationController {
     schema: {
       example: {
         patientId: 'patient-123',
+        chuId: 'chu-01',
         serviceId: 'service-123',
         dateAdmission: '2026-05-22T10:00:00.000Z',
         motifAdmission: 'Observation clinique',
@@ -48,6 +49,7 @@ export class HospitalisationController {
     schema: {
       example: {
         statut: 'EN_COURS',
+        chuId: 'chu-01',
         updatedBy: 'agent-45',
       },
     },
@@ -69,6 +71,7 @@ export class HospitalisationController {
       example: {
         statutFinal: 'SORTIE',
         commentaireSortie: 'Sortie reguliere',
+        chuId: 'chu-01',
         updatedBy: 'agent-45',
         dateSortie: '2026-05-23T09:00:00.000Z',
       },
@@ -83,10 +86,14 @@ export class HospitalisationController {
   @Get(':id')
   @ApiOperation({ summary: 'Recuperer un episode par identifiant' })
   @ApiParam({ name: 'id', description: 'Identifiant episode' })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiResponse({ status: 200, description: 'Episode retourne', type: HospitalisationEpisodeEntity })
   @ApiResponse({ status: 404, description: 'Episode introuvable' })
-  getById(@Param('id') id: string) {
-    return this.hospitalisationService.findEpisodeById(id);
+  getById(@Param('id') id: string, @Query('chuId') chuId?: string) {
+    if (!chuId) {
+      throw new BadRequestException('chuId obligatoire');
+    }
+    return this.hospitalisationService.findEpisodeById(id, chuId);
   }
 
   @Get()
@@ -95,13 +102,14 @@ export class HospitalisationController {
     description: 'Le filtre serviceId est obligatoire. patientId et statut sont optionnels.',
   })
   @ApiQuery({ name: 'serviceId', required: true })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiQuery({ name: 'patientId', required: false })
   @ApiQuery({ name: 'statut', required: false })
   @ApiResponse({ status: 200, description: 'Liste des episodes', type: HospitalisationEpisodeEntity, isArray: true })
-  @ApiResponse({ status: 400, description: 'serviceId obligatoire' })
+  @ApiResponse({ status: 400, description: 'serviceId et chuId obligatoires' })
   listEpisodes(@Query() query: HospitalisationEpisodeQuery) {
-    if (!query.serviceId) {
-      throw new BadRequestException('serviceId obligatoire');
+    if (!query.serviceId || !query.chuId) {
+      throw new BadRequestException('serviceId et chuId obligatoires');
     }
     return this.hospitalisationService.listEpisodes(query);
   }

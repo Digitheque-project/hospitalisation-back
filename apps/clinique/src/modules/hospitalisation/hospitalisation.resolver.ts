@@ -33,16 +33,20 @@ export class HospitalisationResolver {
   }
 
   @Query(() => HospitalisationEpisodeEntity)
-  hospitalisationEpisode(@Args('id', { type: () => ID }) id: string) {
-    return this.hospitalisationService.findEpisodeById(id);
+  hospitalisationEpisode(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('chuId', { type: () => String }) chuId: string,
+  ) {
+    return this.hospitalisationService.findEpisodeById(id, chuId);
   }
 
   @Query(() => [HospitalisationEpisodeEntity])
   hospitalisationEpisodes(
     @Args('serviceId', { type: () => String }) serviceId: string,
+    @Args('chuId', { type: () => String }) chuId: string,
     @Args('patientId', { type: () => String, nullable: true }) patientId?: string,
     @Args('statut', { type: () => StatutHospitalisation, nullable: true }) statut?: StatutHospitalisation,
   ) {
-    return this.hospitalisationService.listEpisodes({ patientId, serviceId, statut });
+    return this.hospitalisationService.listEpisodes({ patientId, serviceId, statut, chuId });
   }
 }

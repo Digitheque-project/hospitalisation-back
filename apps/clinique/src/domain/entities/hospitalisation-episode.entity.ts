@@ -30,6 +30,10 @@ export class HospitalisationEpisodeEntity {
   patientId: string;
 
   @Field()
+  @Column({ name: 'chu_id', type: 'varchar', length: 120 })
+  chuId: string;
+
+  @Field()
   @Column({ name: 'service_id', type: 'varchar', length: 120 })
   serviceId: string;
 

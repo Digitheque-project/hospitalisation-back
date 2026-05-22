@@ -48,6 +48,7 @@ Variables principales:
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `DB_NAME`
+- `DB_SYNC` (defaut: `false` en prod)
 - `CLINIQUE_PORT` (defaut: `3001`)
 - `ACCUEIL_API_BASE_URL`
 - `KAFKA_BROKERS`
@@ -113,4 +114,50 @@ apps/clinique/src/
 
 ```bash
 npm run build
+```
+
+## Migrations (prod)
+
+En production, on n'utilise pas `synchronize: true`.
+
+Workflow conseille:
+1. Ajouter une colonne nullable (ou avec une valeur par defaut).
+2. Backfill des donnees existantes.
+3. Ajouter la contrainte NOT NULL dans une migration suivante.
+
+### Premiere mise en production (Docker)
+
+1. Build et demarrer:
+
+```bash
+docker compose up --build -d
+```
+
+2. Appliquer les migrations versionnees:
+
+```bash
+docker compose exec clinique npm run migration:run
+```
+
+### Ajouter une colonne (schema evolve)
+
+En **dev** uniquement:
+
+```bash
+docker compose run --rm clinique-dev npm run migration:generate
+```
+
+Puis commit le fichier genere dans `apps/clinique/src/database/migrations`.
+
+En **prod** (apres deploy/build):
+
+```bash
+docker compose exec clinique npm run migration:run
+```
+
+### Autres commandes utiles
+
+```bash
+npm run migration:run
+npm run migration:revert
 ```

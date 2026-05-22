@@ -18,6 +18,7 @@ export class ChambreController {
     schema: {
       example: {
         serviceId: 'service-123',
+        chuId: 'chu-01',
         numeroChambre: 101,
         type: 'Standard',
       },
@@ -35,22 +36,27 @@ export class ChambreController {
     description: 'Le filtre serviceId est obligatoire pour limiter la recherche.',
   })
   @ApiQuery({ name: 'serviceId', required: true })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiResponse({ status: 200, description: 'Liste des chambres', type: ChambreEntity, isArray: true })
   @ApiResponse({ status: 400, description: 'serviceId obligatoire' })
   listChambres(@Query() query: ChambreQueryDto) {
-    if (!query.serviceId) {
-      throw new BadRequestException('serviceId obligatoire');
+    if (!query.serviceId || !query.chuId) {
+      throw new BadRequestException('serviceId et chuId obligatoires');
     }
-    return this.chambreService.listChambres(query.serviceId);
+    return this.chambreService.listChambres(query.serviceId, query.chuId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Recuperer une chambre avec ses lits' })
   @ApiParam({ name: 'id', description: 'Identifiant chambre' })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiResponse({ status: 200, description: 'Chambre retournee', type: ChambreEntity })
   @ApiResponse({ status: 404, description: 'Chambre introuvable' })
-  getChambre(@Param('id') id: string) {
-    return this.chambreService.getChambreById(id);
+  getChambre(@Param('id') id: string, @Query('chuId') chuId?: string) {
+    if (!chuId) {
+      throw new BadRequestException('chuId obligatoire');
+    }
+    return this.chambreService.getChambreById(id, chuId);
   }
 
   @Patch(':id')
@@ -59,6 +65,7 @@ export class ChambreController {
   @ApiBody({
     schema: {
       example: {
+        chuId: 'chu-01',
         numeroChambre: 202,
         type: 'Isolation',
       },

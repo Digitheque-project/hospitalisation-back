@@ -22,6 +22,7 @@ export class LitController {
           { codeLit: 'A1', statut: 'DISPONIBLE' },
           { codeLit: 'A2', statut: 'MAINTENANCE' },
         ],
+        chuId: 'chu-01',
       },
     },
   })
@@ -36,21 +37,29 @@ export class LitController {
     summary: 'Lister les lits',
     description: 'Filtrer par chambreId ou serviceId (via chambre).',
   })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiQuery({ name: 'chambreId', required: false })
   @ApiQuery({ name: 'serviceId', required: false })
   @ApiResponse({ status: 200, description: 'Liste des lits', type: LitEntity, isArray: true })
-  @ApiResponse({ status: 400, description: 'chambreId ou serviceId obligatoire' })
+  @ApiResponse({ status: 400, description: 'chuId et chambreId ou serviceId obligatoires' })
   listLits(@Query() query: LitQueryDto) {
+    if (!query.chuId) {
+      throw new BadRequestException('chuId obligatoire');
+    }
     return this.litService.listLits(query);
   }
 
   @Get('lits/:id')
   @ApiOperation({ summary: 'Recuperer un lit' })
   @ApiParam({ name: 'id', description: 'Identifiant lit' })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiResponse({ status: 200, description: 'Lit retourne', type: LitEntity })
   @ApiResponse({ status: 404, description: 'Lit introuvable' })
-  getLit(@Param('id') id: string) {
-    return this.litService.getLitById(id);
+  getLit(@Param('id') id: string, @Query('chuId') chuId?: string) {
+    if (!chuId) {
+      throw new BadRequestException('chuId obligatoire');
+    }
+    return this.litService.getLitById(id, chuId);
   }
 
   @Patch('lits/:id')
@@ -62,6 +71,7 @@ export class LitController {
   @ApiBody({
     schema: {
       example: {
+        chuId: 'chu-01',
         statut: 'MAINTENANCE',
       },
     },
@@ -79,12 +89,13 @@ export class LitController {
     description: 'Retourne toutes les chambres d un service avec leurs lits et statut actuel.',
   })
   @ApiQuery({ name: 'serviceId', required: true })
+  @ApiQuery({ name: 'chuId', required: true })
   @ApiQuery({ name: 'statutLit', required: false, enum: StatutLit })
   @ApiResponse({ status: 200, description: 'Plan de lits', type: PlanLitsResponseDto })
-  @ApiResponse({ status: 400, description: 'serviceId obligatoire' })
+  @ApiResponse({ status: 400, description: 'serviceId et chuId obligatoires' })
   planLits(@Query() query: PlanLitsQueryDto) {
-    if (!query.serviceId) {
-      throw new BadRequestException('serviceId obligatoire');
+    if (!query.serviceId || !query.chuId) {
+      throw new BadRequestException('serviceId et chuId obligatoires');
     }
     return this.litService.planLits(query);
   }

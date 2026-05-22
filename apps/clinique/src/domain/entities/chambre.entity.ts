@@ -20,6 +20,10 @@ export class ChambreEntity {
   @Column({ name: 'service_id', type: 'varchar', length: 120 })
   serviceId: string;
 
+  @Field()
+  @Column({ name: 'chu_id', type: 'varchar', length: 120 })
+  chuId: string;
+
   @Field(() => Int)
   @Column({ name: 'numero_chambre', type: 'int' })
   numeroChambre: number;
