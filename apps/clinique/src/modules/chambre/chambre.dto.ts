@@ -3,6 +3,15 @@ import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateChambreDto {
   @ApiProperty({
+    example: 'chambre-CHU-Andr-2026-service-123-101',
+    description: 'Identifiant lisible de la chambre (optionnel, genere si absent)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({
     example: 'service-123',
     description: 'Identifiant du service rattache a la chambre',
   })

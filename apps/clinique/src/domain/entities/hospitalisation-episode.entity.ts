@@ -3,7 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -22,7 +22,7 @@ registerEnumType(StatutHospitalisation, { name: 'StatutHospitalisation' });
 @Entity('hospitalisation_episode')
 export class HospitalisationEpisodeEntity {
   @Field(() => ID)
-  @PrimaryGeneratedColumn('uuid', { name: 'id_episode' })
+  @PrimaryColumn({ name: 'id_episode', type: 'varchar', length: 120 })
   id: string;
 
   @Field()

@@ -5,6 +5,17 @@ import { StatutHospitalisation } from '../../domain/entities/hospitalisation-epi
 
 @InputType()
 export class CreateHospitalisationEpisodeDto {
+  @Field({ nullable: true })
+  @ApiProperty({
+    example: 'episode-CHU-Andr-2026-patient-123-2026-05-23T09-00-00-000Z',
+    description: 'Identifiant lisible de l episode (optionnel, genere si absent)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(1, 120)
+  id?: string;
+
   @Field()
   @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
   @IsString()
@@ -39,7 +50,7 @@ export class CreateHospitalisationEpisodeDto {
   createdBy: string;
 
   @Field({ nullable: true })
-  @ApiProperty({ example: 'lit-uuid', description: 'Identifiant lit', required: false })
+  @ApiProperty({ example: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1', description: 'Identifiant lit', required: false })
   @IsOptional()
   @IsString()
   litId?: string;

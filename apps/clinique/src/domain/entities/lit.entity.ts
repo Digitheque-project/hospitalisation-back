@@ -5,7 +5,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { ChambreEntity } from './chambre.entity';
@@ -22,11 +22,11 @@ registerEnumType(StatutLit, { name: 'StatutLit' });
 @Entity('lit')
 export class LitEntity {
   @Field(() => ID)
-  @PrimaryGeneratedColumn('uuid', { name: 'id_lit' })
+  @PrimaryColumn({ name: 'id_lit', type: 'varchar', length: 120 })
   id: string;
 
   @Field(() => String)
-  @Column({ name: 'chambre_id', type: 'uuid' })
+  @Column({ name: 'chambre_id', type: 'varchar', length: 120 })
   chambreId: string;
 
   @Field(() => String)

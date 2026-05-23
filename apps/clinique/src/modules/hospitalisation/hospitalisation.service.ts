@@ -11,6 +11,7 @@ import {
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { KafkaService } from '../../infrastructure/kafka/kafka.service';
+import { buildEpisodeId } from '../../common/utils/ids';
 
 @Injectable()
 export class HospitalisationService {
@@ -28,6 +29,8 @@ export class HospitalisationService {
   ): Promise<HospitalisationEpisodeEntity> {
     await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
 
+    const admissionDate = new Date(input.dateAdmission);
+
     let lit: LitEntity | null = null;
     if (input.litId) {
       lit = await this.findAvailableLit(input.litId, input.serviceId, input.chuId);
@@ -36,10 +39,14 @@ export class HospitalisationService {
     }
 
     const entity = this.hospitalisationRepository.create({
+      id: input.id ??
+        buildEpisodeId({
+          dateAdmission: admissionDate,
+        }),
       patientId: input.patientId,
       chuId: input.chuId,
       serviceId: input.serviceId,
-      dateAdmission: new Date(input.dateAdmission),
+      dateAdmission: admissionDate,
       motifAdmission: input.motifAdmission,
       createdBy: input.createdBy,
       litId: lit?.id ?? null,

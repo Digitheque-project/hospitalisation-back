@@ -4,7 +4,7 @@ import {
   CreateDateColumn,
   Entity,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { LitEntity } from './lit.entity';
@@ -13,7 +13,7 @@ import { LitEntity } from './lit.entity';
 @Entity('chambre')
 export class ChambreEntity {
   @Field(() => ID)
-  @PrimaryGeneratedColumn('uuid', { name: 'id_chambre' })
+  @PrimaryColumn({ name: 'id_chambre', type: 'varchar', length: 120 })
   id: string;
 
   @Field()

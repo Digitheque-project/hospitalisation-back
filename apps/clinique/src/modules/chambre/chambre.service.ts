@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { CreateChambreDto, UpdateChambreDto } from './chambre.dto';
+import { buildChambreId } from '../../common/utils/ids';
 
 @Injectable()
 export class ChambreService {
@@ -13,6 +14,9 @@ export class ChambreService {
 
   async createChambre(input: CreateChambreDto): Promise<ChambreEntity> {
     const chambre = this.chambreRepository.create({
+      id: input.id ?? buildChambreId({
+        numeroChambre: input.numeroChambre,
+      }),
       serviceId: input.serviceId,
       chuId: input.chuId,
       numeroChambre: input.numeroChambre,

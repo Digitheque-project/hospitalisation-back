@@ -19,8 +19,8 @@ export class LitController {
     schema: {
       example: {
         lits: [
-          { codeLit: 'A1', statut: 'DISPONIBLE' },
-          { codeLit: 'A2', statut: 'MAINTENANCE' },
+          { id: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1', codeLit: 'A1', statut: 'DISPONIBLE' },
+          { id: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A2', codeLit: 'A2', statut: 'MAINTENANCE' },
         ],
         chuId: 'chu-01',
       },

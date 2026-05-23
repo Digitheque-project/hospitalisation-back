@@ -5,6 +5,7 @@ import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domain/entities/hospitalisation-episode.entity';
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import { CreateLitsDto, PlanLitsQueryDto, UpdateLitDto } from './lit.dto';
+import { buildLitId } from '../../common/utils/ids';
 
 @Injectable()
 export class LitService {
@@ -28,6 +29,11 @@ export class LitService {
 
     const entities = input.lits.map((lit) =>
       this.litRepository.create({
+        id: lit.id ??
+          buildLitId({
+            chambreId: chambre.id,
+            codeLit: lit.codeLit,
+          }),
         chambreId: chambre.id,
         chuId: input.chuId,
         codeLit: lit.codeLit,
