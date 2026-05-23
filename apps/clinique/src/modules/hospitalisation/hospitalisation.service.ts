@@ -29,7 +29,7 @@ export class HospitalisationService {
   ): Promise<HospitalisationEpisodeEntity> {
     await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
 
-    const admissionDate = new Date(input.dateAdmission);
+    const admissionDate = input.dateAdmission ? new Date(input.dateAdmission) : new Date();
 
     let lit: LitEntity | null = null;
     if (input.litId) {
@@ -39,15 +39,15 @@ export class HospitalisationService {
     }
 
     const entity = this.hospitalisationRepository.create({
-      id: input.id ??
-        buildEpisodeId({
-          dateAdmission: admissionDate,
-        }),
+      id: buildEpisodeId({
+        chuId: input.chuId,
+        dateAdmission: admissionDate,
+      }),
       patientId: input.patientId,
       chuId: input.chuId,
       serviceId: input.serviceId,
       dateAdmission: admissionDate,
-      motifAdmission: input.motifAdmission,
+      motifAdmission: input.motifAdmission ?? null,
       createdBy: input.createdBy,
       litId: lit?.id ?? null,
       litCode: lit?.codeLit ?? null,

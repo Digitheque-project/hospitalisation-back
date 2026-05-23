@@ -22,7 +22,6 @@ export class HospitalisationController {
   @ApiBody({
     schema: {
       example: {
-        id: 'episode-CHU-Andr-2026-patient-123-2026-05-22T10-00-00-000Z',
         patientId: 'patient-123',
         chuId: 'chu-01',
         serviceId: 'service-123',

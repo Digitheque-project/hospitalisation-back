@@ -53,9 +53,9 @@ export class HospitalisationEpisodeEntity {
   @Column({ name: 'date_sortie', type: 'timestamp', nullable: true })
   dateSortie?: Date | null;
 
-  @Field()
-  @Column({ name: 'motif_admission', type: 'text' })
-  motifAdmission: string;
+  @Field(() => String, { nullable: true })
+  @Column({ name: 'motif_admission', type: 'text', nullable: true })
+  motifAdmission?: string | null;
 
   @Field(() => StatutHospitalisation)
   @Column({ name: 'statut', type: 'varchar', length: 40 })

@@ -3,15 +3,6 @@ import { ArrayMinSize, IsArray, IsEnum, IsOptional, IsString } from 'class-valid
 import { StatutLit } from '../../domain/entities/lit.entity';
 
 export class CreateLitItemDto {
-  @ApiProperty({
-    example: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
-    description: 'Identifiant lisible du lit (optionnel, genere si absent)',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  id?: string;
-
   @ApiProperty({ example: 'A1', description: 'Code unique du lit' })
   @IsString()
   codeLit: string;

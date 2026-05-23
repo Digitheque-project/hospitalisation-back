@@ -29,11 +29,10 @@ export class LitService {
 
     const entities = input.lits.map((lit) =>
       this.litRepository.create({
-        id: lit.id ??
-          buildLitId({
-            chambreId: chambre.id,
-            codeLit: lit.codeLit,
-          }),
+        id: buildLitId({
+          chambreId: chambre.id,
+          codeLit: lit.codeLit,
+        }),
         chambreId: chambre.id,
         chuId: input.chuId,
         codeLit: lit.codeLit,

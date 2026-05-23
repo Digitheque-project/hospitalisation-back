@@ -17,7 +17,6 @@ export class ChambreController {
   @ApiBody({
     schema: {
       example: {
-        id: 'chambre-CHU-Andr-2026-service-123-101',
         serviceId: 'service-123',
         chuId: 'chu-01',
         numeroChambre: 101,

@@ -5,17 +5,6 @@ import { StatutHospitalisation } from '../../domain/entities/hospitalisation-epi
 
 @InputType()
 export class CreateHospitalisationEpisodeDto {
-  @Field({ nullable: true })
-  @ApiProperty({
-    example: 'episode-CHU-Andr-2026-patient-123-2026-05-23T09-00-00-000Z',
-    description: 'Identifiant lisible de l episode (optionnel, genere si absent)',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  @Length(1, 120)
-  id?: string;
-
   @Field()
   @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
   @IsString()
@@ -34,15 +23,27 @@ export class CreateHospitalisationEpisodeDto {
   @Length(1, 120)
   serviceId: string;
 
-  @Field()
-  @ApiProperty({ example: '2026-05-22T10:00:00.000Z', description: "Date d'admission ISO" })
+  @Field(() => String, { nullable: true })
+  @ApiProperty({
+    example: '2026-05-22T10:00:00.000Z',
+    description: "Date d'admission ISO",
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
   @IsDateString()
-  dateAdmission: string;
+  dateAdmission?: string | null;
 
-  @Field()
-  @ApiProperty({ example: 'Observation clinique', description: "Motif de l'admission" })
+  @Field(() => String, { nullable: true })
+  @ApiProperty({
+    example: 'Observation clinique',
+    description: "Motif de l'admission",
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
   @IsString()
-  motifAdmission: string;
+  motifAdmission?: string | null;
 
   @Field()
   @ApiProperty({ example: 'agent-45', description: "Auteur de l'admission" })

@@ -14,7 +14,9 @@ export class ChambreService {
 
   async createChambre(input: CreateChambreDto): Promise<ChambreEntity> {
     const chambre = this.chambreRepository.create({
-      id: input.id ?? buildChambreId({
+      id: buildChambreId({
+        chuId: input.chuId,
+        serviceId: input.serviceId,
         numeroChambre: input.numeroChambre,
       }),
       serviceId: input.serviceId,

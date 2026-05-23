@@ -5,9 +5,11 @@ export function normalizeIdPart(value: string): string {
 }
 
 export function buildChambreId(params: {
+  chuId: string;
+  serviceId: string;
   numeroChambre: number;
 }): string {
-  return `chambre-${params.numeroChambre}`;
+  return `chambre-${normalizeIdPart(params.chuId)}-${normalizeIdPart(params.serviceId)}-${params.numeroChambre}`;
 }
 
 export function buildLitId(params: {
@@ -18,8 +20,9 @@ export function buildLitId(params: {
 }
 
 export function buildEpisodeId(params: {
+  chuId: string;
   dateAdmission: Date;
 }): string {
   const datePart = params.dateAdmission.toISOString().replace(/[:.]/g, '-');
-  return `episode-${datePart}`;
+  return `episode-${normalizeIdPart(params.chuId)}-${datePart}`;
 }
