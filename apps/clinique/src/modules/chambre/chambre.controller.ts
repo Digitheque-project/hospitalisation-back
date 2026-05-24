@@ -18,7 +18,6 @@ export class ChambreController {
     schema: {
       example: {
         serviceId: 'service-123',
-        chuId: 'chu-01',
         numeroChambre: 101,
         type: 'Standard',
       },

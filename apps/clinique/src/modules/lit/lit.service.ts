@@ -6,6 +6,7 @@ import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domai
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import { CreateLitsDto, PlanLitsQueryDto, UpdateLitDto } from './lit.dto';
 import { buildLitId } from '../../common/utils/ids';
+import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
 
 @Injectable()
 export class LitService {
@@ -16,6 +17,7 @@ export class LitService {
     private readonly chambreRepository: Repository<ChambreEntity>,
     @InjectRepository(HospitalisationEpisodeEntity)
     private readonly hospitalisationRepository: Repository<HospitalisationEpisodeEntity>,
+    private readonly serviceChuApi: ServiceChuApiService,
   ) {}
 
   async createLits(chambreId: string, input: CreateLitsDto): Promise<LitEntity[]> {
@@ -23,9 +25,8 @@ export class LitService {
     if (!chambre) {
       throw new NotFoundException('Chambre introuvable');
     }
-    if (chambre.chuId !== input.chuId) {
-      throw new BadRequestException('La chambre ne correspond pas au CHU cible');
-    }
+
+    const chuId = chambre.chuId;
 
     const entities = input.lits.map((lit) =>
       this.litRepository.create({
@@ -34,7 +35,7 @@ export class LitService {
           codeLit: lit.codeLit,
         }),
         chambreId: chambre.id,
-        chuId: input.chuId,
+        chuId,
         codeLit: lit.codeLit,
         statut: lit.statut ?? StatutLit.DISPONIBLE,
       }),
@@ -47,6 +48,8 @@ export class LitService {
     if (!query.chambreId && !query.serviceId) {
       throw new BadRequestException('chambreId ou serviceId obligatoire');
     }
+
+    await this.serviceChuApi.ensureChuExists(query.chuId);
 
     if (query.chambreId) {
       return this.litRepository.find({
@@ -64,6 +67,7 @@ export class LitService {
   }
 
   async getLitById(id: string, chuId: string): Promise<LitEntity> {
+    await this.serviceChuApi.ensureChuExists(chuId);
     const lit = await this.litRepository.findOne({
       where: { id, chuId },
       relations: ['chambre'],
@@ -90,6 +94,8 @@ export class LitService {
   }
 
   async planLits(query: PlanLitsQueryDto) {
+    await this.serviceChuApi.ensureChuExists(query.chuId);
+
     const chambres = await this.chambreRepository.find({
       where: { serviceId: query.serviceId, chuId: query.chuId },
       relations: ['lits'],
@@ -107,7 +113,7 @@ export class LitService {
           codeLit: lit.codeLit,
           statut: lit.statut,
         })),
-    }));
+    })).filter((chambre) => chambre.lits.length > 0);
 
     return {
       serviceId: query.serviceId,

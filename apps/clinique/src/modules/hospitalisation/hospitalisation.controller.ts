@@ -23,7 +23,6 @@ export class HospitalisationController {
     schema: {
       example: {
         patientId: 'patient-123',
-        chuId: 'chu-01',
         serviceId: 'service-123',
         dateAdmission: '2026-05-22T10:00:00.000Z',
         motifAdmission: 'Observation clinique',

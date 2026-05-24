@@ -21,10 +21,6 @@ export class CreateLitsDto {
   @IsArray()
   @ArrayMinSize(1)
   lits: CreateLitItemDto[];
-
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
-  chuId: string;
 }
 
 export class UpdateLitDto {

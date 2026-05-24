@@ -8,10 +8,15 @@ import { accueilEndpoint } from '../../config/accueil-api.config';
 import { PatientInformationsAccueil } from './patient-informations-accueil.type';
 
 function pickStr(obj: Record<string, unknown>, ...keys: string[]): string | undefined {
+  if (!obj || typeof obj !== 'object') {
+    return undefined;
+  }
   for (const key of keys) {
-    const v = obj[key];
-    if (typeof v === 'string' && v.trim().length > 0) {
-      return v.trim();
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const v = obj[key];
+      if (typeof v === 'string' && v.trim().length > 0) {
+        return v.trim();
+      }
     }
   }
   return undefined;
@@ -44,18 +49,52 @@ function mapAccueilPatientPayload(raw: unknown): PatientInformationsAccueil | nu
   const id = pickStr(o, 'id', 'patientId', 'uuid');
   const dateNaissance = pickStr(o, 'dateNaissance', 'birthDate', 'birthdate');
   const sexe = pickStr(o, 'sexe', 'gender', 'sex');
+
+  const cin = pickStr(o, 'cin', 'idCard');
+  const profession = pickStr(o, 'profession', 'job');
+  const adresse = pickStr(o, 'adresse', 'address');
+  const telephone = pickStr(o, 'telephone', 'phone', 'phoneNumber');
+  const contactUrgence = pickStr(o, 'contactUrgence', 'emergencyContact');
+  const createdBy = pickStr(o, 'createdBy', 'author');
+
+  let priseEnChargeId: number | undefined;
+  if (typeof o.priseEnChargeId === 'number') {
+    priseEnChargeId = o.priseEnChargeId;
+  } else if (typeof o.priseEnChargeId === 'string') {
+    const parsed = parseInt(o.priseEnChargeId, 10);
+    if (!isNaN(parsed)) {
+      priseEnChargeId = parsed;
+    }
+  }
+
   return {
     id: id ?? undefined,
     nom,
     prenom,
     dateNaissance,
     sexe,
+    cin,
+    profession,
+    adresse,
+    telephone,
+    contactUrgence,
+    priseEnChargeId,
+    createdBy,
   };
 }
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 @Injectable()
 export class AccueilPatientApiService {
   private readonly logger = new Logger(AccueilPatientApiService.name);
+  private readonly patientCache = new Map<string, CacheEntry<PatientInformationsAccueil | null>>();
+  private readonly patientExistsCache = new Map<string, CacheEntry<boolean>>();
 
   private patientUrl(patientId: string): string {
     return accueilEndpoint(`/patients/${encodeURIComponent(patientId)}`);
@@ -73,6 +112,11 @@ export class AccueilPatientApiService {
    * Utilise avant la creation d'hospitalisation.
    */
   async ensurePatientExistsAtAccueil(patientId: string): Promise<void> {
+    const cached = this.patientExistsCache.get(patientId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return;
+    }
+
     const url = this.patientUrl(patientId);
     try {
       const response = await this.fetchPatient(patientId);
@@ -86,6 +130,10 @@ export class AccueilPatientApiService {
           `Le service accueil a repondu avec le statut ${response.status}. Validation du patient impossible.`,
         );
       }
+      this.patientExistsCache.set(patientId, {
+        value: true,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      });
     } catch (e) {
       if (e instanceof NotFoundException || e instanceof ServiceUnavailableException) {
         throw e;
@@ -101,12 +149,18 @@ export class AccueilPatientApiService {
    * GET {API_BASE_URL}/patients/{patientId}
    */
   async getPatientById(patientId: string): Promise<PatientInformationsAccueil | null> {
+    const cached = this.patientCache.get(patientId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
+
     const url = this.patientUrl(patientId);
 
     try {
       const response = await this.fetchPatient(patientId);
 
       if (response.status === 404) {
+        this.patientCache.set(patientId, { value: null, expiresAt: Date.now() + CACHE_TTL_MS });
         return null;
       }
 
@@ -118,7 +172,14 @@ export class AccueilPatientApiService {
       }
 
       const body: unknown = await response.json();
-      return mapAccueilPatientPayload(body);
+      const mapped = mapAccueilPatientPayload(body);
+      
+      this.patientCache.set(patientId, { value: mapped, expiresAt: Date.now() + CACHE_TTL_MS });
+      if (mapped) {
+        this.patientExistsCache.set(patientId, { value: true, expiresAt: Date.now() + CACHE_TTL_MS });
+      }
+      
+      return mapped;
     } catch (err) {
       this.logger.warn(`Accueil patient API: echec pour ${patientId} - ${String(err)}`);
       return null;

@@ -22,7 +22,6 @@ export class LitController {
           { codeLit: 'A1', statut: 'DISPONIBLE' },
           { codeLit: 'A2', statut: 'MAINTENANCE' },
         ],
-        chuId: 'chu-01',
       },
     },
   })

@@ -10,6 +10,7 @@ import {
   UpdateHospitalisationStatusDto,
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
+import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
 import { KafkaService } from '../../infrastructure/kafka/kafka.service';
 import { buildEpisodeId } from '../../common/utils/ids';
 
@@ -21,6 +22,7 @@ export class HospitalisationService {
     @InjectRepository(LitEntity)
     private readonly litRepository: Repository<LitEntity>,
     private readonly accueilPatientApi: AccueilPatientApiService,
+    private readonly serviceChuApi: ServiceChuApiService,
     private readonly kafkaService: KafkaService,
   ) {}
 
@@ -29,22 +31,25 @@ export class HospitalisationService {
   ): Promise<HospitalisationEpisodeEntity> {
     await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
 
+    const serviceInfo = await this.serviceChuApi.getServiceById(input.serviceId);
+    const chuId = serviceInfo.chuId;
+
     const admissionDate = input.dateAdmission ? new Date(input.dateAdmission) : new Date();
 
     let lit: LitEntity | null = null;
     if (input.litId) {
-      lit = await this.findAvailableLit(input.litId, input.serviceId, input.chuId);
+      lit = await this.findAvailableLit(input.litId, input.serviceId, chuId);
       lit.statut = StatutLit.OCCUPE;
       await this.litRepository.save(lit);
     }
 
     const entity = this.hospitalisationRepository.create({
       id: buildEpisodeId({
-        chuId: input.chuId,
+        chuId,
         dateAdmission: admissionDate,
       }),
       patientId: input.patientId,
-      chuId: input.chuId,
+      chuId,
       serviceId: input.serviceId,
       dateAdmission: admissionDate,
       motifAdmission: input.motifAdmission ?? null,
@@ -126,6 +131,9 @@ export class HospitalisationService {
   }
 
   async findEpisodeById(id: string, chuId?: string): Promise<HospitalisationEpisodeEntity> {
+    if (chuId) {
+      await this.serviceChuApi.ensureChuExists(chuId);
+    }
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = chuId
       ? { id, chuId }
       : { id };
@@ -133,10 +141,16 @@ export class HospitalisationService {
     if (!episode) {
       throw new NotFoundException('Episode introuvable');
     }
+    const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
+    if (patientInfo) {
+      episode.patient = patientInfo;
+    }
     return episode;
   }
 
   async listEpisodes(query: HospitalisationEpisodeQuery): Promise<HospitalisationEpisodeEntity[]> {
+    await this.serviceChuApi.ensureChuExists(query.chuId);
+
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {};
     where.serviceId = query.serviceId;
     where.chuId = query.chuId;
@@ -147,10 +161,19 @@ export class HospitalisationService {
       where.statut = query.statut;
     }
 
-    return this.hospitalisationRepository.find({
+    const episodes = await this.hospitalisationRepository.find({
       where,
       order: { dateAdmission: 'DESC' },
     });
+
+    for (const episode of episodes) {
+      const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
+      if (patientInfo) {
+        episode.patient = patientInfo;
+      }
+    }
+
+    return episodes;
   }
 
   private async findAvailableLit(

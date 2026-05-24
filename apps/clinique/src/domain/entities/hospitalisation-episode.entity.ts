@@ -1,4 +1,5 @@
 import { Field, ID, ObjectType, registerEnumType } from '@nestjs/graphql';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   Column,
   CreateDateColumn,
@@ -6,6 +7,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { PatientInformationsAccueil } from '../../infrastructure/http-clients/patient-informations-accueil.type';
 
 export enum StatutHospitalisation {
   ADMIS = 'ADMIS',
@@ -28,6 +30,10 @@ export class HospitalisationEpisodeEntity {
   @Field()
   @Column({ name: 'patient_id', type: 'varchar', length: 120 })
   patientId: string;
+
+  @Field(() => PatientInformationsAccueil, { nullable: true })
+  @ApiProperty({ type: () => PatientInformationsAccueil, required: false })
+  patient?: PatientInformationsAccueil;
 
   @Field()
   @Column({ name: 'chu_id', type: 'varchar', length: 120 })

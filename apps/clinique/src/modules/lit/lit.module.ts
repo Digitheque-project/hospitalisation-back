@@ -5,9 +5,13 @@ import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisat
 import { LitEntity } from '../../domain/entities/lit.entity';
 import { LitController } from './lit.controller';
 import { LitService } from './lit.service';
+import { ServiceChuApiModule } from '../../infrastructure/http-clients/service-chu-api.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LitEntity, ChambreEntity, HospitalisationEpisodeEntity])],
+  imports: [
+    TypeOrmModule.forFeature([LitEntity, ChambreEntity, HospitalisationEpisodeEntity]),
+    ServiceChuApiModule,
+  ],
   controllers: [LitController],
   providers: [LitService],
   exports: [LitService],

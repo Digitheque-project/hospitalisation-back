@@ -4,23 +4,28 @@ import { Repository } from 'typeorm';
 import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { CreateChambreDto, UpdateChambreDto } from './chambre.dto';
 import { buildChambreId } from '../../common/utils/ids';
+import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
 
 @Injectable()
 export class ChambreService {
   constructor(
     @InjectRepository(ChambreEntity)
     private readonly chambreRepository: Repository<ChambreEntity>,
+    private readonly serviceChuApi: ServiceChuApiService,
   ) {}
 
   async createChambre(input: CreateChambreDto): Promise<ChambreEntity> {
+    const serviceInfo = await this.serviceChuApi.getServiceById(input.serviceId);
+    const chuId = serviceInfo.chuId;
+
     const chambre = this.chambreRepository.create({
       id: buildChambreId({
-        chuId: input.chuId,
+        chuId,
         serviceId: input.serviceId,
         numeroChambre: input.numeroChambre,
       }),
       serviceId: input.serviceId,
-      chuId: input.chuId,
+      chuId,
       numeroChambre: input.numeroChambre,
       type: input.type,
     });
@@ -29,6 +34,7 @@ export class ChambreService {
   }
 
   async listChambres(serviceId: string, chuId: string): Promise<ChambreEntity[]> {
+    await this.serviceChuApi.ensureChuExists(chuId);
     return this.chambreRepository.find({
       where: { serviceId, chuId },
       order: { numeroChambre: 'ASC' },
@@ -36,6 +42,7 @@ export class ChambreService {
   }
 
   async getChambreById(id: string, chuId: string): Promise<ChambreEntity> {
+    await this.serviceChuApi.ensureChuExists(chuId);
     const chambre = await this.chambreRepository.findOne({
       where: { id, chuId },
       relations: ['lits'],

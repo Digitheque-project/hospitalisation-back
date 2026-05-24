@@ -9,10 +9,6 @@ export class CreateChambreDto {
   @IsString()
   serviceId: string;
 
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
-  chuId: string;
-
   @ApiProperty({ example: 101, description: 'Numero de chambre (>= 1)' })
   @IsInt()
   @Min(1)

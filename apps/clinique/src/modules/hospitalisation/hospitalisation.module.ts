@@ -7,11 +7,13 @@ import { LitEntity } from '../../domain/entities/lit.entity';
 import { HospitalisationResolver } from './hospitalisation.resolver';
 import { HospitalisationService } from './hospitalisation.service';
 import { AccueilApiModule } from '../../infrastructure/http-clients/accueil-api.module';
+import { ServiceChuApiModule } from '../../infrastructure/http-clients/service-chu-api.module';
 import { KafkaModule } from '../../infrastructure/kafka/kafka.module';
 
 @Module({
   imports: [
     AccueilApiModule,
+    ServiceChuApiModule,
     KafkaModule,
     TypeOrmModule.forFeature([HospitalisationEpisodeEntity, LitEntity, ChambreEntity]),
   ],

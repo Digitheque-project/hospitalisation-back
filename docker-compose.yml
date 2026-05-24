@@ -9,6 +9,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV}
       CLINIQUE_PORT: ${CLINIQUE_PORT}
+      SERVICE_CHU_API_BASE_URL: ${SERVICE_CHU_API_BASE_URL}
+      ACCUEIL_API_BASE_URL: ${ACCUEIL_API_BASE_URL}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}
@@ -29,6 +31,8 @@ services:
     container_name: clinique-dev
     environment:
       NODE_ENV: development
+      SERVICE_CHU_API_BASE_URL: ${SERVICE_CHU_API_BASE_URL}
+      ACCUEIL_API_BASE_URL: ${ACCUEIL_API_BASE_URL}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}

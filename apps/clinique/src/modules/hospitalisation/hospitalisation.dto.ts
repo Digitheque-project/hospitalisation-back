@@ -12,12 +12,6 @@ export class CreateHospitalisationEpisodeDto {
   patientId: string;
 
   @Field()
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
-  @Length(1, 120)
-  chuId: string;
-
-  @Field()
   @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
   @IsString()
   @Length(1, 120)
