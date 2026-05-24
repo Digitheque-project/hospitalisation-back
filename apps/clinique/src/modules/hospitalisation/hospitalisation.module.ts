@@ -1,55 +1,24 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AccueilApiModule } from '../accueil/accueil-api.module';
-import { SignatureModule } from '../signature/signature.module';
 import { HospitalisationController } from './hospitalisation.controller';
-import {
-  AffectationLitEntity,
-  AffectationMedecinEntity,
-  AvisMedicalEntity,
-  ChambreEntity,
-  DemandeAvisEntity,
-  DemandeTransfertEntity,
-  DiagnosticsEntity,
-  HospitalisationEntity,
-  LitEntity,
-  ModeSortieEntity,
-  ObservationMedicalEntity,
-  PersonnelRefEntity,
-  PrescriptionMedicaleEntity,
-  ServiceRefEntity,
-  SoinsEntity,
-  TransfertEntity,
-} from './hospitalisation.entities';
+import { ChambreEntity } from '../../domain/entities/chambre.entity';
+import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisation-episode.entity';
+import { LitEntity } from '../../domain/entities/lit.entity';
 import { HospitalisationResolver } from './hospitalisation.resolver';
 import { HospitalisationService } from './hospitalisation.service';
-import { HospitalisationGateway } from './hospitalisation.gateway';
+import { AccueilApiModule } from '../../infrastructure/http-clients/accueil-api.module';
+import { ServiceChuApiModule } from '../../infrastructure/http-clients/service-chu-api.module';
+import { KafkaModule } from '../../infrastructure/kafka/kafka.module';
 
 @Module({
   imports: [
     AccueilApiModule,
-    TypeOrmModule.forFeature([
-      HospitalisationEntity,
-      ServiceRefEntity,
-      PersonnelRefEntity,
-      ObservationMedicalEntity,
-      DiagnosticsEntity,
-      PrescriptionMedicaleEntity,
-      SoinsEntity,
-      ChambreEntity,
-      LitEntity,
-      AffectationLitEntity,
-      AffectationMedecinEntity,
-      DemandeTransfertEntity,
-      TransfertEntity,
-      DemandeAvisEntity,
-      AvisMedicalEntity,
-      ModeSortieEntity,
-    ]),
-    SignatureModule,
+    ServiceChuApiModule,
+    KafkaModule,
+    TypeOrmModule.forFeature([HospitalisationEpisodeEntity, LitEntity, ChambreEntity]),
   ],
   controllers: [HospitalisationController],
-  providers: [HospitalisationService, HospitalisationResolver, HospitalisationGateway],
+  providers: [HospitalisationService, HospitalisationResolver],
   exports: [HospitalisationService],
 })
 export class HospitalisationModule {}
