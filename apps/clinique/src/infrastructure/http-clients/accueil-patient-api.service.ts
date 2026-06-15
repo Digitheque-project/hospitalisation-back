@@ -89,6 +89,7 @@ interface CacheEntry<T> {
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const FETCH_TIMEOUT_MS = 5_000;
 
 @Injectable()
 export class AccueilPatientApiService {
@@ -104,6 +105,7 @@ export class AccueilPatientApiService {
     return fetch(this.patientUrl(patientId), {
       method: 'GET',
       headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   }
 

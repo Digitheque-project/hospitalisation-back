@@ -166,12 +166,14 @@ export class HospitalisationService {
       order: { dateAdmission: 'DESC' },
     });
 
-    for (const episode of episodes) {
-      const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
-      if (patientInfo) {
-        episode.patient = patientInfo;
-      }
-    }
+    await Promise.all(
+      episodes.map(async (episode) => {
+        const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
+        if (patientInfo) {
+          episode.patient = patientInfo;
+        }
+      }),
+    );
 
     return episodes;
   }

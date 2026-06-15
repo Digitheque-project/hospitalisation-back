@@ -3,7 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { join } from 'node:path';
 import { ChambreModule } from './modules/chambre/chambre.module';
 import { HospitalisationModule } from './modules/hospitalisation/hospitalisation.module';
 import { LitModule } from './modules/lit/lit.module';
@@ -38,7 +37,7 @@ import { LitModule } from './modules/lit/lit.module';
         const playgroundEnabled =
           configService.get<string>('GRAPHQL_PLAYGROUND_ENABLED', 'false') === 'true';
         return {
-          autoSchemaFile: join(process.cwd(), 'apps/clinique/schema.gql'),
+          autoSchemaFile: true,
           playground: playgroundEnabled,
           introspection: playgroundEnabled,
           context: ({ req }: { req: unknown }) => ({ req }),
