@@ -19,13 +19,14 @@ export class ServiceChuApiService {
   private readonly logger = new Logger(ServiceChuApiService.name);
   private readonly chuCache = new Map<string, CacheEntry<boolean>>();
   private readonly serviceCache = new Map<string, CacheEntry<ServiceChuInfo>>();
+  private readonly serviceChuPrefix = '/service-chu';
 
   private chuUrl(chuId: string): string {
-    return chuEndpoint(`/chu/${encodeURIComponent(chuId)}`);
+    return chuEndpoint(`${this.serviceChuPrefix}/chu/${encodeURIComponent(chuId)}`);
   }
 
   private serviceByIdUrl(serviceId: string): string {
-    return chuEndpoint(`/service/${encodeURIComponent(serviceId)}`);
+    return chuEndpoint(`${this.serviceChuPrefix}/service/${encodeURIComponent(serviceId)}`);
   }
 
   async ensureChuExists(chuId: string): Promise<void> {
