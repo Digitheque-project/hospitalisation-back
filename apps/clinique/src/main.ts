@@ -28,7 +28,7 @@ async function bootstrap() {
     .setVersion('1.0.0')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
+  SwaggerModule.setup('clinique/api/docs', app, swaggerDocument);
 
   // Render injecte PORT; on garde CLINIQUE_PORT pour le local et les conteneurs.
   const port = Number(process.env.PORT ?? process.env.CLINIQUE_PORT ?? 3001);

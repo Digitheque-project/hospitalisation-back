@@ -80,7 +80,7 @@ npm run start:dev
 
 - `GET /plan-lits` : plan de lits par service (serviceId obligatoire)
 
-Swagger: `http://localhost:3001/api/docs`
+Swagger: `http://localhost:3001/clinique/api/docs`
 GraphQL: `http://localhost:3001/graphql`
 
 ## Kafka (events)
