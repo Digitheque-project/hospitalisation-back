@@ -50,6 +50,7 @@ Variables principales:
 - `DB_NAME`
 - `DB_SYNC` (defaut: `false` en prod)
 - `CLINIQUE_PORT` (defaut: `3001`)
+- `SERVICE_CHU_API_BASE_URL`
 - `ACCUEIL_API_BASE_URL`
 - `KAFKA_BROKERS`
 - `KAFKA_CLIENT_ID`
