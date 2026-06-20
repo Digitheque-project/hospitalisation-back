@@ -16,6 +16,7 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
+      DB_SYNC: ${DB_SYNC}
       KAFKA_BROKERS: ${KAFKA_BROKERS}
       SECURITY_CORS_ORIGINS: ${SECURITY_CORS_ORIGINS}
       GRAPHQL_PLAYGROUND_ENABLED: ${GRAPHQL_PLAYGROUND_ENABLED}
@@ -38,6 +39,7 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
+      DB_SYNC: ${DB_SYNC}
     volumes:
       - ./apps/clinique/src/database/migrations:/app/apps/clinique/src/database/migrations
     depends_on:
