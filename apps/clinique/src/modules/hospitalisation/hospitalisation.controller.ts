@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisation-episode.entity';
 import {
@@ -80,6 +80,42 @@ export class HospitalisationController {
   @ApiResponse({ status: 404, description: 'Episode introuvable' })
   closeEpisode(@Param('id') id: string, @Body() body: CloseHospitalisationEpisodeDto) {
     return this.hospitalisationService.closeEpisode(id, body);
+  }
+
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Statistiques des hospitalisations',
+    description: 'Retourne le total des patients hospitalises actifs et les nouvelles admissions du jour pour un CHU.',
+  })
+  @ApiQuery({ name: 'chuId', required: true })
+  @ApiResponse({ status: 200, description: 'Statistiques retournees' })
+  @ApiResponse({ status: 400, description: 'chuId obligatoire' })
+  getStats(@Query('chuId') chuId?: string) {
+    if (!chuId) {
+      throw new BadRequestException('chuId obligatoire');
+    }
+    return this.hospitalisationService.getStats(chuId);
+  }
+
+  @Get('actives')
+  @ApiOperation({
+    summary: 'Lister les episodes actifs',
+    description: 'Retourne les episodes en statut ADMIS, EN_COURS ou TRANSFERE avec limit optionnel.',
+  })
+  @ApiQuery({ name: 'chuId', required: true })
+  @ApiQuery({ name: 'serviceId', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiResponse({ status: 200, description: 'Episodes actifs', type: HospitalisationEpisodeEntity, isArray: true })
+  @ApiResponse({ status: 400, description: 'chuId obligatoire' })
+  getActives(
+    @Query('chuId') chuId?: string,
+    @Query('serviceId') serviceId?: string,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit?: number,
+  ) {
+    if (!chuId) {
+      throw new BadRequestException('chuId obligatoire');
+    }
+    return this.hospitalisationService.getActives(chuId, serviceId, limit);
   }
 
   @Get(':id')

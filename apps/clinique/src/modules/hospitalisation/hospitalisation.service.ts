@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domain/entities/hospitalisation-episode.entity';
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import {
@@ -164,6 +164,72 @@ export class HospitalisationService {
     const episodes = await this.hospitalisationRepository.find({
       where,
       order: { dateAdmission: 'DESC' },
+    });
+
+    await Promise.all(
+      episodes.map(async (episode) => {
+        const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
+        if (patientInfo) {
+          episode.patient = patientInfo;
+        }
+      }),
+    );
+
+    return episodes;
+  }
+
+  async getStats(chuId: string): Promise<{
+    hospitalizedTotal: number;
+    hospitalizedNewToday: number;
+  }> {
+    const activeStatuts = [
+      StatutHospitalisation.ADMIS,
+      StatutHospitalisation.EN_COURS,
+      StatutHospitalisation.TRANSFERE,
+    ];
+
+    const [total, newToday] = await Promise.all([
+      this.hospitalisationRepository.count({
+        where: { chuId, statut: In(activeStatuts) },
+      }),
+      (() => {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        return this.hospitalisationRepository
+          .createQueryBuilder('ep')
+          .where('ep.chu_id = :chuId', { chuId })
+          .andWhere('ep.statut IN (:...statuts)', { statuts: activeStatuts })
+          .andWhere('ep.date_admission >= :startOfDay', { startOfDay })
+          .getCount();
+      })(),
+    ]);
+
+    return { hospitalizedTotal: total, hospitalizedNewToday: newToday };
+  }
+
+  async getActives(
+    chuId: string,
+    serviceId?: string,
+    limit = 50,
+  ): Promise<HospitalisationEpisodeEntity[]> {
+    const activeStatuts = [
+      StatutHospitalisation.ADMIS,
+      StatutHospitalisation.EN_COURS,
+      StatutHospitalisation.TRANSFERE,
+    ];
+
+    const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
+      chuId,
+      statut: In(activeStatuts),
+    };
+    if (serviceId) {
+      where.serviceId = serviceId;
+    }
+
+    const episodes = await this.hospitalisationRepository.find({
+      where,
+      order: { dateAdmission: 'DESC' },
+      take: limit,
     });
 
     await Promise.all(

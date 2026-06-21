@@ -6,6 +6,7 @@ import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domai
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import { CreateLitsDto, PlanLitsQueryDto, UpdateLitDto } from './lit.dto';
 import { buildLitId } from '../../common/utils/ids';
+import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class LitService {
     @InjectRepository(HospitalisationEpisodeEntity)
     private readonly hospitalisationRepository: Repository<HospitalisationEpisodeEntity>,
     private readonly serviceChuApi: ServiceChuApiService,
+    private readonly accueilPatientApi: AccueilPatientApiService,
   ) {}
 
   async createLits(chambreId: string, input: CreateLitsDto): Promise<LitEntity[]> {
@@ -96,11 +98,48 @@ export class LitService {
   async planLits(query: PlanLitsQueryDto) {
     await this.serviceChuApi.ensureChuExists(query.chuId);
 
+    const activeStatuts = [
+      StatutHospitalisation.ADMIS,
+      StatutHospitalisation.EN_COURS,
+      StatutHospitalisation.TRANSFERE,
+    ];
+
     const chambres = await this.chambreRepository.find({
       where: { serviceId: query.serviceId, chuId: query.chuId },
       relations: ['lits'],
       order: { numeroChambre: 'ASC' },
     });
+
+    // Collect all lit IDs to fetch active episodes in one query
+    const allLitIds = chambres.flatMap((c) => (c.lits ?? []).map((l) => l.id));
+
+    // Fetch all active episodes for those beds in one shot
+    const activeEpisodes: HospitalisationEpisodeEntity[] = allLitIds.length
+      ? await this.hospitalisationRepository.find({
+          where: { litId: In(allLitIds), statut: In(activeStatuts) },
+        })
+      : [];
+
+    // Fetch patient info for episodes
+    await Promise.all(
+      activeEpisodes.map(async (ep) => {
+        try {
+          const info = await this.accueilPatientApi.getPatientById(ep.patientId);
+          if (info) ep.patient = info;
+        } catch {
+          // Patient info not critical; continue
+        }
+      }),
+    );
+
+    // Index episodes by litId for O(1) lookup
+    const episodeByLitId = new Map<string, HospitalisationEpisodeEntity>();
+    for (const ep of activeEpisodes) {
+      if (ep.litId) episodeByLitId.set(ep.litId, ep);
+    }
+
+    let totalLits = 0;
+    let litsOccupes = 0;
 
     const filtered = chambres.map((chambre) => ({
       chambreId: chambre.id,
@@ -108,16 +147,42 @@ export class LitService {
       type: chambre.type,
       lits: (chambre.lits ?? [])
         .filter((lit) => (query.statutLit ? lit.statut === query.statutLit : true))
-        .map((lit) => ({
-          id: lit.id,
-          codeLit: lit.codeLit,
-          statut: lit.statut,
-        })),
+        .map((lit) => {
+          totalLits++;
+          const episode = episodeByLitId.get(lit.id);
+          if (lit.statut === StatutLit.OCCUPE) litsOccupes++;
+
+          const hospPayload = episode
+            ? {
+                id: episode.id,
+                patientId: episode.patientId,
+                dateEntrer: episode.dateAdmission.toISOString(),
+                motifHospitalisation: episode.motifAdmission ?? null,
+                statutHospitalisation: episode.statut,
+                diagnostic: null,
+                soinsCount: 0,
+                patient: (episode.patient as Record<string, unknown>) ?? null,
+              }
+            : null;
+
+          return {
+            litId: lit.id,
+            id: lit.id,
+            codeLit: lit.codeLit,
+            statut: lit.statut,
+            hospitalisation: hospPayload,
+          };
+        }),
     })).filter((chambre) => chambre.lits.length > 0);
 
     return {
       serviceId: query.serviceId,
       chambres: filtered,
+      stats: {
+        totalLits,
+        litsOccupes,
+        totalPatients: litsOccupes,
+      },
     };
   }
 
