@@ -6,6 +6,7 @@ import {
   CreateHospitalisationEpisodeDto,
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
+  AttributeLitDto,
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
 
@@ -24,10 +25,8 @@ export class HospitalisationController {
       example: {
         patientId: 'patient-123',
         serviceId: 'service-123',
-        dateAdmission: '2026-05-22T10:00:00.000Z',
         motifAdmission: 'Observation clinique',
         createdBy: 'agent-45',
-        litId: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
       },
     },
   })
@@ -80,6 +79,29 @@ export class HospitalisationController {
   @ApiResponse({ status: 404, description: 'Episode introuvable' })
   closeEpisode(@Param('id') id: string, @Body() body: CloseHospitalisationEpisodeDto) {
     return this.hospitalisationService.closeEpisode(id, body);
+  }
+
+  @Patch('assign-lit')
+  @ApiOperation({
+    summary: 'Attribuer un lit a un patient',
+    description: 'Attribution d\'un lit disponible pour un patient hospitalise dans un service.',
+  })
+  @ApiBody({
+    schema: {
+      example: {
+        chuId: 'chu-01',
+        serviceId: 'service-123',
+        patientId: 'patient-123',
+        litId: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
+        updatedBy: 'agent-45',
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Lit attribue', type: HospitalisationEpisodeEntity })
+  @ApiResponse({ status: 404, description: 'Episode ou lit introuvable' })
+  @ApiResponse({ status: 400, description: 'Donnees invalides ou lit indisponible' })
+  assignLit(@Body() body: AttributeLitDto) {
+    return this.hospitalisationService.assignLit(body);
   }
 
   @Get('stats')

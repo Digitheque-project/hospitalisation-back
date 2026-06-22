@@ -18,12 +18,6 @@ export class CreateHospitalisationEpisodeDto {
   serviceId: string;
 
   @Field(() => String, { nullable: true })
-  @ApiProperty({
-    example: '2026-05-22T10:00:00.000Z',
-    description: "Date d'admission ISO",
-    required: false,
-    nullable: true,
-  })
   @IsOptional()
   @IsDateString()
   dateAdmission?: string | null;
@@ -44,11 +38,10 @@ export class CreateHospitalisationEpisodeDto {
   @IsString()
   createdBy: string;
 
-  @Field({ nullable: true })
-  @ApiProperty({ example: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1', description: 'Identifiant lit', required: false })
+  @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  litId?: string;
+  litId?: string | null;
 }
 
 @InputType()
@@ -124,4 +117,36 @@ export class HospitalisationEpisodeQuery {
   @IsOptional()
   @IsEnum(StatutHospitalisation)
   statut?: StatutHospitalisation;
+}
+
+@InputType()
+export class AttributeLitDto {
+  @Field()
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  @Length(1, 120)
+  chuId: string;
+
+  @Field()
+  @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
+  @IsString()
+  @Length(1, 120)
+  serviceId: string;
+
+  @Field()
+  @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
+  @IsString()
+  @Length(1, 120)
+  patientId: string;
+
+  @Field()
+  @ApiProperty({ example: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1', description: 'Identifiant lit' })
+  @IsString()
+  @Length(1, 120)
+  litId: string;
+
+  @Field()
+  @ApiProperty({ example: 'agent-45', description: 'Auteur de l\'attribution' })
+  @IsString()
+  updatedBy: string;
 }
