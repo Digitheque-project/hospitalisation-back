@@ -8,6 +8,7 @@ import {
   CreateHospitalisationEpisodeDto,
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
+  AttributeLitDto,
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
@@ -242,6 +243,51 @@ export class HospitalisationService {
     );
 
     return episodes;
+  }
+
+  async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
+    // Find the episode
+    const episode = await this.hospitalisationRepository.findOne({
+      where: {
+        patientId: input.patientId,
+        serviceId: input.serviceId,
+        chuId: input.chuId,
+      },
+    });
+    
+    if (!episode) {
+      throw new NotFoundException(
+        'Aucun episode actif trouvé pour ce patient dans ce service',
+      );
+    }
+
+    // Release old lit if any
+    if (episode.litId) {
+      await this.releaseLitIfNeeded(episode.litId);
+    }
+
+    // Assign new lit
+    const lit = await this.findAvailableLit(input.litId, input.serviceId, input.chuId);
+    lit.statut = StatutLit.OCCUPE;
+    await this.litRepository.save(lit);
+
+    episode.litId = lit.id;
+    episode.litCode = lit.codeLit;
+    episode.updatedBy = input.updatedBy;
+
+    const saved = await this.hospitalisationRepository.save(episode);
+
+    await this.kafkaService.emit('hospitalisation.lit.assigned', {
+      id: saved.id,
+      patientId: saved.patientId,
+      chuId: saved.chuId,
+      serviceId: saved.serviceId,
+      litId: saved.litId,
+      litCode: saved.litCode,
+      updatedBy: saved.updatedBy,
+    });
+
+    return saved;
   }
 
   private async findAvailableLit(
