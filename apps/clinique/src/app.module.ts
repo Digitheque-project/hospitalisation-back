@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChambreModule } from './modules/chambre/chambre.module';
 import { HospitalisationModule } from './modules/hospitalisation/hospitalisation.module';
 import { LitModule } from './modules/lit/lit.module';
+import { migrations } from './database/migrations';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -27,7 +28,7 @@ import { LitModule } from './modules/lit/lit.module';
           database: configService.get<string>('DB_NAME'),
           autoLoadEntities: true,
           synchronize: syncEnabled,
-          migrations: [`${__dirname}/migrations/*.js`],
+          migrations,
           migrationsRun: isProduction,
         };
       },
