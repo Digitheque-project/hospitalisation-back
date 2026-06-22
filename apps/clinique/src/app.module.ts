@@ -27,6 +27,8 @@ import { LitModule } from './modules/lit/lit.module';
           database: configService.get<string>('DB_NAME'),
           autoLoadEntities: true,
           synchronize: syncEnabled,
+          migrations: [`${__dirname}/migrations/*.js`],
+          migrationsRun: isProduction,
         };
       },
     }),
