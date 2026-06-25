@@ -30,6 +30,13 @@ export class LitService {
 
     const chuId = chambre.chuId;
 
+    // Check for duplicate codeLit values
+    const codeLits = input.lits.map((lit) => lit.codeLit);
+    const uniqueCodeLits = new Set(codeLits);
+    if (uniqueCodeLits.size !== codeLits.length) {
+      throw new BadRequestException('Les codes de lit doivent être uniques');
+    }
+
     const entities = input.lits.map((lit) =>
       this.litRepository.create({
         id: buildLitId({
