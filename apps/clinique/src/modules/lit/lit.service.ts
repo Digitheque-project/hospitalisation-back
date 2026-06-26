@@ -180,7 +180,7 @@ export class LitService {
             hospitalisation: hospPayload,
           };
         }),
-    })).filter((chambre) => chambre.lits.length > 0);
+    })).filter((chambre) => chambre.lits.some((lit) => lit.statut === StatutLit.OCCUPE));
 
     return {
       serviceId: query.serviceId,
