@@ -4,6 +4,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChambreModule } from './modules/chambre/chambre.module';
+import { DemandeModule } from './modules/demande/demande.module';
 import { HospitalisationModule } from './modules/hospitalisation/hospitalisation.module';
 import { LitModule } from './modules/lit/lit.module';
 import { migrations } from './database/migrations';
@@ -50,6 +51,7 @@ import { migrations } from './database/migrations';
     HospitalisationModule,
     ChambreModule,
     LitModule,
+    DemandeModule,
   ],
 })
 export class AppModule {}
