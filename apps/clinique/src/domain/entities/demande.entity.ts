@@ -47,6 +47,10 @@ export class DemandeEntity {
   @Column({ name: 'info_complementaire', type: 'text', nullable: true })
   infoComplementaire?: string | null;
 
+  @Field(() => String, { nullable: true })
+  @Column({ name: 'motif_refus', type: 'text', nullable: true })
+  motifRefus?: string | null;
+
   @Field()
   @Column({ name: 'created_by', type: 'varchar', length: 120 })
   createdBy: string;
