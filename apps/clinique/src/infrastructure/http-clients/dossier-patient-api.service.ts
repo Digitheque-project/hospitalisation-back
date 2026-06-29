@@ -1,0 +1,51 @@
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  DOSSIER_PATIENT_API_BASE_URL,
+  dossierPatientEndpoint,
+} from '../../config/dossier-patient-api.config';
+​
+export interface ArchiveDiagnosticsInput {
+  chuId: string;
+  serviceId: string;
+  patientId: string;
+  episodeId?: string;
+}
+​
+/**
+ * Client HTTP vers le service Dossier Patient.
+ *
+ * L'archivage est « best-effort » : toute erreur est journalisée mais ne fait
+ * jamais échouer la clôture de l'épisode d'hospitalisation.
+ */
+@Injectable()
+export class DossierPatientApiService {
+  private readonly logger = new Logger(DossierPatientApiService.name);
+​
+  async archivePatientDiagnostics(input: ArchiveDiagnosticsInput): Promise<void> {
+    if (!DOSSIER_PATIENT_API_BASE_URL) {
+      this.logger.warn(
+        'DOSSIER_PATIENT_API_BASE_URL non configurée : archivage des diagnostics ignoré.',
+      );
+      return;
+    }
+​
+    const url = dossierPatientEndpoint('/diagnostics/archive');
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(input),
+      });
+      if (!response.ok) {
+        this.logger.warn(
+          `Archivage diagnostics: le service Dossier Patient a répondu ${response.status} (patient ${input.patientId}).`,
+        );
+      }
+    } catch (e) {
+      this.logger.warn(
+        `Archivage diagnostics indisponible pour le patient ${input.patientId} (${url}) - ${String(e)}`,
+      );
+    }
+  }
+}
+​
