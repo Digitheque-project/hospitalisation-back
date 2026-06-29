@@ -39,6 +39,17 @@ export class CreateDemandeDto {
   @IsString()
   infoComplementaire?: string | null;
 
+  @Field(() => String, { nullable: true })
+  @ApiProperty({
+    example: 'Capacité insuffisante',
+    description: 'Motif de refus',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  motifRefus?: string | null;
+
   @Field()
   @ApiProperty({ example: 'agent-45', description: 'Auteur de la demande' })
   @IsString()
@@ -65,6 +76,12 @@ export class UpdateDemandeDto {
   @IsOptional()
   @IsString()
   infoComplementaire?: string;
+
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ example: 'Capacité insuffisante', required: false })
+  @IsOptional()
+  @IsString()
+  motifRefus?: string;
 
   @Field()
   @ApiProperty({ example: 'agent-45', description: 'Auteur de la mise à jour' })
