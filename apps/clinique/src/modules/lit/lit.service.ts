@@ -148,39 +148,41 @@ export class LitService {
     let totalLits = 0;
     let litsOccupes = 0;
 
-    const filtered = chambres.map((chambre) => ({
-      chambreId: chambre.id,
-      numeroChambre: chambre.numeroChambre,
-      type: chambre.type,
-      lits: (chambre.lits ?? [])
-        .filter((lit) => (query.statutLit ? lit.statut === query.statutLit : true))
-        .map((lit) => {
-          totalLits++;
-          const episode = episodeByLitId.get(lit.id);
-          if (lit.statut === StatutLit.OCCUPE) litsOccupes++;
+    const filtered = chambres
+      .map((chambre) => ({
+        chambreId: chambre.id,
+        numeroChambre: chambre.numeroChambre,
+        type: chambre.type,
+        lits: (chambre.lits ?? [])
+          .filter((lit) => (query.statutLit ? lit.statut === query.statutLit : true))
+          .map((lit) => {
+            totalLits++;
+            const episode = episodeByLitId.get(lit.id);
+            if (lit.statut === StatutLit.OCCUPE) litsOccupes++;
 
-          const hospPayload = episode
-            ? {
-                id: episode.id,
-                patientId: episode.patientId,
-                dateEntrer: episode.dateAdmission.toISOString(),
-                motifHospitalisation: episode.motifAdmission ?? null,
-                statutHospitalisation: episode.statut,
-                diagnostic: null,
-                soinsCount: 0,
-                patient: (episode.patient as Record<string, unknown>) ?? null,
-              }
-            : null;
+            const hospPayload = episode
+              ? {
+                  id: episode.id,
+                  patientId: episode.patientId,
+                  dateEntrer: episode.dateAdmission.toISOString(),
+                  motifHospitalisation: episode.motifAdmission ?? null,
+                  statutHospitalisation: episode.statut,
+                  diagnostic: null,
+                  soinsCount: 0,
+                  patient: (episode.patient as Record<string, unknown>) ?? null,
+                }
+              : null;
 
-          return {
-            litId: lit.id,
-            id: lit.id,
-            codeLit: lit.codeLit,
-            statut: lit.statut,
-            hospitalisation: hospPayload,
-          };
-        }),
-    })).filter((chambre) => chambre.lits.some((lit) => lit.statut === StatutLit.OCCUPE));
+            return {
+              litId: lit.id,
+              id: lit.id,
+              codeLit: lit.codeLit,
+              statut: lit.statut,
+              hospitalisation: hospPayload,
+            };
+          }),
+      }))
+      .filter((chambre) => chambre.lits.length > 0);
 
     return {
       serviceId: query.serviceId,

@@ -310,6 +310,47 @@ export class HospitalisationService {
     return saved;
   }
 ​
+
+  async assignLitToEpisode(
+    episodeId: string,
+    input: AttributeLitDto,
+  ): Promise<HospitalisationEpisodeEntity> {
+    const episode = await this.findEpisodeById(episodeId, input.chuId);
+
+    if (episode.patientId !== input.patientId) {
+      throw new BadRequestException('Le patient ne correspond pas a l episode');
+    }
+    if (episode.serviceId !== input.serviceId) {
+      throw new BadRequestException('Le service ne correspond pas a l episode');
+    }
+
+    if (episode.litId) {
+      await this.releaseLitIfNeeded(episode.litId);
+    }
+
+    const lit = await this.findAvailableLit(input.litId, episode.serviceId, episode.chuId);
+    lit.statut = StatutLit.OCCUPE;
+    await this.litRepository.save(lit);
+
+    episode.litId = lit.id;
+    episode.litCode = lit.codeLit;
+    episode.updatedBy = input.updatedBy;
+
+    const saved = await this.hospitalisationRepository.save(episode);
+
+    await this.kafkaService.emit('hospitalisation.lit.assigned', {
+      id: saved.id,
+      patientId: saved.patientId,
+      chuId: saved.chuId,
+      serviceId: saved.serviceId,
+      litId: saved.litId,
+      litCode: saved.litCode,
+      updatedBy: saved.updatedBy,
+    });
+
+    return saved;
+  }
+
   private async findAvailableLit(
     litId: string,
     serviceId: string,

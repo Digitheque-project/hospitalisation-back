@@ -104,6 +104,30 @@ export class HospitalisationController {
     return this.hospitalisationService.assignLit(body);
   }
 
+  @Post(':id/assign-lit')
+  @ApiOperation({
+    summary: 'Attribuer un lit a un episode',
+    description: 'Attribution d\'un lit disponible a un episode d hospitalisation precis.',
+  })
+  @ApiParam({ name: 'id', description: 'Identifiant episode' })
+  @ApiBody({
+    schema: {
+      example: {
+        chuId: 'chu-01',
+        serviceId: 'service-123',
+        patientId: 'patient-123',
+        litId: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
+        updatedBy: 'agent-45',
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Lit attribue', type: HospitalisationEpisodeEntity })
+  @ApiResponse({ status: 404, description: 'Episode ou lit introuvable' })
+  @ApiResponse({ status: 400, description: 'Donnees invalides ou lit indisponible' })
+  assignLitToEpisode(@Param('id') id: string, @Body() body: AttributeLitDto) {
+    return this.hospitalisationService.assignLitToEpisode(id, body);
+  }
+
   @Get('stats')
   @ApiOperation({
     summary: 'Statistiques des hospitalisations',
