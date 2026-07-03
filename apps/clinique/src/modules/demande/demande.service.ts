@@ -72,6 +72,9 @@ export class DemandeService {
     if (input.infoComplementaire !== undefined) {
       demande.infoComplementaire = input.infoComplementaire;
     }
+    if (input.motifRefus !== undefined) {
+      demande.motifRefus = input.motifRefus;
+    }
     demande.updatedBy = input.updatedBy;
 
     return this.demandeRepository.save(demande);
