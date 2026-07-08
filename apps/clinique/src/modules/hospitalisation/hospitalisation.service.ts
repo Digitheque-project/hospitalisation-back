@@ -9,6 +9,7 @@ import {
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
   AttributeLitDto,
+  UpdateExeatableDto,
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
@@ -111,6 +112,28 @@ export class HospitalisationService {
         episodeId: saved.id,
       });
     }
+​
+    return saved;
+  }
+​
+  // [Ajout requete UI] Met a jour uniquement l'etat "exeatable" d'un episode
+  // et notifie les autres services via Kafka.
+  async updateExeatable(
+    id: string,
+    input: UpdateExeatableDto,
+  ): Promise<HospitalisationEpisodeEntity> {
+    const episode = await this.findEpisodeById(id, input.chuId);
+    episode.exeatable = input.exeatable;
+    episode.updatedBy = input.updatedBy;
+​
+    const saved = await this.hospitalisationRepository.save(episode);
+​
+    await this.kafkaService.emit('hospitalisation.episode.exeatable.updated', {
+      id: saved.id,
+      chuId: saved.chuId,
+      exeatable: saved.exeatable,
+      updatedBy: saved.updatedBy ?? null,
+    });
 ​
     return saved;
   }
@@ -310,47 +333,6 @@ export class HospitalisationService {
     return saved;
   }
 ​
-
-  async assignLitToEpisode(
-    episodeId: string,
-    input: AttributeLitDto,
-  ): Promise<HospitalisationEpisodeEntity> {
-    const episode = await this.findEpisodeById(episodeId, input.chuId);
-
-    if (episode.patientId !== input.patientId) {
-      throw new BadRequestException('Le patient ne correspond pas a l episode');
-    }
-    if (episode.serviceId !== input.serviceId) {
-      throw new BadRequestException('Le service ne correspond pas a l episode');
-    }
-
-    if (episode.litId) {
-      await this.releaseLitIfNeeded(episode.litId);
-    }
-
-    const lit = await this.findAvailableLit(input.litId, episode.serviceId, episode.chuId);
-    lit.statut = StatutLit.OCCUPE;
-    await this.litRepository.save(lit);
-
-    episode.litId = lit.id;
-    episode.litCode = lit.codeLit;
-    episode.updatedBy = input.updatedBy;
-
-    const saved = await this.hospitalisationRepository.save(episode);
-
-    await this.kafkaService.emit('hospitalisation.lit.assigned', {
-      id: saved.id,
-      patientId: saved.patientId,
-      chuId: saved.chuId,
-      serviceId: saved.serviceId,
-      litId: saved.litId,
-      litCode: saved.litCode,
-      updatedBy: saved.updatedBy,
-    });
-
-    return saved;
-  }
-
   private async findAvailableLit(
     litId: string,
     serviceId: string,
@@ -398,4 +380,3 @@ export class HospitalisationService {
     ].includes(statut);
   }
 }
-​

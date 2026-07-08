@@ -7,14 +7,15 @@ import {
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
   AttributeLitDto,
+  UpdateExeatableDto,
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
-
+​
 @ApiTags('Hospitalisation')
 @Controller('hospitalisations')
 export class HospitalisationController {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
-
+​
   @Post()
   @ApiOperation({
     summary: 'Creer un episode d hospitalisation',
@@ -36,7 +37,7 @@ export class HospitalisationController {
   createEpisode(@Body() body: CreateHospitalisationEpisodeDto) {
     return this.hospitalisationService.createEpisode(body);
   }
-
+​
   @Patch(':id/status')
   @ApiOperation({
     summary: 'Mettre a jour le statut de l episode',
@@ -57,7 +58,14 @@ export class HospitalisationController {
   updateStatus(@Param('id') id: string, @Body() body: UpdateHospitalisationStatusDto) {
     return this.hospitalisationService.updateStatus(id, body);
   }
-
+​
+  // [Ajout requete UI] Persiste l'etat "exeatable" d'un episode (toggle carte lit).
+  // Survit au rafraichissement et a la deconnexion.
+  @Patch(':id/exeatable')
+  updateExeatable(@Param('id') id: string, @Body() body: UpdateExeatableDto) {
+    return this.hospitalisationService.updateExeatable(id, body);
+  }
+​
   @Patch(':id/close')
   @ApiOperation({
     summary: 'Cloturer un episode d hospitalisation',
@@ -80,7 +88,7 @@ export class HospitalisationController {
   closeEpisode(@Param('id') id: string, @Body() body: CloseHospitalisationEpisodeDto) {
     return this.hospitalisationService.closeEpisode(id, body);
   }
-
+​
   @Patch('assign-lit')
   @ApiOperation({
     summary: 'Attribuer un lit a un patient',
@@ -103,31 +111,7 @@ export class HospitalisationController {
   assignLit(@Body() body: AttributeLitDto) {
     return this.hospitalisationService.assignLit(body);
   }
-
-  @Post(':id/assign-lit')
-  @ApiOperation({
-    summary: 'Attribuer un lit a un episode',
-    description: 'Attribution d\'un lit disponible a un episode d hospitalisation precis.',
-  })
-  @ApiParam({ name: 'id', description: 'Identifiant episode' })
-  @ApiBody({
-    schema: {
-      example: {
-        chuId: 'chu-01',
-        serviceId: 'service-123',
-        patientId: 'patient-123',
-        litId: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
-        updatedBy: 'agent-45',
-      },
-    },
-  })
-  @ApiResponse({ status: 200, description: 'Lit attribue', type: HospitalisationEpisodeEntity })
-  @ApiResponse({ status: 404, description: 'Episode ou lit introuvable' })
-  @ApiResponse({ status: 400, description: 'Donnees invalides ou lit indisponible' })
-  assignLitToEpisode(@Param('id') id: string, @Body() body: AttributeLitDto) {
-    return this.hospitalisationService.assignLitToEpisode(id, body);
-  }
-
+​
   @Get('stats')
   @ApiOperation({
     summary: 'Statistiques des hospitalisations',
@@ -142,7 +126,7 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.getStats(chuId);
   }
-
+​
   @Get('actives')
   @ApiOperation({
     summary: 'Lister les episodes actifs',
@@ -163,7 +147,7 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.getActives(chuId, serviceId, limit);
   }
-
+​
   @Get(':id')
   @ApiOperation({ summary: 'Recuperer un episode par identifiant' })
   @ApiParam({ name: 'id', description: 'Identifiant episode' })
@@ -176,7 +160,7 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.findEpisodeById(id, chuId);
   }
-
+​
   @Get()
   @ApiOperation({
     summary: 'Lister les episodes d hospitalisation',
@@ -195,3 +179,4 @@ export class HospitalisationController {
     return this.hospitalisationService.listEpisodes(query);
   }
 }
+​
