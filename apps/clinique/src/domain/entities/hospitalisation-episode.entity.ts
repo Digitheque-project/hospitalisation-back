@@ -79,6 +79,13 @@ export class HospitalisationEpisodeEntity {
   @Column({ name: 'commentaire_sortie', type: 'text', nullable: true })
   commentaireSortie?: string | null;
 
+  // [Ajout requete UI] Etat "exeatable" persistant: le patient est marque
+  // pret pour la sortie. Persiste cote back pour survivre au rafraichissement
+  // et a la deconnexion, tant que l'utilisateur ne le desactive pas.
+  @Field(() => Boolean)
+  @Column({ name: 'exeatable', type: 'boolean', default: false })
+  exeatable: boolean;
+
   @Field(() => Date)
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
