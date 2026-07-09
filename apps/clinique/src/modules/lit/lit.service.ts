@@ -108,7 +108,6 @@ export class LitService {
     const activeStatuts = [
       StatutHospitalisation.ADMIS,
       StatutHospitalisation.EN_COURS,
-      StatutHospitalisation.TRANSFERE,
     ];
 ​
     const chambres = await this.chambreRepository.find({
@@ -168,8 +167,6 @@ export class LitService {
                 statutHospitalisation: episode.statut,
                 diagnostic: null,
                 soinsCount: 0,
-                // [Ajout requete UI] Expose l'etat exeatable persistant au plan des lits.
-                exeatable: episode.exeatable ?? false,
                 patient: (episode.patient as Record<string, unknown>) ?? null,
               }
             : null;
@@ -199,7 +196,6 @@ export class LitService {
     const activeStatuts = [
       StatutHospitalisation.ADMIS,
       StatutHospitalisation.EN_COURS,
-      StatutHospitalisation.TRANSFERE,
     ];
 ​
     if (statut === StatutLit.OCCUPE) {

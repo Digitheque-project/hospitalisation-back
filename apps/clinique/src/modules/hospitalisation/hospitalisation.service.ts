@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, In, Repository } from 'typeorm';
-import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domain/entities/hospitalisation-episode.entity';
+import {
+  HospitalisationEpisodeEntity,
+  ModeSortie,
+  StatutHospitalisation,
+  StatutPaiementSortie,
+} from '../../domain/entities/hospitalisation-episode.entity';
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import {
   CloseHospitalisationEpisodeDto,
@@ -9,7 +14,6 @@ import {
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
   AttributeLitDto,
-  UpdateExeatableDto,
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
@@ -61,6 +65,10 @@ export class HospitalisationService {
       litId: lit?.id ?? null,
       litCode: lit?.codeLit ?? null,
       statut: StatutHospitalisation.ADMIS,
+      fraisRegles: false,
+      statutPaiementSortie: StatutPaiementSortie.NON_VERIFIE,
+      sortieMedicaleValidee: false,
+      sortieAdministrativeValidee: false,
     });
 ​
     const saved = await this.hospitalisationRepository.save(entity);
@@ -85,13 +93,15 @@ export class HospitalisationService {
     input: UpdateHospitalisationStatusDto,
   ): Promise<HospitalisationEpisodeEntity> {
     const episode = await this.findEpisodeById(id, input.chuId);
+    if (this.isClosedStatus(episode.statut)) {
+      throw new BadRequestException('Episode deja cloture');
+    }
+    if (this.isClosedStatus(input.statut)) {
+      throw new BadRequestException('Utiliser /hospitalisations/:id/close pour cloturer un episode');
+    }
+​
     episode.statut = input.statut;
     episode.updatedBy = input.updatedBy;
-​
-    if (this.isClosedStatus(input.statut)) {
-      episode.dateSortie = episode.dateSortie ?? new Date();
-      await this.releaseLitIfNeeded(episode.litId);
-    }
 ​
     const saved = await this.hospitalisationRepository.save(episode);
 ​
@@ -103,38 +113,6 @@ export class HospitalisationService {
       dateSortie: saved.dateSortie ? saved.dateSortie.toISOString() : null,
     });
 ​
-    // Option A : un statut de clôture archive les diagnostics actifs du patient.
-    if (this.isClosedStatus(saved.statut)) {
-      await this.dossierPatientApi.archivePatientDiagnostics({
-        chuId: saved.chuId,
-        serviceId: saved.serviceId,
-        patientId: saved.patientId,
-        episodeId: saved.id,
-      });
-    }
-​
-    return saved;
-  }
-​
-  // [Ajout requete UI] Met a jour uniquement l'etat "exeatable" d'un episode
-  // et notifie les autres services via Kafka.
-  async updateExeatable(
-    id: string,
-    input: UpdateExeatableDto,
-  ): Promise<HospitalisationEpisodeEntity> {
-    const episode = await this.findEpisodeById(id, input.chuId);
-    episode.exeatable = input.exeatable;
-    episode.updatedBy = input.updatedBy;
-​
-    const saved = await this.hospitalisationRepository.save(episode);
-​
-    await this.kafkaService.emit('hospitalisation.episode.exeatable.updated', {
-      id: saved.id,
-      chuId: saved.chuId,
-      exeatable: saved.exeatable,
-      updatedBy: saved.updatedBy ?? null,
-    });
-​
     return saved;
   }
 ​
@@ -143,12 +121,57 @@ export class HospitalisationService {
     input: CloseHospitalisationEpisodeDto,
   ): Promise<HospitalisationEpisodeEntity> {
     const episode = await this.findEpisodeById(id, input.chuId);
+    if (this.isClosedStatus(episode.statut)) {
+      throw new BadRequestException('Episode deja cloture');
+    }
 ​
-    const finalStatus = input.statutFinal ?? StatutHospitalisation.SORTIE;
+    const finalStatus = input.statutFinal ?? this.resolveFinalStatus(input.modeSortie);
+    if (!this.isClosedStatus(finalStatus)) {
+      throw new BadRequestException('Le statut final doit etre un statut de cloture');
+    }
+​
+    const effectiveExitDate = input.dateSortie ? new Date(input.dateSortie) : new Date();
+    if (Number.isNaN(effectiveExitDate.getTime())) {
+      throw new BadRequestException('Date de sortie invalide');
+    }
+    if (effectiveExitDate.getTime() < episode.dateAdmission.getTime()) {
+      throw new BadRequestException('La date de sortie ne peut pas etre avant la date d admission');
+    }
+​
+    this.validateCloseInput(input, finalStatus);
+    const paymentState = this.resolvePaymentState(input, input.updatedBy, effectiveExitDate);
+​
     episode.statut = finalStatus;
+    episode.modeSortie = input.modeSortie;
     episode.updatedBy = input.updatedBy;
+    episode.validatedBy = input.updatedBy;
+    episode.validatedAt = effectiveExitDate;
     episode.commentaireSortie = input.commentaireSortie ?? null;
-    episode.dateSortie = input.dateSortie ? new Date(input.dateSortie) : new Date();
+    episode.dateSortie = effectiveExitDate;
+    episode.etatSortie = input.etatSortie ?? null;
+    episode.motifSortie = input.motifSortie ?? null;
+    episode.resumeSortie = input.resumeSortie ?? null;
+    episode.diagnosticFinal = input.diagnosticFinal ?? null;
+    episode.traitementSortie = input.traitementSortie ?? null;
+    episode.conduiteATenir = input.conduiteATenir ?? null;
+    episode.rendezVousControle = input.rendezVousControle ?? null;
+    episode.destinationServiceId = input.destinationServiceId ?? null;
+    episode.destinationEtablissement = input.destinationEtablissement ?? null;
+    episode.moyenTransport = input.moyenTransport ?? null;
+    episode.dateDeces = input.dateDeces ? new Date(input.dateDeces) : null;
+    episode.causeDeces = input.causeDeces ?? null;
+    episode.certificatDecesNumero = input.certificatDecesNumero ?? null;
+    episode.motifContreAvis = input.motifContreAvis ?? null;
+    episode.risquesExpliques = input.risquesExpliques ?? null;
+    episode.signaturePatient = input.signaturePatient ?? null;
+    episode.fraisRegles = paymentState.fraisRegles;
+    episode.statutPaiementSortie = paymentState.statutPaiementSortie;
+    episode.referencePaiement = input.referencePaiement ?? null;
+    episode.commentairePaiement = input.commentairePaiement ?? null;
+    episode.fraisReglesPar = paymentState.fraisReglesPar;
+    episode.fraisReglesAt = paymentState.fraisReglesAt;
+    episode.sortieMedicaleValidee = true;
+    episode.sortieAdministrativeValidee = paymentState.sortieAdministrativeValidee;
 ​
     await this.releaseLitIfNeeded(episode.litId);
 ​
@@ -156,14 +179,20 @@ export class HospitalisationService {
 ​
     await this.kafkaService.emit('hospitalisation.episode.closed', {
       id: saved.id,
+      patientId: saved.patientId,
       chuId: saved.chuId,
+      serviceId: saved.serviceId,
       statut: saved.statut,
+      modeSortie: saved.modeSortie,
       updatedBy: saved.updatedBy ?? null,
+      validatedBy: saved.validatedBy ?? null,
       dateSortie: saved.dateSortie ? saved.dateSortie.toISOString() : null,
       commentaireSortie: saved.commentaireSortie ?? null,
+      fraisRegles: saved.fraisRegles,
+      statutPaiementSortie: saved.statutPaiementSortie,
+      sortieAdministrativeValidee: saved.sortieAdministrativeValidee,
     });
 ​
-    // Option A : le patient sort -> on archive ses diagnostics actifs.
     await this.dossierPatientApi.archivePatientDiagnostics({
       chuId: saved.chuId,
       serviceId: saved.serviceId,
@@ -226,11 +255,7 @@ export class HospitalisationService {
     hospitalizedTotal: number;
     hospitalizedNewToday: number;
   }> {
-    const activeStatuts = [
-      StatutHospitalisation.ADMIS,
-      StatutHospitalisation.EN_COURS,
-      StatutHospitalisation.TRANSFERE,
-    ];
+    const activeStatuts = this.activeStatuses();
 ​
     const [total, newToday] = await Promise.all([
       this.hospitalisationRepository.count({
@@ -256,15 +281,9 @@ export class HospitalisationService {
     serviceId?: string,
     limit = 50,
   ): Promise<HospitalisationEpisodeEntity[]> {
-    const activeStatuts = [
-      StatutHospitalisation.ADMIS,
-      StatutHospitalisation.EN_COURS,
-      StatutHospitalisation.TRANSFERE,
-    ];
-​
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
       chuId,
-      statut: In(activeStatuts),
+      statut: In(this.activeStatuses()),
     };
     if (serviceId) {
       where.serviceId = serviceId;
@@ -289,27 +308,25 @@ export class HospitalisationService {
   }
 ​
   async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
-    // Find the episode
     const episode = await this.hospitalisationRepository.findOne({
       where: {
         patientId: input.patientId,
         serviceId: input.serviceId,
         chuId: input.chuId,
+        statut: In(this.activeStatuses()),
       },
     });
-    
+​
     if (!episode) {
       throw new NotFoundException(
         'Aucun episode actif trouvé pour ce patient dans ce service',
       );
     }
 ​
-    // Release old lit if any
     if (episode.litId) {
       await this.releaseLitIfNeeded(episode.litId);
     }
 ​
-    // Assign new lit
     const lit = await this.findAvailableLit(input.litId, input.serviceId, input.chuId);
     lit.statut = StatutLit.OCCUPE;
     await this.litRepository.save(lit);
@@ -368,15 +385,101 @@ export class HospitalisationService {
     if (!lit) {
       return;
     }
-    lit.statut = StatutLit.DISPONIBLE;
+    lit.statut = StatutLit.A_NETTOYER;
     await this.litRepository.save(lit);
+  }
+​
+  private validateCloseInput(input: CloseHospitalisationEpisodeDto, finalStatus: StatutHospitalisation): void {
+    if (input.modeSortie === ModeSortie.DECES && !input.causeDeces) {
+      throw new BadRequestException('La cause du deces est obligatoire');
+    }
+    if (input.modeSortie === ModeSortie.DECES && finalStatus !== StatutHospitalisation.DECEDE) {
+      throw new BadRequestException('Le mode DECES doit cloturer avec le statut DECEDE');
+    }
+    if (input.modeSortie === ModeSortie.EVASION && finalStatus !== StatutHospitalisation.EVADE) {
+      throw new BadRequestException('Le mode EVASION doit cloturer avec le statut EVADE');
+    }
+    if (input.modeSortie === ModeSortie.TRANSFERT_INTERNE && !input.destinationServiceId) {
+      throw new BadRequestException('Le service de destination est obligatoire pour un transfert interne');
+    }
+    if (
+      [ModeSortie.TRANSFERT_EXTERNE, ModeSortie.EVACUATION_SANITAIRE].includes(input.modeSortie) &&
+      !input.destinationEtablissement
+    ) {
+      throw new BadRequestException('La destination est obligatoire pour un transfert externe ou une evacuation sanitaire');
+    }
+    if (input.modeSortie === ModeSortie.SORTIE_CONTRE_AVIS) {
+      if (!input.motifContreAvis) {
+        throw new BadRequestException('Le motif est obligatoire pour une sortie contre avis medical');
+      }
+      if (!input.risquesExpliques) {
+        throw new BadRequestException('Les risques expliques sont obligatoires pour une sortie contre avis medical');
+      }
+    }
+  }
+​
+  private resolveFinalStatus(modeSortie: ModeSortie): StatutHospitalisation {
+    switch (modeSortie) {
+      case ModeSortie.DECES:
+        return StatutHospitalisation.DECEDE;
+      case ModeSortie.EVASION:
+        return StatutHospitalisation.EVADE;
+      case ModeSortie.TRANSFERT_INTERNE:
+        return StatutHospitalisation.TRANSFERE;
+      case ModeSortie.SORTIE_AUTORISEE:
+      case ModeSortie.SORTIE_CONTRE_AVIS:
+      case ModeSortie.TRANSFERT_EXTERNE:
+      case ModeSortie.EVACUATION_SANITAIRE:
+      default:
+        return StatutHospitalisation.SORTIE;
+    }
+  }
+​
+  private resolvePaymentState(
+    input: CloseHospitalisationEpisodeDto,
+    userId: string,
+    dateSortie: Date,
+  ): {
+    fraisRegles: boolean;
+    statutPaiementSortie: StatutPaiementSortie;
+    fraisReglesPar: string | null;
+    fraisReglesAt: Date | null;
+    sortieAdministrativeValidee: boolean;
+  } {
+    let statut = input.statutPaiementSortie ?? StatutPaiementSortie.NON_VERIFIE;
+    if (input.fraisRegles === true) {
+      statut = StatutPaiementSortie.REGLE;
+    } else if (input.fraisRegles === false && !input.statutPaiementSortie) {
+      statut = StatutPaiementSortie.NON_REGLE;
+    }
+​
+    const paiementOK = [
+      StatutPaiementSortie.REGLE,
+      StatutPaiementSortie.EXONERE,
+      StatutPaiementSortie.PRISE_EN_CHARGE,
+      StatutPaiementSortie.REGLEMENT_DIFFERE,
+    ].includes(statut);
+​
+    return {
+      fraisRegles: statut === StatutPaiementSortie.REGLE,
+      statutPaiementSortie: statut,
+      fraisReglesPar: statut === StatutPaiementSortie.REGLE ? userId : null,
+      fraisReglesAt: statut === StatutPaiementSortie.REGLE ? dateSortie : null,
+      sortieAdministrativeValidee: paiementOK,
+    };
+  }
+​
+  private activeStatuses(): StatutHospitalisation[] {
+    return [StatutHospitalisation.ADMIS, StatutHospitalisation.EN_COURS];
   }
 ​
   private isClosedStatus(statut: StatutHospitalisation): boolean {
     return [
+      StatutHospitalisation.TRANSFERE,
       StatutHospitalisation.SORTIE,
       StatutHospitalisation.DECEDE,
       StatutHospitalisation.EVADE,
     ].includes(statut);
   }
 }
+​
