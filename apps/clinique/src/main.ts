@@ -29,8 +29,15 @@ async function bootstrap() {
     .setTitle('Hospitalisation Episodes API')
     .setDescription('Microservice de gestion des episodes d hospitalisation')
     .setVersion('1.0.0')
+    // Ajoute le bouton "Authorize" dans Swagger pour coller un token JWT.
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  // Applique le token a TOUS les endpoints une fois "Authorize" renseigne.
+  swaggerDocument.security = [{ 'access-token': [] }];
   SwaggerModule.setup('clinique/api/docs', app, swaggerDocument);
 
   // Render injecte PORT; on garde CLINIQUE_PORT pour le local et les conteneurs.
