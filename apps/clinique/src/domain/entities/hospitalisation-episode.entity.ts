@@ -209,6 +209,11 @@ export class HospitalisationEpisodeEntity {
   @Column({ name: 'commentaire_sortie', type: 'text', nullable: true })
   commentaireSortie?: string | null;
 ​
+  @Field()
+  @ApiProperty({ example: false, description: "Etat 'exeatable' persistant (toggle du plan des lits, front clinique)" })
+  @Column({ name: 'exeatable', type: 'boolean', default: false })
+  exeatable: boolean;
+
   @Field(() => Date)
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

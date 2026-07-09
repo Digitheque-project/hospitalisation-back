@@ -31,9 +31,17 @@ export class DossierPatientApiService {
 ​
     const url = dossierPatientEndpoint('/diagnostics/archive');
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      };
+      // Authentification service-a-service (verifiee par le guard du dossier-patient).
+      if (process.env.INTERNAL_API_KEY) {
+        headers['x-internal-api-key'] = process.env.INTERNAL_API_KEY;
+      }
       const response = await fetch(url, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers,
         body: JSON.stringify(input),
       });
       if (!response.ok) {

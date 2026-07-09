@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from 
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import { CreateLitsDto, LitQueryDto, PlanLitsQueryDto, PlanLitsResponseDto, UpdateLitDto } from './lit.dto';
 import { LitService } from './lit.service';
+import { Permissions } from '../../common/auth/decorators/permissions.decorator';
 
 @ApiTags('Lits')
 @Controller()
@@ -10,6 +11,7 @@ export class LitController {
   constructor(private readonly litService: LitService) {}
 
   @Post('chambres/:chambreId/lits')
+  @Permissions('lit:create')
   @ApiOperation({
     summary: 'Creer un ou plusieurs lits',
     description: 'Les lits sont toujours rattaches a une chambre existante.',
@@ -32,6 +34,7 @@ export class LitController {
   }
 
   @Get('lits')
+  @Permissions('lit:read')
   @ApiOperation({
     summary: 'Lister les lits',
     description: 'Filtrer par chambreId ou serviceId (via chambre).',
@@ -49,6 +52,7 @@ export class LitController {
   }
 
   @Get('lits/:id')
+  @Permissions('lit:read')
   @ApiOperation({ summary: 'Recuperer un lit' })
   @ApiParam({ name: 'id', description: 'Identifiant lit' })
   @ApiQuery({ name: 'chuId', required: true })
@@ -62,6 +66,7 @@ export class LitController {
   }
 
   @Patch('lits/:id')
+  @Permissions('lit:update')
   @ApiOperation({
     summary: 'Modifier un lit',
     description: 'Le statut est contraint par les episodes actifs associes au lit.',
@@ -83,6 +88,7 @@ export class LitController {
   }
 
   @Get('plan-lits')
+  @Permissions('lit:read')
   @ApiOperation({
     summary: 'Plan de lits complet',
     description: 'Retourne toutes les chambres d un service avec leurs lits et statut actuel.',

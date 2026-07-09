@@ -14,6 +14,7 @@ import {
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
   AttributeLitDto,
+  UpdateExeatableDto,
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
@@ -350,6 +351,15 @@ export class HospitalisationService {
     return saved;
   }
 ​
+  async setExeatable(
+    id: string,
+    input: UpdateExeatableDto,
+  ): Promise<HospitalisationEpisodeEntity> {
+    const episode = await this.findEpisodeById(id, input.chuId);
+    episode.exeatable = input.exeatable;
+    return this.hospitalisationRepository.save(episode);
+  }
+
   private async findAvailableLit(
     litId: string,
     serviceId: string,

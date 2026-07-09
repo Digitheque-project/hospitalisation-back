@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from 
 import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { ChambreQueryDto, CreateChambreDto, UpdateChambreDto } from './chambre.dto';
 import { ChambreService } from './chambre.service';
+import { Permissions } from '../../common/auth/decorators/permissions.decorator';
 
 @ApiTags('Chambres')
 @Controller('chambres')
@@ -10,6 +11,7 @@ export class ChambreController {
   constructor(private readonly chambreService: ChambreService) {}
 
   @Post()
+  @Permissions('chambre:create')
   @ApiOperation({
     summary: 'Creer une chambre',
     description: 'Une chambre appartient toujours a un service donne.',
@@ -30,6 +32,7 @@ export class ChambreController {
   }
 
   @Get()
+  @Permissions('chambre:read')
   @ApiOperation({
     summary: 'Lister les chambres',
     description: 'Le filtre serviceId est obligatoire pour limiter la recherche.',
@@ -46,6 +49,7 @@ export class ChambreController {
   }
 
   @Get(':id')
+  @Permissions('chambre:read')
   @ApiOperation({ summary: 'Recuperer une chambre avec ses lits' })
   @ApiParam({ name: 'id', description: 'Identifiant chambre' })
   @ApiQuery({ name: 'chuId', required: true })
@@ -59,6 +63,7 @@ export class ChambreController {
   }
 
   @Patch(':id')
+  @Permissions('chambre:update')
   @ApiOperation({ summary: 'Modifier une chambre' })
   @ApiParam({ name: 'id', description: 'Identifiant chambre' })
   @ApiBody({

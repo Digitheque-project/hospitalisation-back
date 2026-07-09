@@ -281,3 +281,17 @@ export class AttributeLitDto {
   @IsString()
   updatedBy: string;
 }
+
+@InputType()
+export class UpdateExeatableDto {
+  @Field()
+  @ApiProperty({ example: true, description: "Nouvel etat exeatable a persister" })
+  @IsBoolean()
+  exeatable: boolean;
+
+  @Field()
+  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @IsString()
+  @Length(1, 120)
+  chuId: string;
+}
