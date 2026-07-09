@@ -7,7 +7,6 @@ import {
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
   AttributeLitDto,
-  UpdateExeatableDto,
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
 ​
@@ -41,7 +40,7 @@ export class HospitalisationController {
   @Patch(':id/status')
   @ApiOperation({
     summary: 'Mettre a jour le statut de l episode',
-    description: 'Les statuts de cloture liberent automatiquement le lit associe.',
+    description: 'Cette route est reservee aux statuts non cloturants. Utiliser /close pour une sortie.',
   })
   @ApiParam({ name: 'id', description: 'Identifiant episode' })
   @ApiBody({
@@ -59,17 +58,10 @@ export class HospitalisationController {
     return this.hospitalisationService.updateStatus(id, body);
   }
 ​
-  // [Ajout requete UI] Persiste l'etat "exeatable" d'un episode (toggle carte lit).
-  // Survit au rafraichissement et a la deconnexion.
-  @Patch(':id/exeatable')
-  updateExeatable(@Param('id') id: string, @Body() body: UpdateExeatableDto) {
-    return this.hospitalisationService.updateExeatable(id, body);
-  }
-​
   @Patch(':id/close')
   @ApiOperation({
     summary: 'Cloturer un episode d hospitalisation',
-    description: 'La cloture positionne le statut final et libere le lit associe.',
+    description: 'La cloture valide la sortie effective, renseigne les donnees medicales/administratives, archive le dossier et passe le lit a A_NETTOYER.',
   })
   @ApiParam({ name: 'id', description: 'Identifiant episode' })
   @ApiBody({
