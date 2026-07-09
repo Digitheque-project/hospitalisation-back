@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from 
 import { DemandeEntity } from '../../domain/entities/demande.entity';
 import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery } from './demande.dto';
 import { DemandeService } from './demande.service';
+import { Permissions } from '../../common/auth/decorators/permissions.decorator';
 
 @ApiTags('Demande')
 @Controller('demandes')
@@ -10,6 +11,7 @@ export class DemandeController {
   constructor(private readonly demandeService: DemandeService) {}
 
   @Post()
+  @Permissions('demande:create')
   @ApiOperation({
     summary: 'Créer une demande',
     description: 'Créer une nouvelle demande d\'hospitalisation avec motif, patient, service et CHU.',
@@ -33,6 +35,7 @@ export class DemandeController {
   }
 
   @Get(':id')
+  @Permissions('demande:read')
   @ApiOperation({ summary: 'Récupérer une demande par identifiant' })
   @ApiParam({ name: 'id', description: 'Identifiant demande' })
   @ApiQuery({ name: 'chuId', required: false })
@@ -43,6 +46,7 @@ export class DemandeController {
   }
 
   @Get()
+  @Permissions('demande:read')
   @ApiOperation({
     summary: 'Lister les demandes',
     description: 'Filtrer par chuId, serviceId, patientId et/ou statut. Tous les filtres sont optionnels.',
@@ -57,6 +61,7 @@ export class DemandeController {
   }
 
   @Patch(':id')
+  @Permissions('demande:update')
   @ApiOperation({
     summary: 'Mettre à jour une demande',
     description: 'Mettre à jour le motif, le statut ou les informations complémentaires d\'une demande.',
@@ -80,6 +85,7 @@ export class DemandeController {
   }
 
   @Delete(':id')
+  @Permissions('demande:delete')
   @ApiOperation({ summary: 'Supprimer une demande' })
   @ApiParam({ name: 'id', description: 'Identifiant demande' })
   @ApiQuery({ name: 'chuId', required: false })

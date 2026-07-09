@@ -6,16 +6,19 @@ import {
   CreateHospitalisationEpisodeDto,
   HospitalisationEpisodeQuery,
   UpdateHospitalisationStatusDto,
+  UpdateExeatableDto,
   AttributeLitDto,
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
-​
+import { Permissions } from '../../common/auth/decorators/permissions.decorator';
+
 @ApiTags('Hospitalisation')
 @Controller('hospitalisations')
 export class HospitalisationController {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
-​
+
   @Post()
+  @Permissions('hospitalisation:create')
   @ApiOperation({
     summary: 'Creer un episode d hospitalisation',
     description: 'Un episode est rattache a un patient et un service. Le lit doit etre disponible si fourni.',
@@ -36,8 +39,9 @@ export class HospitalisationController {
   createEpisode(@Body() body: CreateHospitalisationEpisodeDto) {
     return this.hospitalisationService.createEpisode(body);
   }
-​
+
   @Patch(':id/status')
+  @Permissions('hospitalisation:update')
   @ApiOperation({
     summary: 'Mettre a jour le statut de l episode',
     description: 'Cette route est reservee aux statuts non cloturants. Utiliser /close pour une sortie.',
@@ -57,8 +61,30 @@ export class HospitalisationController {
   updateStatus(@Param('id') id: string, @Body() body: UpdateHospitalisationStatusDto) {
     return this.hospitalisationService.updateStatus(id, body);
   }
-​
+
+  @Patch(':id/exeatable')
+  @Permissions('hospitalisation:update')
+  @ApiOperation({
+    summary: "Persister l'etat exeatable d'un episode",
+    description: "Met a jour le drapeau exeatable (toggle du plan des lits, front clinique).",
+  })
+  @ApiParam({ name: 'id', description: 'Identifiant episode' })
+  @ApiBody({
+    schema: {
+      example: {
+        exeatable: true,
+        chuId: 'chu-01',
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Etat exeatable mis a jour', type: HospitalisationEpisodeEntity })
+  @ApiResponse({ status: 404, description: 'Episode introuvable' })
+  updateExeatable(@Param('id') id: string, @Body() body: UpdateExeatableDto) {
+    return this.hospitalisationService.setExeatable(id, body);
+  }
+
   @Patch(':id/close')
+  @Permissions('hospitalisation:close')
   @ApiOperation({
     summary: 'Cloturer un episode d hospitalisation',
     description: 'La cloture valide la sortie effective, renseigne les donnees medicales/administratives, archive le dossier et passe le lit a A_NETTOYER.',
@@ -80,8 +106,9 @@ export class HospitalisationController {
   closeEpisode(@Param('id') id: string, @Body() body: CloseHospitalisationEpisodeDto) {
     return this.hospitalisationService.closeEpisode(id, body);
   }
-​
+
   @Patch('assign-lit')
+  @Permissions('hospitalisation:update')
   @ApiOperation({
     summary: 'Attribuer un lit a un patient',
     description: 'Attribution d\'un lit disponible pour un patient hospitalise dans un service.',
@@ -103,8 +130,9 @@ export class HospitalisationController {
   assignLit(@Body() body: AttributeLitDto) {
     return this.hospitalisationService.assignLit(body);
   }
-​
+
   @Get('stats')
+  @Permissions('hospitalisation:read')
   @ApiOperation({
     summary: 'Statistiques des hospitalisations',
     description: 'Retourne le total des patients hospitalises actifs et les nouvelles admissions du jour pour un CHU.',
@@ -118,8 +146,9 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.getStats(chuId);
   }
-​
+
   @Get('actives')
+  @Permissions('hospitalisation:read')
   @ApiOperation({
     summary: 'Lister les episodes actifs',
     description: 'Retourne les episodes en statut ADMIS, EN_COURS ou TRANSFERE avec limit optionnel.',
@@ -139,8 +168,9 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.getActives(chuId, serviceId, limit);
   }
-​
+
   @Get(':id')
+  @Permissions('hospitalisation:read')
   @ApiOperation({ summary: 'Recuperer un episode par identifiant' })
   @ApiParam({ name: 'id', description: 'Identifiant episode' })
   @ApiQuery({ name: 'chuId', required: true })
@@ -152,8 +182,9 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.findEpisodeById(id, chuId);
   }
-​
+
   @Get()
+  @Permissions('hospitalisation:read')
   @ApiOperation({
     summary: 'Lister les episodes d hospitalisation',
     description: 'Le filtre serviceId est obligatoire. patientId et statut sont optionnels.',
@@ -171,4 +202,3 @@ export class HospitalisationController {
     return this.hospitalisationService.listEpisodes(query);
   }
 }
-​
