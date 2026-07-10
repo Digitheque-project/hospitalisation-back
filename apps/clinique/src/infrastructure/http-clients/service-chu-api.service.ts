@@ -19,14 +19,27 @@ export class ServiceChuApiService {
   private readonly logger = new Logger(ServiceChuApiService.name);
   private readonly chuCache = new Map<string, CacheEntry<boolean>>();
   private readonly serviceCache = new Map<string, CacheEntry<ServiceChuInfo>>();
-  private readonly serviceChuPrefix = '/service-chu';
 
-  private chuUrl(chuId: string): string {
-    return chuEndpoint(`${this.serviceChuPrefix}/chu/${encodeURIComponent(chuId)}`);
+  // service-service expose ses routes A LA RACINE (setGlobalPrefix est commente),
+  // sur le controller @Controller('services'). Donc: GET /services et GET /services/:id
+  private serviceByIdUrl(serviceId: string): string {
+    return chuEndpoint(`/services/${encodeURIComponent(serviceId)}`);
   }
 
-  private serviceByIdUrl(serviceId: string): string {
-    return chuEndpoint(`${this.serviceChuPrefix}/service/${encodeURIComponent(serviceId)}`);
+  private servicesUrl(): string {
+    return chuEndpoint('/services');
+  }
+
+  // service-service protege TOUTES ses routes par un JwtAuthGuard global.
+  // Le guard accepte le contournement service-a-service via l'entete x-api-key
+  // dont la valeur doit egaler l'INTERNAL_API_KEY de service-service.
+  private buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    const apiKey = process.env.INTERNAL_API_KEY;
+    if (apiKey) {
+      headers['x-api-key'] = apiKey;
+    }
+    return headers;
   }
 
   async ensureChuExists(chuId: string): Promise<void> {
@@ -35,20 +48,29 @@ export class ServiceChuApiService {
       return;
     }
 
-    const url = this.chuUrl(chuId);
+    // Aucun endpoint dedie "valider un CHU" cote service-service.
+    // On valide donc en listant les services et en cherchant ce chuId.
+    const url = this.servicesUrl();
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: this.buildHeaders(),
       });
-      if (response.status === 404) {
-        throw new NotFoundException(`CHU introuvable dans le service externe (identifiant : ${chuId}).`);
-      }
       if (!response.ok) {
         throw new ServiceUnavailableException(
           `Le service externe a repondu avec le statut ${response.status}. Validation du CHU impossible.`,
         );
       }
+
+      const body = await response.json();
+      const services: Array<{ chuId?: string }> = Array.isArray(body) ? body : [];
+      const exists = services.some((s) => s.chuId === chuId);
+      if (!exists) {
+        throw new NotFoundException(
+          `CHU introuvable dans le service externe (identifiant : ${chuId}).`,
+        );
+      }
+
       this.chuCache.set(chuId, {
         value: true,
         expiresAt: Date.now() + CACHE_TTL_MS,
@@ -72,7 +94,7 @@ export class ServiceChuApiService {
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: this.buildHeaders(),
       });
       if (response.status === 404) {
         throw new NotFoundException(
@@ -86,8 +108,10 @@ export class ServiceChuApiService {
       }
 
       const body = await response.json();
+      // service-service renvoie l'entite Service : { id, name, baseUrl, isActive, chuId }
+      // -> le champ identifiant est "id" (et non "serviceId").
       const info: ServiceChuInfo = {
-        serviceId: body.serviceId,
+        serviceId: body.id,
         name: body.name,
         chuId: body.chuId,
       };
@@ -97,11 +121,13 @@ export class ServiceChuApiService {
         expiresAt: Date.now() + CACHE_TTL_MS,
       });
 
-      // Also warm up the CHU cache since we know this CHU exists
-      this.chuCache.set(info.chuId, {
-        value: true,
-        expiresAt: Date.now() + CACHE_TTL_MS,
-      });
+      // On sait que ce CHU existe : on rechauffe le cache CHU.
+      if (info.chuId) {
+        this.chuCache.set(info.chuId, {
+          value: true,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+        });
+      }
 
       return info;
     } catch (e) {
