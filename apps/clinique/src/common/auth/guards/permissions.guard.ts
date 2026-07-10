@@ -7,11 +7,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
+import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-
+​
 // Autorisation basee sur les permissions/roles portes par le token.
 //
 // Mode par defaut = AUDIT (AUTHZ_ENFORCE != 'true') : on trace un warning en
@@ -21,12 +22,20 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   private readonly logger = new Logger(PermissionsGuard.name);
-
+​
   constructor(
     private readonly reflector: Reflector,
     private readonly configService: ConfigService,
   ) {}
-
+​
+  // Recupere la requete sous-jacente que l'on soit en REST ou GraphQL.
+  private resolveRequest(context: ExecutionContext) {
+    if (context.getType<GqlContextType>() === 'graphql') {
+      return GqlExecutionContext.create(context).getContext()?.req;
+    }
+    return context.switchToHttp().getRequest();
+  }
+​
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -35,7 +44,7 @@ export class PermissionsGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
-
+​
     const requiredPermissions =
       this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
         context.getHandler(),
@@ -46,13 +55,13 @@ export class PermissionsGuard implements CanActivate {
         context.getHandler(),
         context.getClass(),
       ]) ?? [];
-
+​
     if (requiredPermissions.length === 0 && requiredRoles.length === 0) {
       return true;
     }
-
-    const request = context.switchToHttp().getRequest();
-
+​
+    const request = this.resolveRequest(context);
+​
     // Appel service-a-service : deja authentifie par JwtAuthGuard.
     const internalKey = this.configService.get<string>('INTERNAL_API_KEY');
     if (
@@ -61,7 +70,7 @@ export class PermissionsGuard implements CanActivate {
     ) {
       return true;
     }
-
+​
     const user = request?.user as JwtPayload | undefined;
     const services = user?.services ?? [];
     const userPermissions = new Set<string>();
@@ -72,7 +81,7 @@ export class PermissionsGuard implements CanActivate {
         userRoles.add(svc.roleName);
       }
     }
-
+​
     const missingPermissions = requiredPermissions.filter(
       (p) => !userPermissions.has(p),
     );
@@ -80,10 +89,10 @@ export class PermissionsGuard implements CanActivate {
       requiredRoles.length === 0 ||
       requiredRoles.some((r) => userRoles.has(r));
     const authorized = missingPermissions.length === 0 && hasRole;
-
+​
     const enforce =
       this.configService.get<string>('AUTHZ_ENFORCE', 'false') === 'true';
-
+​
     if (!authorized) {
       const detail =
         'user=' +
@@ -100,7 +109,8 @@ export class PermissionsGuard implements CanActivate {
       }
       this.logger.warn('[AUTHZ audit] laisse passer (mode audit) - ' + detail);
     }
-
+​
     return true;
   }
 }
+​

@@ -1,5 +1,14 @@
 // Structure reelle du token signe par auth-service (auth.service.login).
 // Ne pas modifier auth-service : ce back se contente de verifier le token.
+export interface JwtChuInfo {
+  id: string;
+  name?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  responsable?: string;
+}
+
 export interface JwtUserService {
   serviceId?: string;
   serviceName?: string;
@@ -7,7 +16,7 @@ export interface JwtUserService {
   roleId?: string;
   roleName?: string;
   permissions?: string[];
-  chu?: unknown;
+  chu?: JwtChuInfo;
 }
 
 export interface JwtPayload {

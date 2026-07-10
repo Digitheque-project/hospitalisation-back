@@ -1,4 +1,7 @@
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
+import { JwtPayload } from '../../common/auth/interfaces/jwt-payload.interface';
+import { resolveChuIdFromToken } from '../../common/auth/token-chu.util';
 import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domain/entities/hospitalisation-episode.entity';
 import {
   CloseHospitalisationEpisodeDto,
@@ -6,16 +9,20 @@ import {
   UpdateHospitalisationStatusDto,
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
-
+​
 @Resolver(() => HospitalisationEpisodeEntity)
 export class HospitalisationResolver {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
-
+​
   @Mutation(() => HospitalisationEpisodeEntity)
-  createHospitalisationEpisode(@Args('input') input: CreateHospitalisationEpisodeDto) {
-    return this.hospitalisationService.createEpisode(input);
+  createHospitalisationEpisode(
+    @Args('input') input: CreateHospitalisationEpisodeDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const chuId = resolveChuIdFromToken(user, input.serviceId);
+    return this.hospitalisationService.createEpisode(input, chuId);
   }
-
+​
   @Mutation(() => HospitalisationEpisodeEntity)
   updateHospitalisationStatus(
     @Args('id', { type: () => ID }) id: string,
@@ -23,7 +30,7 @@ export class HospitalisationResolver {
   ) {
     return this.hospitalisationService.updateStatus(id, input);
   }
-
+​
   @Mutation(() => HospitalisationEpisodeEntity)
   closeHospitalisationEpisode(
     @Args('id', { type: () => ID }) id: string,
@@ -31,7 +38,7 @@ export class HospitalisationResolver {
   ) {
     return this.hospitalisationService.closeEpisode(id, input);
   }
-
+​
   @Query(() => HospitalisationEpisodeEntity)
   hospitalisationEpisode(
     @Args('id', { type: () => ID }) id: string,
@@ -39,7 +46,7 @@ export class HospitalisationResolver {
   ) {
     return this.hospitalisationService.findEpisodeById(id, chuId);
   }
-
+​
   @Query(() => [HospitalisationEpisodeEntity])
   hospitalisationEpisodes(
     @Args('serviceId', { type: () => String }) serviceId: string,
@@ -50,3 +57,4 @@ export class HospitalisationResolver {
     return this.hospitalisationService.listEpisodes({ patientId, serviceId, statut, chuId });
   }
 }
+​

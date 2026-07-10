@@ -8,39 +8,40 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { LitEntity } from './lit.entity';
-
+​
 @ObjectType()
 @Entity('chambre')
 export class ChambreEntity {
   @Field(() => ID)
-  @PrimaryColumn({ name: 'id_chambre', type: 'varchar', length: 120 })
+  @PrimaryColumn({ type: 'varchar', length: 120 })
   id: string;
-
+​
   @Field()
-  @Column({ name: 'service_id', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   serviceId: string;
-
+​
   @Field()
-  @Column({ name: 'chu_id', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   chuId: string;
-
+​
   @Field(() => Int)
-  @Column({ name: 'numero_chambre', type: 'int' })
+  @Column({ type: 'int' })
   numeroChambre: number;
-
+​
   @Field()
-  @Column({ name: 'type_chambre', type: 'varchar', length: 120 })
+  @Column({ type: 'varchar', length: 120 })
   type: string;
-
+​
   @Field(() => [LitEntity], { nullable: true })
   @OneToMany(() => LitEntity, (lit) => lit.chambre)
   lits?: LitEntity[];
-
+​
   @Field(() => Date)
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
-
+​
   @Field(() => Date)
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+​

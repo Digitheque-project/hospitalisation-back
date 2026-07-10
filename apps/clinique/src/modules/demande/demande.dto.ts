@@ -2,32 +2,38 @@ import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
 import { StatutDemande } from '../../domain/entities/demande.entity';
-
+​
 @InputType()
 export class CreateDemandeDto {
   @Field()
   @ApiProperty({ example: 'Demande d\'hospitalisation pour chirurgie', description: 'Motif de la demande' })
   @IsString()
   motif: string;
-
+​
   @Field()
-  @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient' })
   @IsString()
   @Length(1, 120)
   patientId: string;
-
+​
   @Field()
-  @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant du service source (celui qui fait la demande)' })
   @IsString()
   @Length(1, 120)
-  serviceId: string;
-
+  serviceIdSource: string;
+​
   @Field()
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
+  @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6', description: 'Identifiant du service destination' })
+  @IsString()
+  @Length(1, 120)
+  serviceIdDest: string;
+​
+  @Field()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
   @IsString()
   @Length(1, 120)
   chuId: string;
-
+​
   @Field(() => String, { nullable: true })
   @ApiProperty({
     example: 'Patient allergique aux pénicillines',
@@ -38,7 +44,7 @@ export class CreateDemandeDto {
   @IsOptional()
   @IsString()
   infoComplementaire?: string | null;
-
+​
   @Field(() => String, { nullable: true })
   @ApiProperty({
     example: 'Capacité insuffisante',
@@ -49,14 +55,14 @@ export class CreateDemandeDto {
   @IsOptional()
   @IsString()
   motifRefus?: string | null;
-
+​
   @Field()
-  @ApiProperty({ example: 'agent-45', description: 'Auteur de la demande' })
+  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de la demande' })
   @IsString()
   @Length(1, 120)
   createdBy: string;
 }
-
+​
 @InputType()
 export class UpdateDemandeDto {
   @Field(() => String, { nullable: true })
@@ -64,50 +70,56 @@ export class UpdateDemandeDto {
   @IsOptional()
   @IsString()
   motif?: string;
-
+​
   @Field(() => StatutDemande, { nullable: true })
   @ApiProperty({ enum: StatutDemande, required: false })
   @IsOptional()
   @IsEnum(StatutDemande)
   statut?: StatutDemande;
-
+​
   @Field(() => String, { nullable: true })
   @ApiProperty({ example: 'Patient allergique aux pénicillines', required: false })
   @IsOptional()
   @IsString()
   infoComplementaire?: string;
-
+​
   @Field(() => String, { nullable: true })
   @ApiProperty({ example: 'Capacité insuffisante', required: false })
   @IsOptional()
   @IsString()
   motifRefus?: string;
-
+​
   @Field()
-  @ApiProperty({ example: 'agent-45', description: 'Auteur de la mise à jour' })
+  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de la mise à jour' })
   @IsString()
   @Length(1, 120)
   updatedBy: string;
 }
-
+​
 export class DemandeQuery {
-  @ApiProperty({ example: 'chu-01', required: false })
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', required: false })
   @IsOptional()
   @IsString()
   chuId?: string;
-
-  @ApiProperty({ example: 'service-123', required: false })
+​
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', required: false })
   @IsOptional()
   @IsString()
-  serviceId?: string;
-
-  @ApiProperty({ example: 'patient-123', required: false })
+  serviceIdSource?: string;
+​
+  @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6', required: false })
+  @IsOptional()
+  @IsString()
+  serviceIdDest?: string;
+​
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', required: false })
   @IsOptional()
   @IsString()
   patientId?: string;
-
+​
   @ApiProperty({ enum: StatutDemande, required: false })
   @IsOptional()
   @IsEnum(StatutDemande)
   statut?: StatutDemande;
 }
+​

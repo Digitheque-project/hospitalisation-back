@@ -1,6 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString, Length } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString, IsUUID, Length } from 'class-validator';
 import {
   ModeSortie,
   StatutHospitalisation,
@@ -10,14 +10,14 @@ import {
 @InputType()
 export class CreateHospitalisationEpisodeDto {
   @Field()
-  @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
-  @IsString()
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient' })
+  @IsUUID()
   @Length(1, 120)
   patientId: string;
 ​
   @Field()
-  @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
-  @IsString()
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant service' })
+  @IsUUID()
   @Length(1, 120)
   serviceId: string;
 ​
@@ -38,8 +38,8 @@ export class CreateHospitalisationEpisodeDto {
   motifAdmission?: string | null;
 ​
   @Field()
-  @ApiProperty({ example: 'agent-45', description: "Auteur de l'admission" })
-  @IsString()
+  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: "Auteur de l'admission" })
+  @IsUUID()
   createdBy: string;
 ​
   @Field(() => String, { nullable: true })
@@ -56,14 +56,14 @@ export class UpdateHospitalisationStatusDto {
   statut: StatutHospitalisation;
 ​
   @Field()
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
+  @IsUUID()
   @Length(1, 120)
   chuId: string;
 ​
   @Field()
-  @ApiProperty({ example: 'agent-45', description: 'Auteur de la mise a jour' })
-  @IsString()
+  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de la mise a jour' })
+  @IsUUID()
   updatedBy: string;
 }
 ​
@@ -84,8 +84,8 @@ export class CloseHospitalisationEpisodeDto {
   dateSortie?: string;
 ​
   @Field()
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
+  @IsUUID()
   @Length(1, 120)
   chuId: string;
 ​
@@ -96,8 +96,8 @@ export class CloseHospitalisationEpisodeDto {
   commentaireSortie?: string;
 ​
   @Field()
-  @ApiProperty({ example: 'agent-45', description: 'Auteur de la clôture' })
-  @IsString()
+  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de la clôture' })
+  @IsUUID()
   updatedBy: string;
 ​
   @Field(() => StatutHospitalisation, { nullable: true })
@@ -152,9 +152,9 @@ export class CloseHospitalisationEpisodeDto {
   rendezVousControle?: string;
 ​
   @Field({ nullable: true })
-  @ApiPropertyOptional({ example: 'service-456', description: 'Service de destination si transfert interne' })
+  @ApiPropertyOptional({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6', description: 'Service de destination si transfert interne' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   destinationServiceId?: string;
 ​
   @Field({ nullable: true })
@@ -231,17 +231,17 @@ export class CloseHospitalisationEpisodeDto {
 }
 ​
 export class HospitalisationEpisodeQuery {
-  @ApiProperty({ example: 'service-123', description: 'Filtre obligatoire par service' })
-  @IsString()
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Filtre obligatoire par service' })
+  @IsUUID()
   serviceId: string;
 ​
-  @ApiProperty({ example: 'chu-01', description: 'Filtre obligatoire par CHU' })
-  @IsString()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Filtre obligatoire par CHU' })
+  @IsUUID()
   chuId: string;
 ​
-  @ApiProperty({ example: 'patient-123', required: false })
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', required: false })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   patientId?: string;
 ​
   @ApiProperty({ enum: StatutHospitalisation, required: false })
@@ -253,20 +253,20 @@ export class HospitalisationEpisodeQuery {
 @InputType()
 export class AttributeLitDto {
   @Field()
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
+  @IsUUID()
   @Length(1, 120)
   chuId: string;
 ​
   @Field()
-  @ApiProperty({ example: 'service-123', description: 'Identifiant service' })
-  @IsString()
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant service' })
+  @IsUUID()
   @Length(1, 120)
   serviceId: string;
 ​
   @Field()
-  @ApiProperty({ example: 'patient-123', description: 'Identifiant patient' })
-  @IsString()
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient' })
+  @IsUUID()
   @Length(1, 120)
   patientId: string;
 ​
@@ -277,21 +277,22 @@ export class AttributeLitDto {
   litId: string;
 ​
   @Field()
-  @ApiProperty({ example: 'agent-45', description: 'Auteur de l\'attribution' })
-  @IsString()
+  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de l\'attribution' })
+  @IsUUID()
   updatedBy: string;
 }
-
+​
 @InputType()
 export class UpdateExeatableDto {
   @Field()
   @ApiProperty({ example: true, description: "Nouvel etat exeatable a persister" })
   @IsBoolean()
   exeatable: boolean;
-
+​
   @Field()
-  @ApiProperty({ example: 'chu-01', description: 'Identifiant CHU' })
-  @IsString()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
+  @IsUUID()
   @Length(1, 120)
   chuId: string;
 }
+​

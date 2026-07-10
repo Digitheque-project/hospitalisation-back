@@ -4,12 +4,12 @@ import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import { CreateLitsDto, LitQueryDto, PlanLitsQueryDto, PlanLitsResponseDto, UpdateLitDto } from './lit.dto';
 import { LitService } from './lit.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
-
+​
 @ApiTags('Lits')
 @Controller()
 export class LitController {
   constructor(private readonly litService: LitService) {}
-
+​
   @Post('chambres/:chambreId/lits')
   @Permissions('lit:create')
   @ApiOperation({
@@ -32,7 +32,7 @@ export class LitController {
   createLits(@Param('chambreId') chambreId: string, @Body() body: CreateLitsDto) {
     return this.litService.createLits(chambreId, body);
   }
-
+​
   @Get('lits')
   @Permissions('lit:read')
   @ApiOperation({
@@ -50,7 +50,7 @@ export class LitController {
     }
     return this.litService.listLits(query);
   }
-
+​
   @Get('lits/:id')
   @Permissions('lit:read')
   @ApiOperation({ summary: 'Recuperer un lit' })
@@ -64,7 +64,7 @@ export class LitController {
     }
     return this.litService.getLitById(id, chuId);
   }
-
+​
   @Patch('lits/:id')
   @Permissions('lit:update')
   @ApiOperation({
@@ -75,7 +75,7 @@ export class LitController {
   @ApiBody({
     schema: {
       example: {
-        chuId: 'chu-01',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
         statut: 'MAINTENANCE',
       },
     },
@@ -86,7 +86,7 @@ export class LitController {
   updateLit(@Param('id') id: string, @Body() body: UpdateLitDto) {
     return this.litService.updateLit(id, body);
   }
-
+​
   @Get('plan-lits')
   @Permissions('lit:read')
   @ApiOperation({
@@ -105,3 +105,4 @@ export class LitController {
     return this.litService.planLits(query);
   }
 }
+​

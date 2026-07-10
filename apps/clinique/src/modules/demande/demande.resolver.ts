@@ -23,11 +23,12 @@ export class DemandeResolver {
   @Query(() => [DemandeEntity])
   async demandes(
     @Args('chuId', { nullable: true }) chuId?: string,
-    @Args('serviceId', { nullable: true }) serviceId?: string,
+    @Args('serviceIdSource', { nullable: true }) serviceIdSource?: string,
+    @Args('serviceIdDest', { nullable: true }) serviceIdDest?: string,
     @Args('patientId', { nullable: true }) patientId?: string,
     @Args('statut', { nullable: true }) statut?: string,
   ): Promise<DemandeEntity[]> {
-    return this.demandeService.findAll({ chuId, serviceId, patientId, statut: statut as any });
+    return this.demandeService.findAll({ chuId, serviceIdSource, serviceIdDest, patientId, statut: statut as any });
   }
 
   @Mutation(() => DemandeEntity)
