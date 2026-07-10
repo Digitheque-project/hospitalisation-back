@@ -7,7 +7,6 @@ import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
 import { CreateLitsDto, PlanLitsQueryDto, UpdateLitDto } from './lit.dto';
 import { buildLitId } from '../../common/utils/ids';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
-import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
 ​
 @Injectable()
 export class LitService {
@@ -18,7 +17,6 @@ export class LitService {
     private readonly chambreRepository: Repository<ChambreEntity>,
     @InjectRepository(HospitalisationEpisodeEntity)
     private readonly hospitalisationRepository: Repository<HospitalisationEpisodeEntity>,
-    private readonly serviceChuApi: ServiceChuApiService,
     private readonly accueilPatientApi: AccueilPatientApiService,
   ) {}
 ​
@@ -58,7 +56,6 @@ export class LitService {
       throw new BadRequestException('chambreId ou serviceId obligatoire');
     }
 ​
-    await this.serviceChuApi.ensureChuExists(query.chuId);
 ​
     if (query.chambreId) {
       return this.litRepository.find({
@@ -76,7 +73,6 @@ export class LitService {
   }
 ​
   async getLitById(id: string, chuId: string): Promise<LitEntity> {
-    await this.serviceChuApi.ensureChuExists(chuId);
     const lit = await this.litRepository.findOne({
       where: { id, chuId },
       relations: ['chambre'],
@@ -103,7 +99,6 @@ export class LitService {
   }
 ​
   async planLits(query: PlanLitsQueryDto) {
-    await this.serviceChuApi.ensureChuExists(query.chuId);
 ​
     const activeStatuts = [
       StatutHospitalisation.ADMIS,
@@ -227,3 +222,4 @@ export class LitService {
     }
   }
 }
+​

@@ -4,12 +4,12 @@ import { DemandeEntity } from '../../domain/entities/demande.entity';
 import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery } from './demande.dto';
 import { DemandeService } from './demande.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
-
+​
 @ApiTags('Demande')
 @Controller('demandes')
 export class DemandeController {
   constructor(private readonly demandeService: DemandeService) {}
-
+​
   @Post()
   @Permissions('demande:create')
   @ApiOperation({
@@ -20,11 +20,12 @@ export class DemandeController {
     schema: {
       example: {
         motif: 'Demande d\'hospitalisation pour chirurgie',
-        patientId: 'patient-123',
-        serviceId: 'service-123',
-        chuId: 'chu-01',
+        patientId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        serviceIdSource: '75f995a2-40e9-4285-84e4-a72501d37bfd',
+        serviceIdDest: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
         infoComplementaire: 'Patient allergique aux pénicillines',
-        createdBy: 'agent-45',
+        createdBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
     },
   })
@@ -33,7 +34,7 @@ export class DemandeController {
   create(@Body() body: CreateDemandeDto) {
     return this.demandeService.create(body);
   }
-
+​
   @Get(':id')
   @Permissions('demande:read')
   @ApiOperation({ summary: 'Récupérer une demande par identifiant' })
@@ -44,22 +45,23 @@ export class DemandeController {
   findById(@Param('id') id: string, @Query('chuId') chuId?: string) {
     return this.demandeService.findById(id, chuId);
   }
-
+​
   @Get()
   @Permissions('demande:read')
   @ApiOperation({
     summary: 'Lister les demandes',
-    description: 'Filtrer par chuId, serviceId, patientId et/ou statut. Tous les filtres sont optionnels.',
+    description: 'Filtrer par chuId, serviceIdSource, serviceIdDest, patientId et/ou statut. Tous les filtres sont optionnels.',
   })
   @ApiQuery({ name: 'chuId', required: false })
-  @ApiQuery({ name: 'serviceId', required: false })
+  @ApiQuery({ name: 'serviceIdSource', required: false })
+  @ApiQuery({ name: 'serviceIdDest', required: false })
   @ApiQuery({ name: 'patientId', required: false })
   @ApiQuery({ name: 'statut', required: false })
   @ApiResponse({ status: 200, description: 'Liste des demandes', type: DemandeEntity, isArray: true })
   findAll(@Query() query: DemandeQuery) {
     return this.demandeService.findAll(query);
   }
-
+​
   @Patch(':id')
   @Permissions('demande:update')
   @ApiOperation({
@@ -74,7 +76,7 @@ export class DemandeController {
         motif: 'Demande d\'hospitalisation pour chirurgie cardiaque',
         statut: 'ACCEPTE',
         infoComplementaire: 'Patient allergique aux pénicillines',
-        updatedBy: 'agent-45',
+        updatedBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
     },
   })
@@ -83,7 +85,7 @@ export class DemandeController {
   update(@Param('id') id: string, @Body() body: UpdateDemandeDto, @Query('chuId') chuId?: string) {
     return this.demandeService.update(id, body, chuId);
   }
-
+​
   @Delete(':id')
   @Permissions('demande:delete')
   @ApiOperation({ summary: 'Supprimer une demande' })
@@ -95,3 +97,4 @@ export class DemandeController {
     await this.demandeService.delete(id, chuId);
   }
 }
+​

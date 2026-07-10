@@ -11,12 +11,15 @@ import {
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
-
+import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
+import { JwtPayload } from '../../common/auth/interfaces/jwt-payload.interface';
+import { resolveChuIdFromToken } from '../../common/auth/token-chu.util';
+​
 @ApiTags('Hospitalisation')
 @Controller('hospitalisations')
 export class HospitalisationController {
   constructor(private readonly hospitalisationService: HospitalisationService) {}
-
+​
   @Post()
   @Permissions('hospitalisation:create')
   @ApiOperation({
@@ -26,20 +29,21 @@ export class HospitalisationController {
   @ApiBody({
     schema: {
       example: {
-        patientId: 'patient-123',
-        serviceId: 'service-123',
+        patientId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        serviceId: '75f995a2-40e9-4285-84e4-a72501d37bfd',
         motifAdmission: 'Observation clinique',
-        createdBy: 'agent-45',
+        createdBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
     },
   })
   @ApiResponse({ status: 201, description: 'Episode cree', type: HospitalisationEpisodeEntity })
   @ApiResponse({ status: 400, description: 'Donnees invalides ou lit indisponible' })
   @ApiResponse({ status: 404, description: 'Lit introuvable ou patient inconnu' })
-  createEpisode(@Body() body: CreateHospitalisationEpisodeDto) {
-    return this.hospitalisationService.createEpisode(body);
+  createEpisode(@Body() body: CreateHospitalisationEpisodeDto, @CurrentUser() user: JwtPayload) {
+    const chuId = resolveChuIdFromToken(user, body.serviceId);
+    return this.hospitalisationService.createEpisode(body, chuId);
   }
-
+​
   @Patch(':id/status')
   @Permissions('hospitalisation:update')
   @ApiOperation({
@@ -51,8 +55,8 @@ export class HospitalisationController {
     schema: {
       example: {
         statut: 'EN_COURS',
-        chuId: 'chu-01',
-        updatedBy: 'agent-45',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
+        updatedBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
     },
   })
@@ -61,7 +65,7 @@ export class HospitalisationController {
   updateStatus(@Param('id') id: string, @Body() body: UpdateHospitalisationStatusDto) {
     return this.hospitalisationService.updateStatus(id, body);
   }
-
+​
   @Patch(':id/exeatable')
   @Permissions('hospitalisation:update')
   @ApiOperation({
@@ -73,7 +77,7 @@ export class HospitalisationController {
     schema: {
       example: {
         exeatable: true,
-        chuId: 'chu-01',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
       },
     },
   })
@@ -82,7 +86,7 @@ export class HospitalisationController {
   updateExeatable(@Param('id') id: string, @Body() body: UpdateExeatableDto) {
     return this.hospitalisationService.setExeatable(id, body);
   }
-
+​
   @Patch(':id/close')
   @Permissions('hospitalisation:close')
   @ApiOperation({
@@ -95,8 +99,8 @@ export class HospitalisationController {
       example: {
         statutFinal: 'SORTIE',
         commentaireSortie: 'Sortie reguliere',
-        chuId: 'chu-01',
-        updatedBy: 'agent-45',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
+        updatedBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
         dateSortie: '2026-05-23T09:00:00.000Z',
       },
     },
@@ -106,7 +110,7 @@ export class HospitalisationController {
   closeEpisode(@Param('id') id: string, @Body() body: CloseHospitalisationEpisodeDto) {
     return this.hospitalisationService.closeEpisode(id, body);
   }
-
+​
   @Patch('assign-lit')
   @Permissions('hospitalisation:update')
   @ApiOperation({
@@ -116,11 +120,11 @@ export class HospitalisationController {
   @ApiBody({
     schema: {
       example: {
-        chuId: 'chu-01',
-        serviceId: 'service-123',
-        patientId: 'patient-123',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
+        serviceId: '75f995a2-40e9-4285-84e4-a72501d37bfd',
+        patientId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         litId: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
-        updatedBy: 'agent-45',
+        updatedBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
     },
   })
@@ -130,7 +134,7 @@ export class HospitalisationController {
   assignLit(@Body() body: AttributeLitDto) {
     return this.hospitalisationService.assignLit(body);
   }
-
+​
   @Get('stats')
   @Permissions('hospitalisation:read')
   @ApiOperation({
@@ -146,7 +150,7 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.getStats(chuId);
   }
-
+​
   @Get('actives')
   @Permissions('hospitalisation:read')
   @ApiOperation({
@@ -168,7 +172,7 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.getActives(chuId, serviceId, limit);
   }
-
+​
   @Get(':id')
   @Permissions('hospitalisation:read')
   @ApiOperation({ summary: 'Recuperer un episode par identifiant' })
@@ -182,7 +186,7 @@ export class HospitalisationController {
     }
     return this.hospitalisationService.findEpisodeById(id, chuId);
   }
-
+​
   @Get()
   @Permissions('hospitalisation:read')
   @ApiOperation({
@@ -202,3 +206,4 @@ export class HospitalisationController {
     return this.hospitalisationService.listEpisodes(query);
   }
 }
+​

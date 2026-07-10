@@ -23,35 +23,36 @@ registerEnumType(StatutLit, { name: 'StatutLit' });
 @Entity('lit')
 export class LitEntity {
   @Field(() => ID)
-  @PrimaryColumn({ name: 'id_lit', type: 'varchar', length: 120 })
+  @PrimaryColumn({ type: 'varchar', length: 120 })
   id: string;
 ​
   @Field(() => String)
-  @Column({ name: 'chambre_id', type: 'varchar', length: 120 })
+  @Column({ type: 'varchar', length: 120 })
   chambreId: string;
 ​
   @Field(() => String)
-  @Column({ name: 'chu_id', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   chuId: string;
 ​
   @Field(() => ChambreEntity)
   @ManyToOne(() => ChambreEntity, (chambre) => chambre.lits, { nullable: false })
-  @JoinColumn({ name: 'chambre_id' })
+  @JoinColumn({ name: 'chambreId' })
   chambre: ChambreEntity;
 ​
   @Field()
-  @Column({ name: 'code_lit', type: 'varchar', length: 120 })
+  @Column({ type: 'varchar', length: 120 })
   codeLit: string;
 ​
   @Field(() => StatutLit)
-  @Column({ name: 'statut', type: 'varchar', length: 40, default: StatutLit.DISPONIBLE })
+  @Column({ type: 'varchar', length: 40, default: StatutLit.DISPONIBLE })
   statut: StatutLit;
 ​
   @Field(() => Date)
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 ​
   @Field(() => Date)
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+​

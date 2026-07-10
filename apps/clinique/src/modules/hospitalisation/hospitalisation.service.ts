@@ -17,7 +17,6 @@ import {
   UpdateExeatableDto,
 } from './hospitalisation.dto';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
-import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
 import { DossierPatientApiService } from '../../infrastructure/http-clients/dossier-patient-api.service';
 import { KafkaService } from '../../infrastructure/kafka/kafka.service';
 import { buildEpisodeId } from '../../common/utils/ids';
@@ -30,18 +29,16 @@ export class HospitalisationService {
     @InjectRepository(LitEntity)
     private readonly litRepository: Repository<LitEntity>,
     private readonly accueilPatientApi: AccueilPatientApiService,
-    private readonly serviceChuApi: ServiceChuApiService,
     private readonly dossierPatientApi: DossierPatientApiService,
     private readonly kafkaService: KafkaService,
   ) {}
 ​
   async createEpisode(
     input: CreateHospitalisationEpisodeDto,
+    chuId: string,
   ): Promise<HospitalisationEpisodeEntity> {
     await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
 ​
-    const serviceInfo = await this.serviceChuApi.getServiceById(input.serviceId);
-    const chuId = serviceInfo.chuId;
 ​
     const admissionDate = input.dateAdmission ? new Date(input.dateAdmission) : new Date();
 ​
@@ -205,9 +202,6 @@ export class HospitalisationService {
   }
 ​
   async findEpisodeById(id: string, chuId?: string): Promise<HospitalisationEpisodeEntity> {
-    if (chuId) {
-      await this.serviceChuApi.ensureChuExists(chuId);
-    }
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = chuId
       ? { id, chuId }
       : { id };
@@ -223,7 +217,6 @@ export class HospitalisationService {
   }
 ​
   async listEpisodes(query: HospitalisationEpisodeQuery): Promise<HospitalisationEpisodeEntity[]> {
-    await this.serviceChuApi.ensureChuExists(query.chuId);
 ​
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {};
     where.serviceId = query.serviceId;
@@ -267,9 +260,9 @@ export class HospitalisationService {
         startOfDay.setHours(0, 0, 0, 0);
         return this.hospitalisationRepository
           .createQueryBuilder('ep')
-          .where('ep.chu_id = :chuId', { chuId })
+          .where('ep."chuId" = :chuId', { chuId })
           .andWhere('ep.statut IN (:...statuts)', { statuts: activeStatuts })
-          .andWhere('ep.date_admission >= :startOfDay', { startOfDay })
+          .andWhere('ep."dateAdmission" >= :startOfDay', { startOfDay })
           .getCount();
       })(),
     ]);
@@ -359,7 +352,7 @@ export class HospitalisationService {
     episode.exeatable = input.exeatable;
     return this.hospitalisationRepository.save(episode);
   }
-
+​
   private async findAvailableLit(
     litId: string,
     serviceId: string,

@@ -45,11 +45,11 @@ registerEnumType(StatutPaiementSortie, { name: 'StatutPaiementSortie' });
 @Entity('hospitalisation_episode')
 export class HospitalisationEpisodeEntity {
   @Field(() => ID)
-  @PrimaryColumn({ name: 'id_episode', type: 'varchar', length: 120 })
+  @PrimaryColumn({ type: 'varchar', length: 120 })
   id: string;
 ​
   @Field()
-  @Column({ name: 'patient_id', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   patientId: string;
 ​
   @Field(() => PatientInformationsAccueil, { nullable: true })
@@ -57,168 +57,169 @@ export class HospitalisationEpisodeEntity {
   patient?: PatientInformationsAccueil;
 ​
   @Field()
-  @Column({ name: 'chu_id', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   chuId: string;
 ​
   @Field()
-  @Column({ name: 'service_id', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   serviceId: string;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'lit_id', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
   litId?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'lit_code', type: 'varchar', length: 80, nullable: true })
+  @Column({ type: 'varchar', length: 80, nullable: true })
   litCode?: string | null;
 ​
   @Field()
-  @Column({ name: 'date_admission', type: 'timestamp' })
+  @Column({ type: 'timestamp' })
   dateAdmission: Date;
 ​
   /** Date effective de sortie. Remplie automatiquement à la validation/clôture. */
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'date_sortie', type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   dateSortie?: Date | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'motif_admission', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   motifAdmission?: string | null;
 ​
   @Field(() => StatutHospitalisation)
-  @Column({ name: 'statut', type: 'varchar', length: 40 })
+  @Column({ type: 'varchar', length: 40 })
   statut: StatutHospitalisation;
 ​
   @Field(() => ModeSortie, { nullable: true })
-  @Column({ name: 'mode_sortie', type: 'varchar', length: 40, nullable: true })
+  @Column({ type: 'varchar', length: 40, nullable: true })
   modeSortie?: ModeSortie | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'etat_sortie', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
   etatSortie?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'motif_sortie', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   motifSortie?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'resume_sortie', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   resumeSortie?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'diagnostic_final', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   diagnosticFinal?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'traitement_sortie', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   traitementSortie?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'conduite_a_tenir', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   conduiteATenir?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'rendez_vous_controle', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   rendezVousControle?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'destination_service_id', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   destinationServiceId?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'destination_etablissement', type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   destinationEtablissement?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'moyen_transport', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
   moyenTransport?: string | null;
 ​
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'date_deces', type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   dateDeces?: Date | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'cause_deces', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   causeDeces?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'certificat_deces_numero', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
   certificatDecesNumero?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'motif_contre_avis', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   motifContreAvis?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'risques_expliques', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   risquesExpliques?: string | null;
 ​
   @Field(() => Boolean, { nullable: true })
-  @Column({ name: 'signature_patient', type: 'boolean', nullable: true })
+  @Column({ type: 'boolean', nullable: true })
   signaturePatient?: boolean | null;
 ​
   @Field(() => Boolean)
-  @Column({ name: 'frais_regles', type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   fraisRegles: boolean;
 ​
   @Field(() => StatutPaiementSortie)
-  @Column({ name: 'statut_paiement_sortie', type: 'varchar', length: 40, default: StatutPaiementSortie.NON_VERIFIE })
+  @Column({ type: 'varchar', length: 40, default: StatutPaiementSortie.NON_VERIFIE })
   statutPaiementSortie: StatutPaiementSortie;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'reference_paiement', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
   referencePaiement?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'commentaire_paiement', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   commentairePaiement?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'frais_regles_par', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   fraisReglesPar?: string | null;
 ​
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'frais_regles_at', type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   fraisReglesAt?: Date | null;
 ​
   @Field(() => Boolean)
-  @Column({ name: 'sortie_medicale_validee', type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   sortieMedicaleValidee: boolean;
 ​
   @Field(() => Boolean)
-  @Column({ name: 'sortie_administrative_validee', type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   sortieAdministrativeValidee: boolean;
 ​
   @Field()
-  @Column({ name: 'created_by', type: 'varchar', length: 120 })
+  @Column({ type: 'uuid' })
   createdBy: string;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'updated_by', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   updatedBy?: string | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'validated_by', type: 'varchar', length: 120, nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   validatedBy?: string | null;
 ​
   @Field(() => Date, { nullable: true })
-  @Column({ name: 'validated_at', type: 'timestamp', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   validatedAt?: Date | null;
 ​
   @Field(() => String, { nullable: true })
-  @Column({ name: 'commentaire_sortie', type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true })
   commentaireSortie?: string | null;
 ​
   @Field()
   @ApiProperty({ example: false, description: "Etat 'exeatable' persistant (toggle du plan des lits, front clinique)" })
-  @Column({ name: 'exeatable', type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false })
   exeatable: boolean;
-
+​
   @Field(() => Date)
-  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 ​
   @Field(() => Date)
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }
+​
