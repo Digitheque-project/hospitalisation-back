@@ -301,15 +301,33 @@ export class HospitalisationService {
     return episodes;
   }
 ​
-  async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
-    const episode = await this.hospitalisationRepository.findOne({
+  /**
+   * Episode actif (ADMIS/EN_COURS) d'un patient dans un service.
+   * Utilise par l'attribution de lit et par l'acceptation d'une demande
+   * (idempotence : ne pas creer un second episode si un actif existe deja).
+   */
+  async findActiveEpisode(
+    patientId: string,
+    serviceId: string,
+    chuId: string,
+  ): Promise<HospitalisationEpisodeEntity | null> {
+    return this.hospitalisationRepository.findOne({
       where: {
-        patientId: input.patientId,
-        serviceId: input.serviceId,
-        chuId: input.chuId,
+        patientId,
+        serviceId,
+        chuId,
         statut: In(this.activeStatuses()),
       },
+      order: { dateAdmission: 'DESC' },
     });
+  }
+
+  async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
+    const episode = await this.findActiveEpisode(
+      input.patientId,
+      input.serviceId,
+      input.chuId,
+    );
 ​
     if (!episode) {
       throw new NotFoundException(

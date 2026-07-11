@@ -66,7 +66,11 @@ export class DemandeController {
   @Permissions('demande:update')
   @ApiOperation({
     summary: 'Mettre à jour une demande',
-    description: 'Mettre à jour le motif, le statut ou les informations complémentaires d\'une demande.',
+    description:
+      'Mettre à jour le motif, le statut ou les informations complémentaires d\'une demande. '
+      + 'Le passage au statut ACCEPTE crée (ou retrouve) l\'épisode d\'hospitalisation dans le service '
+      + 'destination et le renvoie dans le champ "episode" de la réponse ; si la création échoue, '
+      + 'la demande reste EN_ATTENTE.',
   })
   @ApiParam({ name: 'id', description: 'Identifiant demande' })
   @ApiQuery({ name: 'chuId', required: false })

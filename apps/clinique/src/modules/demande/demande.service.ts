@@ -2,9 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { DemandeEntity, StatutDemande } from '../../domain/entities/demande.entity';
+import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisation-episode.entity';
 import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery } from './demande.dto';
 import { buildEpisodeId } from '../../common/utils/ids';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
+import { HospitalisationService } from '../hospitalisation/hospitalisation.service';
+
+/** Reponse du PATCH quand la demande est acceptee : la demande + l'episode cree/retrouve. */
+export type DemandeUpdateResult = DemandeEntity & {
+  episode?: HospitalisationEpisodeEntity | null;
+};
 ​
 @Injectable()
 export class DemandeService {
@@ -12,6 +19,7 @@ export class DemandeService {
     @InjectRepository(DemandeEntity)
     private readonly demandeRepository: Repository<DemandeEntity>,
     private readonly serviceChuApi: ServiceChuApiService,
+    private readonly hospitalisationService: HospitalisationService,
   ) {}
 ​
   async create(input: CreateDemandeDto): Promise<DemandeEntity> {
@@ -70,8 +78,32 @@ export class DemandeService {
     });
   }
 ​
-  async update(id: string, input: UpdateDemandeDto, chuId?: string): Promise<DemandeEntity> {
+  async update(id: string, input: UpdateDemandeDto, chuId?: string): Promise<DemandeUpdateResult> {
     const demande = await this.findById(id, chuId);
+
+    // L'acceptation cree l'episode d'hospitalisation AVANT de persister le statut :
+    // si la creation echoue (patient inconnu a l'accueil, service indisponible...),
+    // la demande reste EN_ATTENTE et reste visible/retraitable dans les notifications.
+    // Idempotent : re-accepter une demande deja ACCEPTE sans episode actif le recree.
+    let episode: HospitalisationEpisodeEntity | null = null;
+    if (input.statut === StatutDemande.ACCEPTE) {
+      episode = await this.hospitalisationService.findActiveEpisode(
+        demande.patientId,
+        demande.serviceIdDest,
+        demande.chuId,
+      );
+      if (!episode) {
+        episode = await this.hospitalisationService.createEpisode(
+          {
+            patientId: demande.patientId,
+            serviceId: demande.serviceIdDest,
+            motifAdmission: input.motif ?? demande.motif,
+            createdBy: input.updatedBy,
+          },
+          demande.chuId,
+        );
+      }
+    }
 ​
     if (input.motif !== undefined) {
       demande.motif = input.motif;
@@ -87,7 +119,11 @@ export class DemandeService {
     }
     demande.updatedBy = input.updatedBy;
 ​
-    return this.demandeRepository.save(demande);
+    const saved: DemandeUpdateResult = await this.demandeRepository.save(demande);
+    if (episode) {
+      saved.episode = episode;
+    }
+    return saved;
   }
 ​
   async delete(id: string, chuId?: string): Promise<void> {
