@@ -245,7 +245,7 @@ export class HospitalisationService {
     return episodes;
   }
 ​
-  async getStats(chuId: string): Promise<{
+  async getStats(chuId: string, serviceId?: string): Promise<{
     hospitalizedTotal: number;
     hospitalizedNewToday: number;
   }> {
@@ -253,7 +253,7 @@ export class HospitalisationService {
 ​
     const [total, newToday] = await Promise.all([
       this.hospitalisationRepository.count({
-        where: { chuId, statut: In(activeStatuts) },
+        where: { chuId, statut: In(activeStatuts), ...(serviceId ? { serviceId } : {}) },
       }),
       (() => {
         const startOfDay = new Date();
@@ -263,6 +263,10 @@ export class HospitalisationService {
           .where('ep."chuId" = :chuId', { chuId })
           .andWhere('ep.statut IN (:...statuts)', { statuts: activeStatuts })
           .andWhere('ep."dateAdmission" >= :startOfDay', { startOfDay })
+          .andWhere(
+            serviceId ? 'ep."serviceId" = :serviceId' : '1=1',
+            serviceId ? { serviceId } : {},
+          )
           .getCount();
       })(),
     ]);
@@ -321,7 +325,7 @@ export class HospitalisationService {
       order: { dateAdmission: 'DESC' },
     });
   }
-
+​
   async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
     const episode = await this.findActiveEpisode(
       input.patientId,

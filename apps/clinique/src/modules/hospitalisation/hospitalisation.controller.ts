@@ -142,13 +142,17 @@ export class HospitalisationController {
     description: 'Retourne le total des patients hospitalises actifs et les nouvelles admissions du jour pour un CHU.',
   })
   @ApiQuery({ name: 'chuId', required: true })
+  @ApiQuery({ name: 'serviceId', required: false })
   @ApiResponse({ status: 200, description: 'Statistiques retournees' })
   @ApiResponse({ status: 400, description: 'chuId obligatoire' })
-  getStats(@Query('chuId') chuId?: string) {
+  getStats(
+    @Query('chuId') chuId?: string,
+    @Query('serviceId') serviceId?: string,
+  ) {
     if (!chuId) {
       throw new BadRequestException('chuId obligatoire');
     }
-    return this.hospitalisationService.getStats(chuId);
+    return this.hospitalisationService.getStats(chuId, serviceId);
   }
 ​
   @Get('actives')
