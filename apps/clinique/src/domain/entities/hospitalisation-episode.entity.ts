@@ -49,7 +49,9 @@ export class HospitalisationEpisodeEntity {
   id: string;
 ​
   @Field()
-  @Column({ type: 'uuid' })
+  // patientId stocke comme chaine de la longueur d'un UUID (36).
+  // Accepte aussi bien un UUID qu'une autre chaine <= 36 caracteres.
+  @Column({ type: 'varchar', length: 36 })
   patientId: string;
 ​
   @Field(() => PatientInformationsAccueil, { nullable: true })

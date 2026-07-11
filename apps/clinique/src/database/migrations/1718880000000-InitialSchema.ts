@@ -53,7 +53,7 @@ export class InitialSchema1718880000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE "hospitalisation_episode" (
         "id" character varying(120) NOT NULL,
-        "patientId" uuid NOT NULL,
+        "patientId" character varying(36) NOT NULL,
         "chuId" uuid NOT NULL,
         "serviceId" uuid NOT NULL,
         "litId" character varying(120),
@@ -129,4 +129,3 @@ export class InitialSchema1718880000000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE "chambre"`);
   }
 }
-​
