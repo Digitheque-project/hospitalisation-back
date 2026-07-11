@@ -174,7 +174,7 @@ export class LitService {
             hospitalisation: hospPayload,
           };
         }),
-    })).filter((chambre) => chambre.lits.some((lit) => lit.statut === StatutLit.OCCUPE));
+    }));
 ​
     return {
       serviceId: query.serviceId,
