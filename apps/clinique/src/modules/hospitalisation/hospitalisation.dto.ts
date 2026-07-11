@@ -10,9 +10,9 @@ import {
 @InputType()
 export class CreateHospitalisationEpisodeDto {
   @Field()
-  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient' })
-  @IsUUID()
-  @Length(1, 120)
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient (chaine, longueur max = celle d\'un UUID)' })
+  @IsString()
+  @Length(1, 36)
   patientId: string;
 ​
   @Field()
