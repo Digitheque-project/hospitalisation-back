@@ -106,7 +106,7 @@ export class InitialSchema1718880000000 implements MigrationInterface {
       CREATE TABLE "demande" (
         "id" character varying(120) NOT NULL,
         "motif" text NOT NULL,
-        "patientId" uuid NOT NULL,
+        "patientId" character varying(36) NOT NULL,
         "serviceIdSource" uuid NOT NULL,
         "serviceIdDest" uuid NOT NULL,
         "chuId" uuid NOT NULL,

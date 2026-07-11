@@ -28,7 +28,7 @@ export class DemandeEntity {
   motif: string;
 ​
   @Field()
-  @Column({ type: 'uuid' })
+  @Column({ type: 'varchar', length: 36 })
   patientId: string;
 ​
   @Field()
