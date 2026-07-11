@@ -162,6 +162,9 @@ export class LitService {
                 statutHospitalisation: episode.statut,
                 diagnostic: null,
                 soinsCount: 0,
+                // [Fix] Renvoyer l'etat exeatable persiste pour que le toggle du
+                // plan des lits survive a la navigation / au rechargement.
+                exeatable: episode.exeatable ?? false,
                 patient: (episode.patient as Record<string, unknown>) ?? null,
               }
             : null;
