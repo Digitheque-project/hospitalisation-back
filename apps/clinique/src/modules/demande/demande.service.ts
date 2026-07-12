@@ -46,17 +46,19 @@ export class DemandeService {
 ​
     const saved = await this.demandeRepository.save(entity);
 
-    await this.notificationApi.send({
-      userId: saved.createdBy,
-      title: 'Demande d\'hospitalisation envoyée',
-      message: `Votre demande pour le patient ${saved.patientId} a été soumise au service destination.`,
+    await this.notificationApi.sendToService({
+      serviceId: saved.serviceIdDest,
+      title: 'Nouvelle demande d\'hospitalisation',
+      message: `Une demande pour le patient ${saved.patientId} nécessite votre attention.`,
       type: 'demande_created',
       source: 'hospitalisation-back',
       data: {
         demandeId: saved.id,
         patientId: saved.patientId,
+        serviceIdSource: saved.serviceIdSource,
         serviceIdDest: saved.serviceIdDest,
         statut: saved.statut,
+        motif: saved.motif,
       },
     });
 
@@ -143,15 +145,16 @@ export class DemandeService {
     }
 
     if (input.statut === StatutDemande.ACCEPTE) {
-      await this.notificationApi.send({
-        userId: demande.createdBy,
+      await this.notificationApi.sendToService({
+        serviceId: demande.serviceIdSource,
         title: 'Demande d\'hospitalisation acceptée',
-        message: `Votre demande pour le patient ${demande.patientId} a été acceptée.`,
+        message: `Votre demande pour le patient ${demande.patientId} a été acceptée par le service de destination.`,
         type: 'demande_accepted',
         source: 'hospitalisation-back',
         data: {
           demandeId: saved.id,
           patientId: saved.patientId,
+          serviceIdSource: demande.serviceIdSource,
           serviceIdDest: demande.serviceIdDest,
           statut: saved.statut,
         },
@@ -159,8 +162,8 @@ export class DemandeService {
     }
 
     if (input.statut === StatutDemande.REFUSE) {
-      await this.notificationApi.send({
-        userId: demande.createdBy,
+      await this.notificationApi.sendToService({
+        serviceId: demande.serviceIdSource,
         title: 'Demande d\'hospitalisation refusée',
         message: `Votre demande pour le patient ${demande.patientId} a été refusée.${input.motifRefus ? ` Motif : ${input.motifRefus}` : ''}`,
         type: 'demande_refused',
@@ -168,6 +171,7 @@ export class DemandeService {
         data: {
           demandeId: saved.id,
           patientId: saved.patientId,
+          serviceIdSource: demande.serviceIdSource,
           serviceIdDest: demande.serviceIdDest,
           statut: saved.statut,
           motifRefus: input.motifRefus ?? null,
