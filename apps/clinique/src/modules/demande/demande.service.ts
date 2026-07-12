@@ -6,6 +6,7 @@ import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisat
 import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery } from './demande.dto';
 import { buildEpisodeId } from '../../common/utils/ids';
 import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
+import { NotificationApiService } from '../../infrastructure/http-clients/notification-api.service';
 import { HospitalisationService } from '../hospitalisation/hospitalisation.service';
 
 /** Reponse du PATCH quand la demande est acceptee : la demande + l'episode cree/retrouve. */
@@ -19,6 +20,7 @@ export class DemandeService {
     @InjectRepository(DemandeEntity)
     private readonly demandeRepository: Repository<DemandeEntity>,
     private readonly serviceChuApi: ServiceChuApiService,
+    private readonly notificationApi: NotificationApiService,
     private readonly hospitalisationService: HospitalisationService,
   ) {}
 ​
@@ -42,7 +44,23 @@ export class DemandeService {
       createdBy: input.createdBy,
     });
 ​
-    return this.demandeRepository.save(entity);
+    const saved = await this.demandeRepository.save(entity);
+
+    await this.notificationApi.send({
+      userId: saved.createdBy,
+      title: 'Demande d\'hospitalisation envoyée',
+      message: `Votre demande pour le patient ${saved.patientId} a été soumise au service destination.`,
+      type: 'demande_created',
+      source: 'hospitalisation-back',
+      data: {
+        demandeId: saved.id,
+        patientId: saved.patientId,
+        serviceIdDest: saved.serviceIdDest,
+        statut: saved.statut,
+      },
+    });
+
+    return saved;
   }
 ​
   async findById(id: string, chuId?: string): Promise<DemandeEntity> {
@@ -123,6 +141,40 @@ export class DemandeService {
     if (episode) {
       saved.episode = episode;
     }
+
+    if (input.statut === StatutDemande.ACCEPTE) {
+      await this.notificationApi.send({
+        userId: demande.createdBy,
+        title: 'Demande d\'hospitalisation acceptée',
+        message: `Votre demande pour le patient ${demande.patientId} a été acceptée.`,
+        type: 'demande_accepted',
+        source: 'hospitalisation-back',
+        data: {
+          demandeId: saved.id,
+          patientId: saved.patientId,
+          serviceIdDest: demande.serviceIdDest,
+          statut: saved.statut,
+        },
+      });
+    }
+
+    if (input.statut === StatutDemande.REFUSE) {
+      await this.notificationApi.send({
+        userId: demande.createdBy,
+        title: 'Demande d\'hospitalisation refusée',
+        message: `Votre demande pour le patient ${demande.patientId} a été refusée.${input.motifRefus ? ` Motif : ${input.motifRefus}` : ''}`,
+        type: 'demande_refused',
+        source: 'hospitalisation-back',
+        data: {
+          demandeId: saved.id,
+          patientId: saved.patientId,
+          serviceIdDest: demande.serviceIdDest,
+          statut: saved.statut,
+          motifRefus: input.motifRefus ?? null,
+        },
+      });
+    }
+
     return saved;
   }
 ​
