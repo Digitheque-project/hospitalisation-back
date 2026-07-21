@@ -38,6 +38,12 @@ export class CreateHospitalisationEpisodeDto {
   motifAdmission?: string | null;
 ​
   @Field()
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU auquel appartient l episode' })
+  @IsUUID()
+  @Length(1, 120)
+  chuId: string;
+
+  @Field()
   @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: "Auteur de l'admission" })
   @IsUUID()
   createdBy: string;

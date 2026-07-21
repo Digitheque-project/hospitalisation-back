@@ -1,7 +1,4 @@
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
-import { JwtPayload } from '../../common/auth/interfaces/jwt-payload.interface';
-import { resolveChuIdFromToken } from '../../common/auth/token-chu.util';
 import { HospitalisationEpisodeEntity, StatutHospitalisation } from '../../domain/entities/hospitalisation-episode.entity';
 import {
   CloseHospitalisationEpisodeDto,
@@ -17,10 +14,8 @@ export class HospitalisationResolver {
   @Mutation(() => HospitalisationEpisodeEntity)
   createHospitalisationEpisode(
     @Args('input') input: CreateHospitalisationEpisodeDto,
-    @CurrentUser() user: JwtPayload,
   ) {
-    const chuId = resolveChuIdFromToken(user, input.serviceIdDest);
-    return this.hospitalisationService.createEpisode(input, chuId);
+    return this.hospitalisationService.createEpisode(input, input.chuId);
   }
 ​
   @Mutation(() => HospitalisationEpisodeEntity)

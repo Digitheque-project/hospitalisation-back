@@ -15,9 +15,6 @@ import {
 } from './hospitalisation.dto';
 import { HospitalisationService } from './hospitalisation.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
-import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
-import { JwtPayload } from '../../common/auth/interfaces/jwt-payload.interface';
-import { resolveChuIdFromToken } from '../../common/auth/token-chu.util';
 ​
 @ApiTags('Hospitalisation')
 @Controller('hospitalisations')
@@ -35,6 +32,7 @@ export class HospitalisationController {
       example: {
         patientId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         serviceIdDest: '75f995a2-40e9-4285-84e4-a72501d37bfd',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
         motifAdmission: 'Observation clinique',
         createdBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
@@ -43,9 +41,8 @@ export class HospitalisationController {
   @ApiResponse({ status: 201, description: 'Episode cree', type: HospitalisationEpisodeEntity })
   @ApiResponse({ status: 400, description: 'Donnees invalides ou lit indisponible' })
   @ApiResponse({ status: 404, description: 'Lit introuvable ou patient inconnu' })
-  createEpisode(@Body() body: CreateHospitalisationEpisodeDto, @CurrentUser() user: JwtPayload) {
-    const chuId = resolveChuIdFromToken(user, body.serviceIdDest);
-    return this.hospitalisationService.createEpisode(body, chuId);
+  createEpisode(@Body() body: CreateHospitalisationEpisodeDto) {
+    return this.hospitalisationService.createEpisode(body, body.chuId);
   }
 ​
   @Patch(':id/status')
