@@ -162,6 +162,7 @@ export class DemandeService {
             patientId: demande.patientId,
             serviceIdDest: demande.serviceIdDest,
             serviceIdSource: demande.serviceIdSource,
+            chuId: demande.chuId,
             motifAdmission: input.motif ?? demande.motif,
             createdBy: input.updatedBy,
           },
