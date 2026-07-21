@@ -1,6 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import {
+  Between,
+  FindOptionsWhere,
+  In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import {
   HospitalisationEpisodeEntity,
   ModeSortie,
@@ -245,6 +252,132 @@ export class HospitalisationService {
     return episodes;
   }
 ​
+  /**
+   * Archive du service : liste paginee des episodes CLOTURES (SORTIE,
+   * TRANSFERE, DECEDE, EVADE), enrichis des informations patient. Le back
+   * applique les filtres statut/mode/date + la pagination ; la recherche
+   * plein-texte (nom, motif, diagnostic, lit) est appliquee en memoire car le
+   * nom du patient provient du service accueil et non de la base locale.
+   */
+  async getArchives(options: {
+    chuId: string;
+    serviceId: string;
+    search?: string;
+    statut?: string;
+    modeSortie?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    items: HospitalisationEpisodeEntity[];
+    total: number;
+    limit: number;
+    offset: number;
+    stats: {
+      total: number;
+      sorties: number;
+      transferts: number;
+      deces: number;
+      evasions: number;
+    };
+  }> {
+    const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
+      chuId: options.chuId,
+      serviceId: options.serviceId,
+    };
+
+    if (options.statut) {
+      const statut = options.statut as StatutHospitalisation;
+      if (!this.isClosedStatus(statut)) {
+        throw new BadRequestException(
+          'Le filtre statut doit correspondre a un statut de cloture',
+        );
+      }
+      where.statut = statut;
+    } else {
+      where.statut = In(this.closedStatuses());
+    }
+
+    if (options.modeSortie) {
+      if (
+        !Object.values(ModeSortie).includes(options.modeSortie as ModeSortie)
+      ) {
+        throw new BadRequestException('Mode de sortie invalide');
+      }
+      where.modeSortie = options.modeSortie as ModeSortie;
+    }
+
+    const fromDate = this.parseBoundaryDate(options.from, 'start');
+    const toDate = this.parseBoundaryDate(options.to, 'end');
+    if (fromDate && toDate) {
+      where.dateSortie = Between(fromDate, toDate);
+    } else if (fromDate) {
+      where.dateSortie = MoreThanOrEqual(fromDate);
+    } else if (toDate) {
+      where.dateSortie = LessThanOrEqual(toDate);
+    }
+
+    let episodes = await this.hospitalisationRepository.find({
+      where,
+      order: { dateSortie: 'DESC', dateAdmission: 'DESC' },
+    });
+
+    await Promise.all(
+      episodes.map(async (episode) => {
+        const patientInfo = await this.accueilPatientApi.getPatientById(
+          episode.patientId,
+        );
+        if (patientInfo) {
+          episode.patient = patientInfo;
+        }
+      }),
+    );
+
+    // Statistiques calculees sur l'ensemble filtre, avant recherche/pagination.
+    const stats = {
+      total: episodes.length,
+      sorties: episodes.filter(
+        (e) => e.statut === StatutHospitalisation.SORTIE,
+      ).length,
+      transferts: episodes.filter(
+        (e) => e.statut === StatutHospitalisation.TRANSFERE,
+      ).length,
+      deces: episodes.filter(
+        (e) => e.statut === StatutHospitalisation.DECEDE,
+      ).length,
+      evasions: episodes.filter(
+        (e) => e.statut === StatutHospitalisation.EVADE,
+      ).length,
+    };
+
+    const search = options.search?.trim().toLowerCase();
+    if (search) {
+      episodes = episodes.filter((episode) => {
+        const patient = (episode.patient ?? {}) as Record<string, unknown>;
+        const haystack = [
+          patient.nom,
+          patient.prenom,
+          episode.patientId,
+          episode.motifAdmission,
+          episode.diagnosticFinal,
+          episode.litCode,
+        ]
+          .filter((value): value is string => typeof value === 'string')
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(search);
+      });
+    }
+
+    const total = episodes.length;
+    const limit = options.limit && options.limit > 0 ? options.limit : 20;
+    const offset = options.offset && options.offset > 0 ? options.offset : 0;
+    const items = episodes.slice(offset, offset + limit);
+
+    return { items, total, limit, offset, stats };
+  }
+
   async getStats(chuId: string, serviceId?: string): Promise<{
     hospitalizedTotal: number;
     hospitalizedNewToday: number;
@@ -499,12 +632,41 @@ export class HospitalisationService {
   }
 ​
   private isClosedStatus(statut: StatutHospitalisation): boolean {
+    return this.closedStatuses().includes(statut);
+  }
+
+  private closedStatuses(): StatutHospitalisation[] {
     return [
       StatutHospitalisation.TRANSFERE,
       StatutHospitalisation.SORTIE,
       StatutHospitalisation.DECEDE,
       StatutHospitalisation.EVADE,
-    ].includes(statut);
+    ];
+  }
+
+  /**
+   * Normalise une borne de date de filtre. Une date seule (AAAA-MM-JJ) est
+   * etendue au debut (00:00:00) ou a la fin (23:59:59) de la journee.
+   */
+  private parseBoundaryDate(
+    value: string | undefined,
+    boundary: 'start' | 'end',
+  ): Date | null {
+    if (!value) {
+      return null;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException('Date de filtre invalide');
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+      if (boundary === 'start') {
+        date.setHours(0, 0, 0, 0);
+      } else {
+        date.setHours(23, 59, 59, 999);
+      }
+    }
+    return date;
   }
 }
 ​

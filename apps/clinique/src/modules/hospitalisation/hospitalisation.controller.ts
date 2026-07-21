@@ -1,6 +1,10 @@
 import { BadRequestException, Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisation-episode.entity';
+import {
+  HospitalisationEpisodeEntity,
+  ModeSortie,
+  StatutHospitalisation,
+} from '../../domain/entities/hospitalisation-episode.entity';
 import {
   CloseHospitalisationEpisodeDto,
   CreateHospitalisationEpisodeDto,
@@ -177,6 +181,59 @@ export class HospitalisationController {
     return this.hospitalisationService.getActives(chuId, serviceId, limit);
   }
 ​
+  @Get('archives')
+  @Permissions('hospitalisation:read')
+  @ApiOperation({
+    summary: 'Archive du service (episodes clotures)',
+    description:
+      'Liste paginee des hospitalisations cloturees (SORTIE, TRANSFERE, DECEDE, EVADE) du service, avec recherche plein-texte, filtres statut/mode/date et statistiques.',
+  })
+  @ApiQuery({ name: 'chuId', required: true })
+  @ApiQuery({ name: 'serviceId', required: true })
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'statut', required: false, enum: StatutHospitalisation })
+  @ApiQuery({ name: 'modeSortie', required: false, enum: ModeSortie })
+  @ApiQuery({
+    name: 'from',
+    required: false,
+    description: 'Borne basse sur la date de sortie (ISO ou AAAA-MM-JJ)',
+  })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    description: 'Borne haute sur la date de sortie (ISO ou AAAA-MM-JJ)',
+  })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'offset', required: false })
+  @ApiResponse({ status: 200, description: 'Archive paginee retournee' })
+  @ApiResponse({ status: 400, description: 'chuId et serviceId obligatoires' })
+  getArchives(
+    @Query('chuId') chuId?: string,
+    @Query('serviceId') serviceId?: string,
+    @Query('search') search?: string,
+    @Query('statut') statut?: string,
+    @Query('modeSortie') modeSortie?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset?: number,
+  ) {
+    if (!chuId || !serviceId) {
+      throw new BadRequestException('chuId et serviceId obligatoires');
+    }
+    return this.hospitalisationService.getArchives({
+      chuId,
+      serviceId,
+      search,
+      statut,
+      modeSortie,
+      from,
+      to,
+      limit,
+      offset,
+    });
+  }
+
   @Get(':id')
   @Permissions('hospitalisation:read')
   @ApiOperation({ summary: 'Recuperer un episode par identifiant' })
