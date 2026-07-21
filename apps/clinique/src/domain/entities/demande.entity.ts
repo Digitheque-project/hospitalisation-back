@@ -12,6 +12,9 @@ export enum StatutDemande {
   ACCEPTE = 'ACCEPTE',
   REFUSE = 'REFUSE',
   EN_ATTENTE = 'EN_ATTENTE',
+  // Demande vue/consultee par le service destination mais pas encore decidee.
+  // Etat PARTAGE : ne compte plus dans le badge "non lues" mais reste traitable.
+  CONSULTEE = 'CONSULTEE',
 }
 ​
 registerEnumType(StatutDemande, { name: 'StatutDemande' });

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Delete, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DemandeEntity } from '../../domain/entities/demande.entity';
-import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery } from './demande.dto';
+import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery, MarquerConsulteesDto } from './demande.dto';
 import { DemandeService } from './demande.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
 ​
@@ -62,6 +62,21 @@ export class DemandeController {
     return this.demandeService.findAll(query);
   }
 ​
+  @Patch('consulter')
+  @Permissions('demande:read')
+  @ApiOperation({
+    summary: 'Marquer les demandes en attente comme consultees',
+    description:
+      'Passe toutes les demandes EN_ATTENTE du service destination au statut CONSULTEE. '
+      + 'Etat partage : le badge "non lues" disparait pour tous les utilisateurs du service '
+      + 'destination (emission temps reel), les demandes restant traitables (Accepter / Refuser).',
+  })
+  @ApiBody({ type: MarquerConsulteesDto })
+  @ApiResponse({ status: 200, description: 'Nombre de demandes mises a jour' })
+  marquerConsultees(@Body() body: MarquerConsulteesDto) {
+    return this.demandeService.marquerConsultees(body.serviceIdDest, body.chuId);
+  }
+
   @Patch(':id')
   @Permissions('demande:update')
   @ApiOperation({

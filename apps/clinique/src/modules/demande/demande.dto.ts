@@ -96,6 +96,21 @@ export class UpdateDemandeDto {
   updatedBy: string;
 }
 ​
+export class MarquerConsulteesDto {
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
+  @IsString()
+  @Length(1, 120)
+  chuId: string;
+
+  @ApiProperty({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'Service destination dont on marque les demandes EN_ATTENTE comme CONSULTEE',
+  })
+  @IsString()
+  @Length(1, 120)
+  serviceIdDest: string;
+}
+
 export class DemandeQuery {
   @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', required: false })
   @IsOptional()

@@ -98,6 +98,50 @@ export class DemandeService {
     });
   }
 ​
+  /**
+   * Marque comme CONSULTEE toutes les demandes encore EN_ATTENTE d'un service
+   * destination. Etat PARTAGE (persiste) : une fois consultees, elles ne
+   * comptent plus dans le badge "non lues", pour TOUS les utilisateurs du
+   * service, tout en restant traitables (Accepter / Refuser).
+   *
+   * Emet en TEMPS REEL un evenement 'demande_consulted' vers la room du service
+   * (via le service de notifications), afin que le badge des autres utilisateurs
+   * connectes se mette a jour instantanement, SANS polling cote front.
+   */
+  async marquerConsultees(
+    serviceIdDest: string,
+    chuId: string,
+  ): Promise<{ updated: number }> {
+    const result = await this.demandeRepository.update(
+      { serviceIdDest, chuId, statut: StatutDemande.EN_ATTENTE },
+      { statut: StatutDemande.CONSULTEE },
+    );
+    const updated = result.affected ?? 0;
+
+    if (updated > 0) {
+      // Best-effort : l'echec de la notification ne doit pas faire echouer le
+      // marquage (l'etat est deja persiste en base).
+      try {
+        await this.notificationApi.sendToService({
+          serviceId: serviceIdDest,
+          title: 'Demandes consultees',
+          message: 'Les demandes en attente ont ete consultees.',
+          type: 'demande_consulted',
+          source: 'hospitalisation-back',
+          data: {
+            serviceIdDest,
+            chuId,
+            updated,
+          },
+        });
+      } catch (error) {
+        console.error('[DemandeService] Echec notification demande_consulted:', error);
+      }
+    }
+
+    return { updated };
+  }
+
   async update(id: string, input: UpdateDemandeDto, chuId?: string): Promise<DemandeUpdateResult> {
     const demande = await this.findById(id, chuId);
 
