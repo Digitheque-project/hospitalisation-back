@@ -34,7 +34,7 @@ export class HospitalisationController {
     schema: {
       example: {
         patientId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-        serviceId: '75f995a2-40e9-4285-84e4-a72501d37bfd',
+        serviceIdDest: '75f995a2-40e9-4285-84e4-a72501d37bfd',
         motifAdmission: 'Observation clinique',
         createdBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
       },
@@ -44,7 +44,7 @@ export class HospitalisationController {
   @ApiResponse({ status: 400, description: 'Donnees invalides ou lit indisponible' })
   @ApiResponse({ status: 404, description: 'Lit introuvable ou patient inconnu' })
   createEpisode(@Body() body: CreateHospitalisationEpisodeDto, @CurrentUser() user: JwtPayload) {
-    const chuId = resolveChuIdFromToken(user, body.serviceId);
+    const chuId = resolveChuIdFromToken(user, body.serviceIdDest);
     return this.hospitalisationService.createEpisode(body, chuId);
   }
 ​
@@ -125,7 +125,7 @@ export class HospitalisationController {
     schema: {
       example: {
         chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
-        serviceId: '75f995a2-40e9-4285-84e4-a72501d37bfd',
+        serviceIdDest: '75f995a2-40e9-4285-84e4-a72501d37bfd',
         patientId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         litId: 'lit-CHU-Andr-2026-chambre-CHU-Andr-2026-service-123-101-A1',
         updatedBy: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909',
@@ -146,17 +146,17 @@ export class HospitalisationController {
     description: 'Retourne le total des patients hospitalises actifs et les nouvelles admissions du jour pour un CHU.',
   })
   @ApiQuery({ name: 'chuId', required: true })
-  @ApiQuery({ name: 'serviceId', required: false })
+  @ApiQuery({ name: 'serviceIdDest', required: false })
   @ApiResponse({ status: 200, description: 'Statistiques retournees' })
   @ApiResponse({ status: 400, description: 'chuId obligatoire' })
   getStats(
     @Query('chuId') chuId?: string,
-    @Query('serviceId') serviceId?: string,
+    @Query('serviceIdDest') serviceIdDest?: string,
   ) {
     if (!chuId) {
       throw new BadRequestException('chuId obligatoire');
     }
-    return this.hospitalisationService.getStats(chuId, serviceId);
+    return this.hospitalisationService.getStats(chuId, serviceIdDest);
   }
 ​
   @Get('actives')
@@ -166,19 +166,19 @@ export class HospitalisationController {
     description: 'Retourne les episodes en statut ADMIS, EN_COURS ou TRANSFERE avec limit optionnel.',
   })
   @ApiQuery({ name: 'chuId', required: true })
-  @ApiQuery({ name: 'serviceId', required: false })
+  @ApiQuery({ name: 'serviceIdDest', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ status: 200, description: 'Episodes actifs', type: HospitalisationEpisodeEntity, isArray: true })
   @ApiResponse({ status: 400, description: 'chuId obligatoire' })
   getActives(
     @Query('chuId') chuId?: string,
-    @Query('serviceId') serviceId?: string,
+    @Query('serviceIdDest') serviceIdDest?: string,
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit?: number,
   ) {
     if (!chuId) {
       throw new BadRequestException('chuId obligatoire');
     }
-    return this.hospitalisationService.getActives(chuId, serviceId, limit);
+    return this.hospitalisationService.getActives(chuId, serviceIdDest, limit);
   }
 ​
   @Get('archives')
@@ -189,7 +189,7 @@ export class HospitalisationController {
       'Liste paginee des hospitalisations cloturees (SORTIE, TRANSFERE, DECEDE, EVADE) du service, avec recherche plein-texte, filtres statut/mode/date et statistiques.',
   })
   @ApiQuery({ name: 'chuId', required: true })
-  @ApiQuery({ name: 'serviceId', required: true })
+  @ApiQuery({ name: 'serviceIdDest', required: true })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'statut', required: false, enum: StatutHospitalisation })
   @ApiQuery({ name: 'modeSortie', required: false, enum: ModeSortie })
@@ -209,7 +209,7 @@ export class HospitalisationController {
   @ApiResponse({ status: 400, description: 'chuId et serviceId obligatoires' })
   getArchives(
     @Query('chuId') chuId?: string,
-    @Query('serviceId') serviceId?: string,
+    @Query('serviceIdDest') serviceIdDest?: string,
     @Query('search') search?: string,
     @Query('statut') statut?: string,
     @Query('modeSortie') modeSortie?: string,
@@ -218,12 +218,12 @@ export class HospitalisationController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset?: number,
   ) {
-    if (!chuId || !serviceId) {
+    if (!chuId || !serviceIdDest) {
       throw new BadRequestException('chuId et serviceId obligatoires');
     }
     return this.hospitalisationService.getArchives({
       chuId,
-      serviceId,
+      serviceIdDest,
       search,
       statut,
       modeSortie,
@@ -254,14 +254,14 @@ export class HospitalisationController {
     summary: 'Lister les episodes d hospitalisation',
     description: 'Le filtre serviceId est obligatoire. patientId et statut sont optionnels.',
   })
-  @ApiQuery({ name: 'serviceId', required: true })
+  @ApiQuery({ name: 'serviceIdDest', required: true })
   @ApiQuery({ name: 'chuId', required: true })
   @ApiQuery({ name: 'patientId', required: false })
   @ApiQuery({ name: 'statut', required: false })
   @ApiResponse({ status: 200, description: 'Liste des episodes', type: HospitalisationEpisodeEntity, isArray: true })
   @ApiResponse({ status: 400, description: 'serviceId et chuId obligatoires' })
   listEpisodes(@Query() query: HospitalisationEpisodeQuery) {
-    if (!query.serviceId || !query.chuId) {
+    if (!query.serviceIdDest || !query.chuId) {
       throw new BadRequestException('serviceId et chuId obligatoires');
     }
     return this.hospitalisationService.listEpisodes(query);

@@ -160,11 +160,15 @@ export class DemandeService {
         episode = await this.hospitalisationService.createEpisode(
           {
             patientId: demande.patientId,
-            serviceId: demande.serviceIdDest,
+            serviceIdDest: demande.serviceIdDest,
+            serviceIdSource: demande.serviceIdSource,
             motifAdmission: input.motif ?? demande.motif,
             createdBy: input.updatedBy,
           },
           demande.chuId,
+          // L'acceptation d'une demande envoie deja ses propres notifications
+          // (demande_accepted): on evite une double notification en attente de lit.
+          { notifyServiceConcerne: false },
         );
       }
     }

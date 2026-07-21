@@ -64,7 +64,13 @@ export class HospitalisationEpisodeEntity {
 ​
   @Field()
   @Column({ type: 'uuid' })
-  serviceId: string;
+  @ApiProperty({ description: 'Service destination (concerne) de l episode' })
+  serviceIdDest: string;
+​
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ required: false, nullable: true, description: 'Service source (consultation externe) a l origine de l episode' })
+  @Column({ type: 'uuid', nullable: true })
+  serviceIdSource?: string | null;
 ​
   @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 120, nullable: true })

@@ -19,7 +19,7 @@ export class HospitalisationResolver {
     @Args('input') input: CreateHospitalisationEpisodeDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    const chuId = resolveChuIdFromToken(user, input.serviceId);
+    const chuId = resolveChuIdFromToken(user, input.serviceIdDest);
     return this.hospitalisationService.createEpisode(input, chuId);
   }
 ​
@@ -49,12 +49,12 @@ export class HospitalisationResolver {
 ​
   @Query(() => [HospitalisationEpisodeEntity])
   hospitalisationEpisodes(
-    @Args('serviceId', { type: () => String }) serviceId: string,
+    @Args('serviceIdDest', { type: () => String }) serviceIdDest: string,
     @Args('chuId', { type: () => String }) chuId: string,
     @Args('patientId', { type: () => String, nullable: true }) patientId?: string,
     @Args('statut', { type: () => StatutHospitalisation, nullable: true }) statut?: StatutHospitalisation,
   ) {
-    return this.hospitalisationService.listEpisodes({ patientId, serviceId, statut, chuId });
+    return this.hospitalisationService.listEpisodes({ patientId, serviceIdDest, statut, chuId });
   }
 }
 ​

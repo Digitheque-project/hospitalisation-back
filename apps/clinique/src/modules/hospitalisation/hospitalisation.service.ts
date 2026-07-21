@@ -27,6 +27,7 @@ import { AccueilPatientApiService } from '../../infrastructure/http-clients/accu
 import { DossierPatientApiService } from '../../infrastructure/http-clients/dossier-patient-api.service';
 import { KafkaService } from '../../infrastructure/kafka/kafka.service';
 import { buildEpisodeId } from '../../common/utils/ids';
+import { NotificationApiService } from '../../infrastructure/http-clients/notification-api.service';
 ​
 @Injectable()
 export class HospitalisationService {
@@ -38,11 +39,13 @@ export class HospitalisationService {
     private readonly accueilPatientApi: AccueilPatientApiService,
     private readonly dossierPatientApi: DossierPatientApiService,
     private readonly kafkaService: KafkaService,
+    private readonly notificationApi: NotificationApiService,
   ) {}
 ​
   async createEpisode(
     input: CreateHospitalisationEpisodeDto,
     chuId: string,
+    options: { notifyServiceConcerne?: boolean } = {},
   ): Promise<HospitalisationEpisodeEntity> {
     await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
 ​
@@ -51,7 +54,7 @@ export class HospitalisationService {
 ​
     let lit: LitEntity | null = null;
     if (input.litId) {
-      lit = await this.findAvailableLit(input.litId, input.serviceId, chuId);
+      lit = await this.findAvailableLit(input.litId, input.serviceIdDest, chuId);
       lit.statut = StatutLit.OCCUPE;
       await this.litRepository.save(lit);
     }
@@ -63,7 +66,8 @@ export class HospitalisationService {
       }),
       patientId: input.patientId,
       chuId,
-      serviceId: input.serviceId,
+      serviceIdDest: input.serviceIdDest,
+      serviceIdSource: input.serviceIdSource ?? null,
       dateAdmission: admissionDate,
       motifAdmission: input.motifAdmission ?? null,
       createdBy: input.createdBy,
@@ -82,13 +86,42 @@ export class HospitalisationService {
       id: saved.id,
       patientId: saved.patientId,
       chuId: saved.chuId,
-      serviceId: saved.serviceId,
+      serviceId: saved.serviceIdDest,
       dateAdmission: saved.dateAdmission.toISOString(),
       statut: saved.statut,
       createdBy: saved.createdBy,
+      serviceIdSource: saved.serviceIdSource ?? null,
       litId: saved.litId ?? null,
       litCode: saved.litCode ?? null,
     });
+​
+    // Notification patient en attente de lit au service concerne (destination).
+    // Declenchee par le POST /clinique/hospitalisations (consultation externe).
+    // Le flux d'acceptation d'une demande passe notifyServiceConcerne=false car
+    // il envoie deja ses propres notifications (demande_accepted).
+    const shouldNotify = options.notifyServiceConcerne ?? true;
+    if (shouldNotify) {
+      const serviceConcerne = saved.serviceIdDest;
+      await this.notificationApi.sendToService({
+        serviceId: serviceConcerne,
+        title: 'Nouveau patient en attente de lit',
+        message: `Le patient ${saved.patientId} a ete oriente vers votre service et est en attente d'attribution de lit.`,
+        type: 'hospitalisation_en_attente_lit',
+        source: 'hospitalisation-back',
+        data: {
+          episodeId: saved.id,
+          patientId: saved.patientId,
+          chuId: saved.chuId,
+          serviceIdDest: serviceConcerne,
+          serviceIdSource: saved.serviceIdSource ?? null,
+          statut: saved.statut,
+          litId: saved.litId ?? null,
+          litCode: saved.litCode ?? null,
+          enAttenteLit: !saved.litId,
+          createdAt: saved.createdAt ? saved.createdAt.toISOString() : new Date().toISOString(),
+        },
+      });
+    }
 ​
     return saved;
   }
@@ -186,7 +219,7 @@ export class HospitalisationService {
       id: saved.id,
       patientId: saved.patientId,
       chuId: saved.chuId,
-      serviceId: saved.serviceId,
+      serviceId: saved.serviceIdDest,
       statut: saved.statut,
       modeSortie: saved.modeSortie,
       updatedBy: saved.updatedBy ?? null,
@@ -200,7 +233,7 @@ export class HospitalisationService {
 ​
     await this.dossierPatientApi.archivePatientDiagnostics({
       chuId: saved.chuId,
-      serviceId: saved.serviceId,
+      serviceId: saved.serviceIdDest,
       patientId: saved.patientId,
       episodeId: saved.id,
     });
@@ -226,7 +259,7 @@ export class HospitalisationService {
   async listEpisodes(query: HospitalisationEpisodeQuery): Promise<HospitalisationEpisodeEntity[]> {
 ​
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {};
-    where.serviceId = query.serviceId;
+    where.serviceIdDest = query.serviceIdDest;
     where.chuId = query.chuId;
     if (query.patientId) {
       where.patientId = query.patientId;
@@ -261,7 +294,7 @@ export class HospitalisationService {
    */
   async getArchives(options: {
     chuId: string;
-    serviceId: string;
+    serviceIdDest: string;
     search?: string;
     statut?: string;
     modeSortie?: string;
@@ -284,7 +317,7 @@ export class HospitalisationService {
   }> {
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
       chuId: options.chuId,
-      serviceId: options.serviceId,
+      serviceIdDest: options.serviceIdDest,
     };
 
     if (options.statut) {
@@ -378,7 +411,7 @@ export class HospitalisationService {
     return { items, total, limit, offset, stats };
   }
 
-  async getStats(chuId: string, serviceId?: string): Promise<{
+  async getStats(chuId: string, serviceIdDest?: string): Promise<{
     hospitalizedTotal: number;
     hospitalizedNewToday: number;
   }> {
@@ -386,7 +419,7 @@ export class HospitalisationService {
 ​
     const [total, newToday] = await Promise.all([
       this.hospitalisationRepository.count({
-        where: { chuId, statut: In(activeStatuts), ...(serviceId ? { serviceId } : {}) },
+        where: { chuId, statut: In(activeStatuts), ...(serviceIdDest ? { serviceIdDest } : {}) },
       }),
       (() => {
         const startOfDay = new Date();
@@ -397,8 +430,8 @@ export class HospitalisationService {
           .andWhere('ep.statut IN (:...statuts)', { statuts: activeStatuts })
           .andWhere('ep."dateAdmission" >= :startOfDay', { startOfDay })
           .andWhere(
-            serviceId ? 'ep."serviceId" = :serviceId' : '1=1',
-            serviceId ? { serviceId } : {},
+            serviceIdDest ? 'ep."serviceIdDest" = :serviceIdDest' : '1=1',
+            serviceIdDest ? { serviceIdDest } : {},
           )
           .getCount();
       })(),
@@ -409,15 +442,15 @@ export class HospitalisationService {
 ​
   async getActives(
     chuId: string,
-    serviceId?: string,
+    serviceIdDest?: string,
     limit = 50,
   ): Promise<HospitalisationEpisodeEntity[]> {
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
       chuId,
       statut: In(this.activeStatuses()),
     };
-    if (serviceId) {
-      where.serviceId = serviceId;
+    if (serviceIdDest) {
+      where.serviceIdDest = serviceIdDest;
     }
 ​
     const episodes = await this.hospitalisationRepository.find({
@@ -445,13 +478,13 @@ export class HospitalisationService {
    */
   async findActiveEpisode(
     patientId: string,
-    serviceId: string,
+    serviceIdDest: string,
     chuId: string,
   ): Promise<HospitalisationEpisodeEntity | null> {
     return this.hospitalisationRepository.findOne({
       where: {
         patientId,
-        serviceId,
+        serviceIdDest,
         chuId,
         statut: In(this.activeStatuses()),
       },
@@ -462,7 +495,7 @@ export class HospitalisationService {
   async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
     const episode = await this.findActiveEpisode(
       input.patientId,
-      input.serviceId,
+      input.serviceIdDest,
       input.chuId,
     );
 ​
@@ -476,7 +509,7 @@ export class HospitalisationService {
       await this.releaseLitIfNeeded(episode.litId);
     }
 ​
-    const lit = await this.findAvailableLit(input.litId, input.serviceId, input.chuId);
+    const lit = await this.findAvailableLit(input.litId, input.serviceIdDest, input.chuId);
     lit.statut = StatutLit.OCCUPE;
     await this.litRepository.save(lit);
 ​
@@ -490,7 +523,7 @@ export class HospitalisationService {
       id: saved.id,
       patientId: saved.patientId,
       chuId: saved.chuId,
-      serviceId: saved.serviceId,
+      serviceId: saved.serviceIdDest,
       litId: saved.litId,
       litCode: saved.litCode,
       updatedBy: saved.updatedBy,

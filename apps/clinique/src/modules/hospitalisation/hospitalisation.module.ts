@@ -9,12 +9,14 @@ import { HospitalisationService } from './hospitalisation.service';
 import { AccueilApiModule } from '../../infrastructure/http-clients/accueil-api.module';
 import { DossierPatientApiModule } from '../../infrastructure/http-clients/dossier-patient-api.module';
 import { KafkaModule } from '../../infrastructure/kafka/kafka.module';
+import { NotificationApiModule } from '../../infrastructure/http-clients/notification-api.module';
 
 @Module({
   imports: [
     AccueilApiModule,
     DossierPatientApiModule,
     KafkaModule,
+    NotificationApiModule,
     TypeOrmModule.forFeature([HospitalisationEpisodeEntity, LitEntity, ChambreEntity]),
   ],
   controllers: [HospitalisationController],

@@ -16,10 +16,10 @@ export class CreateHospitalisationEpisodeDto {
   patientId: string;
 ​
   @Field()
-  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant service' })
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant service destination (concerne)' })
   @IsUUID()
   @Length(1, 120)
-  serviceId: string;
+  serviceIdDest: string;
 ​
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -46,6 +46,13 @@ export class CreateHospitalisationEpisodeDto {
   @IsOptional()
   @IsString()
   litId?: string | null;
+​
+  @Field(() => String, { nullable: true })
+  @ApiPropertyOptional({ description: 'Service source (consultation externe) a l origine de l episode' })
+  @IsOptional()
+  @IsUUID()
+  @Length(1, 120)
+  serviceIdSource?: string | null;
 }
 ​
 @InputType()
@@ -231,9 +238,9 @@ export class CloseHospitalisationEpisodeDto {
 }
 ​
 export class HospitalisationEpisodeQuery {
-  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Filtre obligatoire par service' })
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Filtre obligatoire par service destination (concerne)' })
   @IsUUID()
-  serviceId: string;
+  serviceIdDest: string;
 ​
   @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Filtre obligatoire par CHU' })
   @IsUUID()
@@ -260,10 +267,10 @@ export class AttributeLitDto {
   chuId: string;
 ​
   @Field()
-  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant service' })
+  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Identifiant service destination (concerne)' })
   @IsUUID()
   @Length(1, 120)
-  serviceId: string;
+  serviceIdDest: string;
 ​
   @Field()
   @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient (chaine, longueur max = celle d\'un UUID)' })
