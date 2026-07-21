@@ -23,6 +23,13 @@ import {
   AttributeLitDto,
   UpdateExeatableDto,
 } from './hospitalisation.dto';
+import {
+  RapportData,
+  Demographie,
+  PeriodeStat,
+  RAPPORT_AGE_BUCKETS,
+  RAPPORT_MONTH_LABELS,
+} from './rapport.types';
 import { AccueilPatientApiService } from '../../infrastructure/http-clients/accueil-patient-api.service';
 import { DossierPatientApiService } from '../../infrastructure/http-clients/dossier-patient-api.service';
 import { KafkaService } from '../../infrastructure/kafka/kafka.service';
@@ -411,6 +418,100 @@ export class HospitalisationService {
     return { items, total, limit, offset, stats };
   }
 
+  /**
+   * Rapport d'activite du service : agrege les episodes CLOTURES sur une
+   * periode (indicateurs cles, repartition par mode de cloture, demographie
+   * patients et evolution mensuelle). Reutilise le meme perimetre que
+   * l'archive (statuts de cloture + borne sur la date de sortie).
+   */
+  async getRapport(options: {
+    chuId: string;
+    serviceIdDest: string;
+    from?: string;
+    to?: string;
+  }): Promise<RapportData> {
+    const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
+      chuId: options.chuId,
+      serviceIdDest: options.serviceIdDest,
+      statut: In(this.closedStatuses()),
+    };
+
+    const fromDate = this.parseBoundaryDate(options.from, 'start');
+    const toDate = this.parseBoundaryDate(options.to, 'end');
+    if (fromDate && toDate) {
+      where.dateSortie = Between(fromDate, toDate);
+    } else if (fromDate) {
+      where.dateSortie = MoreThanOrEqual(fromDate);
+    } else if (toDate) {
+      where.dateSortie = LessThanOrEqual(toDate);
+    }
+
+    const episodes = await this.hospitalisationRepository.find({
+      where,
+      order: { dateSortie: 'DESC', dateAdmission: 'DESC' },
+    });
+
+    await Promise.all(
+      episodes.map(async (episode) => {
+        const patientInfo = await this.accueilPatientApi.getPatientById(
+          episode.patientId,
+        );
+        if (patientInfo) {
+          episode.patient = patientInfo;
+        }
+      }),
+    );
+
+    const countBy = (statut: StatutHospitalisation) =>
+      episodes.filter((e) => e.statut === statut).length;
+
+    const total = episodes.length;
+    const sorties = countBy(StatutHospitalisation.SORTIE);
+    const transferts = countBy(StatutHospitalisation.TRANSFERE);
+    const deces = countBy(StatutHospitalisation.DECEDE);
+    const evasions = countBy(StatutHospitalisation.EVADE);
+
+    const durations = episodes
+      .map((e) => this.stayDays(e))
+      .filter((d): d is number => d !== null);
+    const dureeMoyenne =
+      durations.length > 0
+        ? Math.round(
+            (durations.reduce((sum, d) => sum + d, 0) / durations.length) *
+              10,
+          ) / 10
+        : 0;
+
+    const tauxSortie =
+      total > 0 ? Math.round((sorties / total) * 1000) / 10 : 0;
+
+    return {
+      date_from: options.from ?? null,
+      date_to: options.to ?? null,
+      kpis: {
+        total_archives: total,
+        sorties,
+        transferts,
+        deces,
+        evasions,
+        taux_sortie: tauxSortie,
+        duree_moyenne_sejour: dureeMoyenne,
+      },
+      modes_sortie: [
+        { code: StatutHospitalisation.SORTIE, nom: 'Sorties', nombre: sorties },
+        {
+          code: StatutHospitalisation.TRANSFERE,
+          nom: 'Transferts',
+          nombre: transferts,
+        },
+        { code: StatutHospitalisation.DECEDE, nom: 'Deces', nombre: deces },
+        { code: StatutHospitalisation.EVADE, nom: 'Evasions', nombre: evasions },
+      ],
+      demographie: this.buildDemographie(episodes),
+      periodes: this.buildPeriodes(episodes),
+    };
+  }
+
   async getStats(chuId: string, serviceIdDest?: string): Promise<{
     hospitalizedTotal: number;
     hospitalizedNewToday: number;
@@ -675,6 +776,134 @@ export class HospitalisationService {
       StatutHospitalisation.DECEDE,
       StatutHospitalisation.EVADE,
     ];
+  }
+
+  /** Duree de sejour en jours (dateSortie - dateAdmission, borne a 0). */
+  private stayDays(episode: HospitalisationEpisodeEntity): number | null {
+    if (!episode.dateAdmission) {
+      return null;
+    }
+    const start = new Date(episode.dateAdmission);
+    const end = episode.dateSortie ? new Date(episode.dateSortie) : new Date();
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return null;
+    }
+    return Math.max(
+      0,
+      Math.round((end.getTime() - start.getTime()) / 86400000),
+    );
+  }
+
+  /** Age (en annees) a partir d'une date de naissance ISO. */
+  private ageFromBirthdate(dateNaissance?: string): number | null {
+    if (!dateNaissance) {
+      return null;
+    }
+    const birth = new Date(dateNaissance);
+    if (Number.isNaN(birth.getTime())) {
+      return null;
+    }
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const m = now.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+      age -= 1;
+    }
+    if (age < 0 || age > 140) {
+      return null;
+    }
+    return age;
+  }
+
+  /** Repartition par genre + tranches d'age des patients archives. */
+  private buildDemographie(
+    episodes: HospitalisationEpisodeEntity[],
+  ): Demographie {
+    const tranches_age = RAPPORT_AGE_BUCKETS.map((b) => ({
+      tranche: b.tranche,
+      nombre: 0,
+    }));
+    let hommes = 0;
+    let femmes = 0;
+    let enfants = 0;
+    let inconnus = 0;
+
+    for (const ep of episodes) {
+      const sexe = (ep.patient?.sexe ?? '').toString().trim().toUpperCase();
+      if (sexe.startsWith('F')) {
+        femmes += 1;
+      } else if (sexe.startsWith('M')) {
+        hommes += 1;
+      } else {
+        inconnus += 1;
+      }
+
+      const age = this.ageFromBirthdate(ep.patient?.dateNaissance);
+      if (age !== null) {
+        if (age < 18) {
+          enfants += 1;
+        }
+        const idx = RAPPORT_AGE_BUCKETS.findIndex(
+          (b) => age >= b.min && age <= b.max,
+        );
+        if (idx >= 0) {
+          tranches_age[idx].nombre += 1;
+        }
+      }
+    }
+
+    return { hommes, femmes, enfants, inconnus, tranches_age };
+  }
+
+  /** Regroupement mensuel des episodes (par date de sortie). */
+  private buildPeriodes(
+    episodes: HospitalisationEpisodeEntity[],
+  ): PeriodeStat[] {
+    const map = new Map<string, PeriodeStat>();
+
+    for (const ep of episodes) {
+      const raw = ep.dateSortie ?? ep.dateAdmission;
+      if (!raw) {
+        continue;
+      }
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) {
+        continue;
+      }
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      let entry = map.get(key);
+      if (!entry) {
+        entry = {
+          key,
+          periode: `${RAPPORT_MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`,
+          total: 0,
+          sorties: 0,
+          transferts: 0,
+          deces: 0,
+          evasions: 0,
+        };
+        map.set(key, entry);
+      }
+      entry.total += 1;
+      switch (ep.statut) {
+        case StatutHospitalisation.SORTIE:
+          entry.sorties += 1;
+          break;
+        case StatutHospitalisation.TRANSFERE:
+          entry.transferts += 1;
+          break;
+        case StatutHospitalisation.DECEDE:
+          entry.deces += 1;
+          break;
+        case StatutHospitalisation.EVADE:
+          entry.evasions += 1;
+          break;
+        default:
+          break;
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key));
   }
 
   /**

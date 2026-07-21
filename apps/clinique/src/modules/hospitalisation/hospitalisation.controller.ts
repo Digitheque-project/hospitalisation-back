@@ -231,6 +231,44 @@ export class HospitalisationController {
     });
   }
 
+  @Get('rapport')
+  @Permissions('hospitalisation:read')
+  @ApiOperation({
+    summary: "Rapport d activite du service",
+    description:
+      'Agrege les hospitalisations cloturees (SORTIE, TRANSFERE, DECEDE, EVADE) du service sur une periode : indicateurs cles, repartition par mode de cloture, demographie patients et evolution mensuelle.',
+  })
+  @ApiQuery({ name: 'chuId', required: true })
+  @ApiQuery({ name: 'serviceIdDest', required: true })
+  @ApiQuery({
+    name: 'from',
+    required: false,
+    description: 'Borne basse sur la date de sortie (ISO ou AAAA-MM-JJ)',
+  })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    description: 'Borne haute sur la date de sortie (ISO ou AAAA-MM-JJ)',
+  })
+  @ApiResponse({ status: 200, description: 'Rapport agrege retourne' })
+  @ApiResponse({ status: 400, description: 'chuId et serviceId obligatoires' })
+  getRapport(
+    @Query('chuId') chuId?: string,
+    @Query('serviceIdDest') serviceIdDest?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    if (!chuId || !serviceIdDest) {
+      throw new BadRequestException('chuId et serviceId obligatoires');
+    }
+    return this.hospitalisationService.getRapport({
+      chuId,
+      serviceIdDest,
+      from,
+      to,
+    });
+  }
+
   @Get(':id')
   @Permissions('hospitalisation:read')
   @ApiOperation({ summary: 'Recuperer un episode par identifiant' })
