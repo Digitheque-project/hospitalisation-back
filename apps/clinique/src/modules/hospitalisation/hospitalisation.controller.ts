@@ -232,7 +232,7 @@ export class HospitalisationController {
   }
 
   @Get('rapport')
-  @Permissions('hospitalisation:read')
+  @Permissions('rapport:read')
   @ApiOperation({
     summary: "Rapport d activite du service",
     description:
