@@ -4,37 +4,44 @@ import { Repository } from 'typeorm';
 import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { CreateChambreDto, UpdateChambreDto } from './chambre.dto';
 import { buildChambreId } from '../../common/utils/ids';
-​
+import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
+
 @Injectable()
 export class ChambreService {
   constructor(
     @InjectRepository(ChambreEntity)
     private readonly chambreRepository: Repository<ChambreEntity>,
+    private readonly serviceChuApi: ServiceChuApiService,
   ) {}
-​
-  async createChambre(input: CreateChambreDto, chuId: string): Promise<ChambreEntity> {
+
+  async createChambre(input: CreateChambreDto): Promise<ChambreEntity> {
+    // Le service n'est pas porte par le token (n'importe quel token valide est
+    // accepte) : on valide donc le service aupres du service CHU externe, comme
+    // le fait le module demande. Le chuId provient du corps de la requete.
+    await this.serviceChuApi.getServiceById(input.serviceId);
+
     const chambre = this.chambreRepository.create({
       id: buildChambreId({
-        chuId,
+        chuId: input.chuId,
         serviceId: input.serviceId,
         numeroChambre: input.numeroChambre,
       }),
       serviceId: input.serviceId,
-      chuId,
+      chuId: input.chuId,
       numeroChambre: input.numeroChambre,
       type: input.type,
     });
-​
+
     return this.chambreRepository.save(chambre);
   }
-​
+
   async listChambres(serviceId: string, chuId: string): Promise<ChambreEntity[]> {
     return this.chambreRepository.find({
       where: { serviceId, chuId },
       order: { numeroChambre: 'ASC' },
     });
   }
-​
+
   async getChambreById(id: string, chuId: string): Promise<ChambreEntity> {
     const chambre = await this.chambreRepository.findOne({
       where: { id, chuId },
@@ -45,7 +52,7 @@ export class ChambreService {
     }
     return chambre;
   }
-​
+
   async updateChambre(id: string, input: UpdateChambreDto): Promise<ChambreEntity> {
     const chambre = await this.getChambreById(id, input.chuId);
     if (input.numeroChambre !== undefined) {
@@ -57,4 +64,3 @@ export class ChambreService {
     return this.chambreRepository.save(chambre);
   }
 }
-​

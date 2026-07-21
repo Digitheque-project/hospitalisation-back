@@ -4,25 +4,27 @@ import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { ChambreQueryDto, CreateChambreDto, UpdateChambreDto } from './chambre.dto';
 import { ChambreService } from './chambre.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
-import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
-import { JwtPayload } from '../../common/auth/interfaces/jwt-payload.interface';
-import { resolveChuIdFromToken } from '../../common/auth/token-chu.util';
-​
+
 @ApiTags('Chambres')
 @Controller('chambres')
 export class ChambreController {
   constructor(private readonly chambreService: ChambreService) {}
-​
+
   @Post()
   @Permissions('chambre:create')
   @ApiOperation({
     summary: 'Creer une chambre',
-    description: 'Une chambre appartient toujours a un service donne.',
+    description:
+      'Une chambre appartient toujours a un service et a un CHU donnes. '
+      + 'Le serviceId et le chuId sont fournis dans le corps de la requete : '
+      + 'tout utilisateur porteur d\'un token valide peut creer une chambre. '
+      + 'Le service est valide aupres du service CHU externe.',
   })
   @ApiBody({
     schema: {
       example: {
         serviceId: '75f995a2-40e9-4285-84e4-a72501d37bfd',
+        chuId: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394',
         numeroChambre: 101,
         type: 'Standard',
       },
@@ -30,11 +32,10 @@ export class ChambreController {
   })
   @ApiResponse({ status: 201, description: 'Chambre creee', type: ChambreEntity })
   @ApiResponse({ status: 400, description: 'Requete invalide' })
-  createChambre(@Body() body: CreateChambreDto, @CurrentUser() user: JwtPayload) {
-    const chuId = resolveChuIdFromToken(user, body.serviceId);
-    return this.chambreService.createChambre(body, chuId);
+  createChambre(@Body() body: CreateChambreDto) {
+    return this.chambreService.createChambre(body);
   }
-​
+
   @Get()
   @Permissions('chambre:read')
   @ApiOperation({
@@ -51,7 +52,7 @@ export class ChambreController {
     }
     return this.chambreService.listChambres(query.serviceId, query.chuId);
   }
-​
+
   @Get(':id')
   @Permissions('chambre:read')
   @ApiOperation({ summary: 'Recuperer une chambre avec ses lits' })
@@ -65,7 +66,7 @@ export class ChambreController {
     }
     return this.chambreService.getChambreById(id, chuId);
   }
-​
+
   @Patch(':id')
   @Permissions('chambre:update')
   @ApiOperation({ summary: 'Modifier une chambre' })
@@ -85,4 +86,3 @@ export class ChambreController {
     return this.chambreService.updateChambre(id, body);
   }
 }
-​
