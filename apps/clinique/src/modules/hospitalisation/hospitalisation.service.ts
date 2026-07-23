@@ -367,15 +367,6 @@ export class HospitalisationService {
       order: { dateSortie: 'DESC', dateAdmission: 'DESC' },
     });
 
-    await Promise.all(
-      episodes.map(async (episode) => {
-        const patientInfo = await this.accueilPatientApi.getPatientById(
-          episode.patientId,
-        );
-        if (patientInfo) episode.patient = patientInfo;
-      }),
-    );
-
     // Normalisation sans accents pour une recherche clinique tolerante.
     const normalizeText = (value: unknown): string =>
       typeof value === 'string'
@@ -404,22 +395,44 @@ export class HospitalisationService {
     const search = normalizeText(options.search);
     const diagnostic = normalizeText(options.diagnostic);
 
+    // Le diagnostic est local a l'episode : on le filtre avant tout appel au
+    // service Patient afin de reduire au maximum la cohorte a enrichir.
+    if (diagnostic) {
+      episodes = episodes.filter((episode) =>
+        normalizeText(episode.diagnosticFinal).includes(diagnostic),
+      );
+    }
+
+    const enrichPatients = async (
+      cohort: HospitalisationEpisodeEntity[],
+    ): Promise<void> => {
+      await Promise.all(
+        cohort.map(async (episode) => {
+          const patientInfo = await this.accueilPatientApi.getPatientById(
+            episode.patientId,
+          );
+          if (patientInfo) episode.patient = patientInfo;
+        }),
+      );
+    };
+
+    // Nom et sexe proviennent du service Patient : uniquement ces deux filtres
+    // necessitent l'enrichissement de toute la cohorte. Dans le cas courant,
+    // seuls les 5/10/20 elements de la page seront enrichis plus bas.
+    const requiresFullPatientEnrichment = Boolean(search || requestedSexe);
+    if (requiresFullPatientEnrichment) {
+      await enrichPatients(episodes);
+    }
+
     // Tous les criteres cliniques hors statut sont appliques avant les KPI.
-    // Les KPI refleteront donc la cohorte recherchee (ex. femmes + pneumonie +
-    // periode), mais resteront stables lorsqu'une carte statut est selectionnee.
+    // Les KPI refletent la cohorte recherchee mais restent stables lorsqu'une
+    // carte de statut est selectionnee.
     episodes = episodes.filter((episode) => {
       const patient = (episode.patient ?? {}) as Record<string, unknown>;
 
       if (
         requestedSexe &&
         normalizeSexe(patient.sexe) !== requestedSexe
-      ) {
-        return false;
-      }
-
-      if (
-        diagnostic &&
-        !normalizeText(episode.diagnosticFinal).includes(diagnostic)
       ) {
         return false;
       }
@@ -466,9 +479,20 @@ export class HospitalisationService {
     }
 
     const total = episodes.length;
-    const limit = options.limit && options.limit > 0 ? options.limit : 20;
-    const offset = options.offset && options.offset > 0 ? options.offset : 0;
+    // Pagination défensive : le frontend propose 5, 10 ou 20 et le backend
+    // interdit toute réponse supérieure à 20 dossiers par requête.
+    const requestedLimit =
+      options.limit && Number.isFinite(options.limit) ? options.limit : 10;
+    const limit = Math.min(20, Math.max(1, Math.trunc(requestedLimit)));
+    const offset =
+      options.offset && Number.isFinite(options.offset)
+        ? Math.max(0, Math.trunc(options.offset))
+        : 0;
     const items = episodes.slice(offset, offset + limit);
+
+    if (!requiresFullPatientEnrichment) {
+      await enrichPatients(items);
+    }
 
     return { items, total, limit, offset, stats };
   }
