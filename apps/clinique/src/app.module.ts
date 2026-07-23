@@ -7,6 +7,7 @@ import { ChambreModule } from "./modules/chambre/chambre.module";
 import { DemandeModule } from "./modules/demande/demande.module";
 import { HospitalisationModule } from "./modules/hospitalisation/hospitalisation.module";
 import { LitModule } from "./modules/lit/lit.module";
+import { RapportModule } from "./modules/rapport/rapport.module";
 import { AuthModule } from "./common/auth/auth.module";
 import { migrations } from "./database/migrations";
 @Module({
@@ -59,6 +60,7 @@ import { migrations } from "./database/migrations";
     ChambreModule,
     LitModule,
     DemandeModule,
+    RapportModule,
   ],
 })
 export class AppModule {}
