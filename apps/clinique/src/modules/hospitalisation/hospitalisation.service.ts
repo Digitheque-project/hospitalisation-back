@@ -418,7 +418,7 @@ export class HospitalisationService {
 
     // Nom et sexe proviennent du service Patient : uniquement ces deux filtres
     // necessitent l'enrichissement de toute la cohorte. Dans le cas courant,
-    // seuls les 5/10/20 elements de la page seront enrichis plus bas.
+    // seuls les éléments de la page demandée seront enrichis plus bas.
     const requiresFullPatientEnrichment = Boolean(search || requestedSexe);
     if (requiresFullPatientEnrichment) {
       await enrichPatients(episodes);
@@ -479,11 +479,11 @@ export class HospitalisationService {
     }
 
     const total = episodes.length;
-    // Pagination défensive : le frontend propose 5, 10 ou 20 et le backend
-    // interdit toute réponse supérieure à 20 dossiers par requête.
+    // Pagination défensive : le frontend propose 5, 10, 20, 50 ou 100 et le backend
+    // interdit toute réponse supérieure à 100 dossiers par requête.
     const requestedLimit =
       options.limit && Number.isFinite(options.limit) ? options.limit : 10;
-    const limit = Math.min(20, Math.max(1, Math.trunc(requestedLimit)));
+    const limit = Math.min(100, Math.max(1, Math.trunc(requestedLimit)));
     const offset =
       options.offset && Number.isFinite(options.offset)
         ? Math.max(0, Math.trunc(options.offset))
