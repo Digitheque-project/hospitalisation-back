@@ -183,11 +183,22 @@ export class HospitalisationController {
   @ApiOperation({
     summary: 'Archive du service (episodes clotures)',
     description:
-      'Liste paginee des hospitalisations cloturees (SORTIE, TRANSFERE, DECEDE, EVADE) du service, avec recherche plein-texte, filtres statut/mode/date et statistiques.',
+      'Liste paginee des hospitalisations cloturees (SORTIE, TRANSFERE, DECEDE, EVADE) du service, avec recherche plein-texte, filtres patient/diagnostic/sexe/statut/mode/date et statistiques facettees.',
   })
   @ApiQuery({ name: 'chuId', required: true })
   @ApiQuery({ name: 'serviceIdDest', required: true })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({
+    name: 'diagnostic',
+    required: false,
+    description: 'Recherche ciblee dans le diagnostic final',
+  })
+  @ApiQuery({
+    name: 'sexe',
+    required: false,
+    enum: ['F', 'M', 'INCONNU'],
+    description: 'Sexe du patient (F, M ou non renseigne)',
+  })
   @ApiQuery({ name: 'statut', required: false, enum: StatutHospitalisation })
   @ApiQuery({ name: 'modeSortie', required: false, enum: ModeSortie })
   @ApiQuery({
@@ -208,6 +219,8 @@ export class HospitalisationController {
     @Query('chuId') chuId?: string,
     @Query('serviceIdDest') serviceIdDest?: string,
     @Query('search') search?: string,
+    @Query('diagnostic') diagnostic?: string,
+    @Query('sexe') sexe?: string,
     @Query('statut') statut?: string,
     @Query('modeSortie') modeSortie?: string,
     @Query('from') from?: string,
@@ -222,6 +235,8 @@ export class HospitalisationController {
       chuId,
       serviceIdDest,
       search,
+      diagnostic,
+      sexe,
       statut,
       modeSortie,
       from,

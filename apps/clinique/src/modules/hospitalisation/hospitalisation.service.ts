@@ -303,6 +303,8 @@ export class HospitalisationService {
     chuId: string;
     serviceIdDest: string;
     search?: string;
+    diagnostic?: string;
+    sexe?: string;
     statut?: string;
     modeSortie?: string;
     from?: string;
@@ -322,22 +324,24 @@ export class HospitalisationService {
       evasions: number;
     };
   }> {
-    const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
-      chuId: options.chuId,
-      serviceIdDest: options.serviceIdDest,
-    };
-
+    // Le statut est valide ici mais n'est PAS applique a la requete de base :
+    // les KPI doivent conserver les totaux de chaque categorie lorsque
+    // l'utilisateur clique une carte (filtrage facette).
+    let requestedStatus: StatutHospitalisation | undefined;
     if (options.statut) {
-      const statut = options.statut as StatutHospitalisation;
-      if (!this.isClosedStatus(statut)) {
+      requestedStatus = options.statut as StatutHospitalisation;
+      if (!this.isClosedStatus(requestedStatus)) {
         throw new BadRequestException(
           'Le filtre statut doit correspondre a un statut de cloture',
         );
       }
-      where.statut = statut;
-    } else {
-      where.statut = In(this.closedStatuses());
     }
+
+    const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {
+      chuId: options.chuId,
+      serviceIdDest: options.serviceIdDest,
+      statut: In(this.closedStatuses()),
+    };
 
     if (options.modeSortie) {
       if (
@@ -368,33 +372,59 @@ export class HospitalisationService {
         const patientInfo = await this.accueilPatientApi.getPatientById(
           episode.patientId,
         );
-        if (patientInfo) {
-          episode.patient = patientInfo;
-        }
+        if (patientInfo) episode.patient = patientInfo;
       }),
     );
 
-    // Statistiques calculees sur l'ensemble filtre, avant recherche/pagination.
-    const stats = {
-      total: episodes.length,
-      sorties: episodes.filter(
-        (e) => e.statut === StatutHospitalisation.SORTIE,
-      ).length,
-      transferts: episodes.filter(
-        (e) => e.statut === StatutHospitalisation.TRANSFERE,
-      ).length,
-      deces: episodes.filter(
-        (e) => e.statut === StatutHospitalisation.DECEDE,
-      ).length,
-      evasions: episodes.filter(
-        (e) => e.statut === StatutHospitalisation.EVADE,
-      ).length,
+    // Normalisation sans accents pour une recherche clinique tolerante.
+    const normalizeText = (value: unknown): string =>
+      typeof value === 'string'
+        ? value
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim()
+        : '';
+
+    const normalizeSexe = (value: unknown): 'F' | 'M' | 'INCONNU' => {
+      const sexe = normalizeText(value).toUpperCase();
+      if (sexe.startsWith('F')) return 'F';
+      if (sexe.startsWith('M') || sexe.startsWith('H')) return 'M';
+      return 'INCONNU';
     };
 
-    const search = options.search?.trim().toLowerCase();
-    if (search) {
-      episodes = episodes.filter((episode) => {
-        const patient = (episode.patient ?? {}) as Record<string, unknown>;
+    const requestedSexe = options.sexe?.trim().toUpperCase();
+    if (
+      requestedSexe &&
+      !['F', 'M', 'INCONNU'].includes(requestedSexe)
+    ) {
+      throw new BadRequestException('Filtre sexe invalide');
+    }
+
+    const search = normalizeText(options.search);
+    const diagnostic = normalizeText(options.diagnostic);
+
+    // Tous les criteres cliniques hors statut sont appliques avant les KPI.
+    // Les KPI refleteront donc la cohorte recherchee (ex. femmes + pneumonie +
+    // periode), mais resteront stables lorsqu'une carte statut est selectionnee.
+    episodes = episodes.filter((episode) => {
+      const patient = (episode.patient ?? {}) as Record<string, unknown>;
+
+      if (
+        requestedSexe &&
+        normalizeSexe(patient.sexe) !== requestedSexe
+      ) {
+        return false;
+      }
+
+      if (
+        diagnostic &&
+        !normalizeText(episode.diagnosticFinal).includes(diagnostic)
+      ) {
+        return false;
+      }
+
+      if (search) {
         const haystack = [
           patient.nom,
           patient.prenom,
@@ -403,11 +433,36 @@ export class HospitalisationService {
           episode.diagnosticFinal,
           episode.litCode,
         ]
-          .filter((value): value is string => typeof value === 'string')
-          .join(' ')
-          .toLowerCase();
-        return haystack.includes(search);
-      });
+          .map(normalizeText)
+          .filter(Boolean)
+          .join(' ');
+        if (!haystack.includes(search)) return false;
+      }
+
+      return true;
+    });
+
+    // Statistiques facettees : elles sont calculees AVANT le filtre statut.
+    const stats = {
+      total: episodes.length,
+      sorties: episodes.filter(
+        (episode) => episode.statut === StatutHospitalisation.SORTIE,
+      ).length,
+      transferts: episodes.filter(
+        (episode) => episode.statut === StatutHospitalisation.TRANSFERE,
+      ).length,
+      deces: episodes.filter(
+        (episode) => episode.statut === StatutHospitalisation.DECEDE,
+      ).length,
+      evasions: episodes.filter(
+        (episode) => episode.statut === StatutHospitalisation.EVADE,
+      ).length,
+    };
+
+    if (requestedStatus) {
+      episodes = episodes.filter(
+        (episode) => episode.statut === requestedStatus,
+      );
     }
 
     const total = episodes.length;
