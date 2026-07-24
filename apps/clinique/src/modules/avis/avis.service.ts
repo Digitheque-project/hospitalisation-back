@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { AvisEntity, StatutAvis, UrgenceAvis } from '../../domain/entities/avis.entity';
@@ -16,10 +16,22 @@ export class AvisService {
     private readonly notificationApi: NotificationApiService,
   ) {}
 
+  private readonly logger = new Logger(AvisService.name);
+
   async create(input: CreateAvisDto): Promise<AvisEntity> {
     // Le service destinataire n'est pas porte par le token : on le valide
     // via le service CHU externe (SERVICE_CHU_API_BASE_URL).
-    await this.serviceChuApi.getServiceById(input.serviceIdDest);
+    // Validation best-effort : ne bloque pas la creation si le service CHU
+    // externe est momentanement indisponible (500/503).
+    try {
+      await this.serviceChuApi.getServiceById(input.serviceIdDest);
+    } catch (err) {
+      this.logger.warn(
+        `Avis: validation du service destinataire ignoree (${input.serviceIdDest}) : ${
+          (err as Error)?.message ?? err
+        }`,
+      );
+    }
 
     const entity = this.avisRepository.create({
       id: buildAvisId({ chuId: input.chuId, createdAt: new Date() }),
@@ -37,7 +49,7 @@ export class AvisService {
     const saved = await this.avisRepository.save(entity);
 
     // Notifie le service destinataire (le consultant) qu'un avis est demande.
-    await this.notificationApi.sendToService({
+    await this.safeNotify({
       serviceId: saved.serviceIdDest,
       title: "Nouvelle demande d'avis",
       message: `Un avis (${saved.urgence}) est demande pour le patient ${saved.patientId}.`,
@@ -152,7 +164,7 @@ export class AvisService {
     avis: AvisEntity,
     n: { title: string; message: string; type: string },
   ): Promise<void> {
-    await this.notificationApi.sendToService({
+    await this.safeNotify({
       serviceId: avis.serviceIdSource,
       title: n.title,
       message: n.message,
@@ -167,5 +179,18 @@ export class AvisService {
         motifRefus: avis.motifRefus ?? null,
       },
     });
+  }
+
+  /** Notification best-effort : ne doit jamais faire echouer l'operation metier. */
+  private async safeNotify(
+    payload: Parameters<NotificationApiService['sendToService']>[0],
+  ): Promise<void> {
+    try {
+      await this.notificationApi.sendToService(payload);
+    } catch (err) {
+      this.logger.warn(
+        `Avis: notification non envoyee : ${(err as Error)?.message ?? err}`,
+      );
+    }
   }
 }
