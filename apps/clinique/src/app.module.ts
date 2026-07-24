@@ -5,6 +5,7 @@ import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ChambreModule } from "./modules/chambre/chambre.module";
 import { DemandeModule } from "./modules/demande/demande.module";
+import { AvisModule } from "./modules/avis/avis.module";
 import { HospitalisationModule } from "./modules/hospitalisation/hospitalisation.module";
 import { LitModule } from "./modules/lit/lit.module";
 import { RapportModule } from "./modules/rapport/rapport.module";
@@ -60,6 +61,7 @@ import { migrations } from "./database/migrations";
     ChambreModule,
     LitModule,
     DemandeModule,
+    AvisModule,
     RapportModule,
   ],
 })

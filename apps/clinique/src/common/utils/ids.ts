@@ -26,3 +26,11 @@ export function buildEpisodeId(params: {
   const datePart = params.dateAdmission.toISOString().replace(/[:.]/g, '-');
   return `episode-${normalizeIdPart(params.chuId)}-${datePart}`;
 }
+
+export function buildAvisId(params: {
+  chuId: string;
+  createdAt: Date;
+}): string {
+  const datePart = params.createdAt.toISOString().replace(/[:.]/g, '-');
+  return `avis-${normalizeIdPart(params.chuId)}-${datePart}`;
+}
