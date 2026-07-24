@@ -1,11 +1,20 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
-import { AvisEntity, StatutAvis, UrgenceAvis } from '../../domain/entities/avis.entity';
-import { CreateAvisDto, UpdateAvisDto, AvisQuery } from './avis.dto';
-import { buildAvisId } from '../../common/utils/ids';
-import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
-import { NotificationApiService } from '../../infrastructure/http-clients/notification-api.service';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { FindOptionsWhere, QueryFailedError, Repository } from "typeorm";
+import {
+  AvisEntity,
+  StatutAvis,
+  UrgenceAvis,
+} from "../../domain/entities/avis.entity";
+import { CreateAvisDto, UpdateAvisDto, AvisQuery } from "./avis.dto";
+import { buildAvisId } from "../../common/utils/ids";
+import { ServiceChuApiService } from "../../infrastructure/http-clients/service-chu-api.service";
+import { NotificationApiService } from "../../infrastructure/http-clients/notification-api.service";
 
 @Injectable()
 export class AvisService {
@@ -46,15 +55,33 @@ export class AvisService {
       createdBy: input.createdBy,
     });
 
-    const saved = await this.avisRepository.save(entity);
+    let saved: AvisEntity;
+    try {
+      saved = await this.avisRepository.save(entity);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `Avis: echec de l'enregistrement PostgreSQL : ${detail}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+
+      // Une valeur incompatible avec le schema (UUID, longueur, contrainte)
+      // est une erreur de requete et ne doit pas devenir un 500 opaque.
+      if (err instanceof QueryFailedError) {
+        throw new BadRequestException(
+          `Impossible d'enregistrer l'avis : ${detail}`,
+        );
+      }
+      throw err;
+    }
 
     // Notifie le service destinataire (le consultant) qu'un avis est demande.
     await this.safeNotify({
       serviceId: saved.serviceIdDest,
       title: "Nouvelle demande d'avis",
       message: `Un avis (${saved.urgence}) est demande pour le patient ${saved.patientId}.`,
-      type: 'avis_created',
-      source: 'hospitalisation-back',
+      type: "avis_created",
+      source: "hospitalisation-back",
       data: {
         avisId: saved.id,
         patientId: saved.patientId,
@@ -73,7 +100,7 @@ export class AvisService {
     const where: FindOptionsWhere<AvisEntity> = chuId ? { id, chuId } : { id };
     const avis = await this.avisRepository.findOne({ where });
     if (!avis) {
-      throw new NotFoundException('Avis introuvable');
+      throw new NotFoundException("Avis introuvable");
     }
     return avis;
   }
@@ -98,11 +125,15 @@ export class AvisService {
 
     return this.avisRepository.find({
       where,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
   }
 
-  async update(id: string, input: UpdateAvisDto, chuId?: string): Promise<AvisEntity> {
+  async update(
+    id: string,
+    input: UpdateAvisDto,
+    chuId?: string,
+  ): Promise<AvisEntity> {
     const avis = await this.findById(id, chuId);
 
     if (input.motif !== undefined) {
@@ -130,7 +161,7 @@ export class AvisService {
       await this.notifySource(saved, {
         title: "Avis pris en charge",
         message: `Votre demande d'avis pour le patient ${saved.patientId} est prise en charge.`,
-        type: 'avis_taken',
+        type: "avis_taken",
       });
     }
 
@@ -138,16 +169,17 @@ export class AvisService {
       await this.notifySource(saved, {
         title: "Reponse a votre demande d'avis",
         message: `Le consultant a repondu pour le patient ${saved.patientId}.`,
-        type: 'avis_answered',
+        type: "avis_answered",
       });
     }
 
     if (input.statut === StatutAvis.REFUSEE) {
       await this.notifySource(saved, {
         title: "Demande d'avis refusee",
-        message: `Votre demande d'avis pour le patient ${saved.patientId} a ete refusee.`
-          + `${saved.motifRefus ? ` Motif : ${saved.motifRefus}` : ''}`,
-        type: 'avis_refused',
+        message:
+          `Votre demande d'avis pour le patient ${saved.patientId} a ete refusee.` +
+          `${saved.motifRefus ? ` Motif : ${saved.motifRefus}` : ""}`,
+        type: "avis_refused",
       });
     }
 
@@ -169,7 +201,7 @@ export class AvisService {
       title: n.title,
       message: n.message,
       type: n.type,
-      source: 'hospitalisation-back',
+      source: "hospitalisation-back",
       data: {
         avisId: avis.id,
         patientId: avis.patientId,
@@ -183,7 +215,7 @@ export class AvisService {
 
   /** Notification best-effort : ne doit jamais faire echouer l'operation metier. */
   private async safeNotify(
-    payload: Parameters<NotificationApiService['sendToService']>[0],
+    payload: Parameters<NotificationApiService["sendToService"]>[0],
   ): Promise<void> {
     try {
       await this.notificationApi.sendToService(payload);

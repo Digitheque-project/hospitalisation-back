@@ -1,37 +1,49 @@
-import { Field, InputType } from '@nestjs/graphql';
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
-import { StatutAvis, UrgenceAvis } from '../../domain/entities/avis.entity';
+import { Field, InputType } from "@nestjs/graphql";
+import { ApiProperty } from "@nestjs/swagger";
+import { IsEnum, IsOptional, IsString, IsUUID, Length } from "class-validator";
+import { StatutAvis, UrgenceAvis } from "../../domain/entities/avis.entity";
 
 @InputType()
 export class CreateAvisDto {
   @Field()
-  @ApiProperty({ example: "Avis cardiologique pour douleur thoracique", description: "Motif de la demande d'avis" })
+  @ApiProperty({
+    example: "Avis cardiologique pour douleur thoracique",
+    description: "Motif de la demande d'avis",
+  })
   @IsString()
   motif: string;
 
   @Field()
-  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Identifiant patient' })
+  @ApiProperty({
+    example: "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    description: "Identifiant patient",
+  })
   @IsString()
   @Length(1, 36)
   patientId: string;
 
   @Field()
-  @ApiProperty({ example: '75f995a2-40e9-4285-84e4-a72501d37bfd', description: 'Service source (celui qui demande)' })
-  @IsString()
-  @Length(1, 120)
+  @ApiProperty({
+    example: "75f995a2-40e9-4285-84e4-a72501d37bfd",
+    description: "Service source (celui qui demande)",
+  })
+  @IsUUID()
   serviceIdSource: string;
 
   @Field()
-  @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6', description: 'Service destinataire (le consultant)' })
-  @IsString()
-  @Length(1, 120)
+  @ApiProperty({
+    example: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    description: "Service destinataire (le consultant)",
+  })
+  @IsUUID()
   serviceIdDest: string;
 
   @Field()
-  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
-  @IsString()
-  @Length(1, 120)
+  @ApiProperty({
+    example: "1e5bbbb7-fa10-4d59-8848-2d0ce96a9394",
+    description: "Identifiant CHU",
+  })
+  @IsUUID()
   chuId: string;
 
   @Field(() => UrgenceAvis, { nullable: true })
@@ -41,13 +53,20 @@ export class CreateAvisDto {
   urgence?: UrgenceAvis;
 
   @Field(() => String, { nullable: true })
-  @ApiProperty({ example: 'ECG realise, troponine en cours', required: false, nullable: true })
+  @ApiProperty({
+    example: "ECG realise, troponine en cours",
+    required: false,
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   infoComplementaire?: string | null;
 
   @Field()
-  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: "Auteur de la demande" })
+  @ApiProperty({
+    example: "bb2ff11e-0e8b-4ea5-a120-ed4c55d07909",
+    description: "Auteur de la demande",
+  })
   @IsString()
   @Length(1, 120)
   createdBy: string;
@@ -86,7 +105,10 @@ export class UpdateAvisDto {
   infoComplementaire?: string;
 
   @Field()
-  @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de la mise a jour' })
+  @ApiProperty({
+    example: "bb2ff11e-0e8b-4ea5-a120-ed4c55d07909",
+    description: "Auteur de la mise a jour",
+  })
   @IsString()
   @Length(1, 120)
   updatedBy: string;
