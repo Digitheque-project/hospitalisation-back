@@ -139,4 +139,32 @@ export class AvisQuery {
   @IsOptional()
   @IsEnum(StatutAvis)
   statut?: StatutAvis;
+
+  /**
+   * Plusieurs statuts separes par des virgules, pour charger une file de
+   * travail en un seul appel (ex. EN_ATTENTE,CONSULTEE,PRISE_EN_CHARGE).
+   * Prioritaire sur `statut` s'il est renseigne.
+   */
+  @ApiProperty({
+    required: false,
+    example: "EN_ATTENTE,CONSULTEE,PRISE_EN_CHARGE",
+  })
+  @IsOptional()
+  @IsString()
+  statuts?: string;
+}
+
+/** Accuse de reception groupe des avis recus par un service. */
+export class MarquerAvisConsulteesDto {
+  @ApiProperty({
+    example: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    description: "Service consulte qui accuse reception",
+  })
+  @IsUUID()
+  serviceIdDest: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUUID()
+  chuId?: string;
 }

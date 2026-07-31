@@ -18,7 +18,12 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { AvisEntity } from "../../domain/entities/avis.entity";
-import { CreateAvisDto, UpdateAvisDto, AvisQuery } from "./avis.dto";
+import {
+  CreateAvisDto,
+  UpdateAvisDto,
+  AvisQuery,
+  MarquerAvisConsulteesDto,
+} from "./avis.dto";
 import { AvisService } from "./avis.service";
 import { Permissions } from "../../common/auth/decorators/permissions.decorator";
 import { CurrentUser } from "../../common/auth/decorators/current-user.decorator";
@@ -44,7 +49,7 @@ export class AvisController {
         serviceIdSource: "75f995a2-40e9-4285-84e4-a72501d37bfd",
         serviceIdDest: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
         chuId: "1e5bbbb7-fa10-4d59-8848-2d0ce96a9394",
-        urgence: "URGENTE",
+        urgence: "URGENT",
         infoComplementaire: "ECG realise, troponine en cours",
         createdBy: "bb2ff11e-0e8b-4ea5-a120-ed4c55d07909",
       },
@@ -97,6 +102,70 @@ export class AvisController {
     return this.avisService.findAll(query);
   }
 
+  @Patch("consulter")
+  @Permissions("avis:update")
+  @ApiOperation({
+    summary: "Accuser reception des avis recus",
+    description:
+      "Passe tous les avis EN_ATTENTE recus par le service a CONSULTEE et informe " +
+      "chaque service demandeur que sa demande a bien ete recue. Idempotent.",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Avis accuses",
+    type: AvisEntity,
+    isArray: true,
+  })
+  marquerConsultees(
+    @Body() body: MarquerAvisConsulteesDto,
+    @CurrentUser("userId") userId?: string,
+  ) {
+    return this.avisService.marquerConsultees(
+      body.serviceIdDest,
+      body.chuId,
+      userId,
+    );
+  }
+
+  @Get("non-lus/:serviceIdDest")
+  @Permissions("avis:read")
+  @ApiOperation({
+    summary: "Compter les avis recus non encore accuses",
+    description: "Alimente le badge \"non lus\" de la file du service consulte.",
+  })
+  @ApiParam({ name: "serviceIdDest", description: "Service consulte" })
+  @ApiQuery({ name: "chuId", required: false })
+  async countNonLus(
+    @Param("serviceIdDest") serviceIdDest: string,
+    @Query("chuId") chuId?: string,
+  ) {
+    return { count: await this.avisService.countNonLus(serviceIdDest, chuId) };
+  }
+
+  @Patch(":id/accuser-reception")
+  @Permissions("avis:update")
+  @ApiOperation({
+    summary: "Accuser reception du compte-rendu d'avis",
+    description:
+      "Le service DEMANDEUR declare avoir lu le compte-rendu : la boucle est " +
+      "refermee des deux cotes et le consultant en est informe. Idempotent.",
+  })
+  @ApiParam({ name: "id", description: "Identifiant avis" })
+  @ApiQuery({ name: "chuId", required: false })
+  @ApiResponse({
+    status: 200,
+    description: "Lecture enregistree",
+    type: AvisEntity,
+  })
+  @ApiResponse({ status: 400, description: "Aucun compte-rendu a accuser" })
+  accuserReception(
+    @Param("id") id: string,
+    @CurrentUser("userId", new ParseUUIDPipe({ version: "4" })) userId: string,
+    @Query("chuId") chuId?: string,
+  ) {
+    return this.avisService.accuserReceptionReponse(id, userId, chuId);
+  }
+
   @Patch(":id")
   @Permissions("avis:update")
   @ApiOperation({
@@ -125,9 +194,12 @@ export class AvisController {
   update(
     @Param("id") id: string,
     @Body() body: UpdateAvisDto,
+    @CurrentUser("userId", new ParseUUIDPipe({ version: "4" })) userId: string,
     @Query("chuId") chuId?: string,
   ) {
-    return this.avisService.update(id, body, chuId);
+    // L'auteur de la transition est impose par le JWT : la tracabilite d'un
+    // compte-rendu medical ne peut pas dependre d'un champ envoye par le front.
+    return this.avisService.update(id, { ...body, updatedBy: userId }, chuId);
   }
 
   @Delete(":id")
