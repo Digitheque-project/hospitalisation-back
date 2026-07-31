@@ -56,6 +56,18 @@ export class CreateDemandeDto {
   @IsString()
   motifRefus?: string | null;
 ​
+  @Field(() => String, { nullable: true })
+  @ApiProperty({
+    example: 'episode-1e5bbbb7-2026-07-31T08-00-00-000Z',
+    description: "Episode source d'un transfert interne (renseigne par le back, pas par le front)",
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @Length(1, 120)
+  episodeSourceId?: string | null;
+
   @Field()
   @ApiProperty({ example: 'bb2ff11e-0e8b-4ea5-a120-ed4c55d07909', description: 'Auteur de la demande' })
   @IsString()

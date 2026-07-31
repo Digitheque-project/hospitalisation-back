@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
@@ -35,6 +35,7 @@ import { DossierPatientApiService } from '../../infrastructure/http-clients/doss
 import { KafkaService } from '../../infrastructure/kafka/kafka.service';
 import { buildEpisodeId } from '../../common/utils/ids';
 import { NotificationApiService } from '../../infrastructure/http-clients/notification-api.service';
+import { DemandeEntity, StatutDemande } from '../../domain/entities/demande.entity';
 ​
 @Injectable()
 export class HospitalisationService {
@@ -43,11 +44,17 @@ export class HospitalisationService {
     private readonly hospitalisationRepository: Repository<HospitalisationEpisodeEntity>,
     @InjectRepository(LitEntity)
     private readonly litRepository: Repository<LitEntity>,
+    // Injection du repository (et non de DemandeService) pour eviter une
+    // dependance circulaire : DemandeModule importe deja HospitalisationModule.
+    @InjectRepository(DemandeEntity)
+    private readonly demandeRepository: Repository<DemandeEntity>,
     private readonly accueilPatientApi: AccueilPatientApiService,
     private readonly dossierPatientApi: DossierPatientApiService,
     private readonly kafkaService: KafkaService,
     private readonly notificationApi: NotificationApiService,
   ) {}
+
+  private readonly logger = new Logger(HospitalisationService.name);
 ​
   async createEpisode(
     input: CreateHospitalisationEpisodeDto,
@@ -75,6 +82,8 @@ export class HospitalisationService {
       chuId,
       serviceIdDest: input.serviceIdDest,
       serviceIdSource: input.serviceIdSource ?? null,
+      // Chainage du parcours : renseigne quand l'episode nait d'un transfert interne.
+      episodePrecedentId: input.episodePrecedentId ?? null,
       dateAdmission: admissionDate,
       motifAdmission: input.motifAdmission ?? null,
       createdBy: input.createdBy,
@@ -244,6 +253,11 @@ export class HospitalisationService {
       patientId: saved.patientId,
       episodeId: saved.id,
     });
+
+    // Transfert interne : le service destinataire doit RECEVOIR le patient.
+    // Best-effort : la cloture est deja persistee, une panne notification/demande
+    // ne doit jamais faire echouer la sortie.
+    await this.notifierTransfertInterne(saved);
 ​
     return saved;
   }
@@ -789,6 +803,128 @@ export class HospitalisationService {
     }
   }
 ​
+  /**
+   * TRANSFERT INTERNE : cote reception.
+   *
+   * A la cloture d'un episode en TRANSFERT_INTERNE, le patient doit apparaitre
+   * dans le service destinataire. On realise donc deux choses :
+   *  1. creation d'une demande d'hospitalisation PRE-REMPLIE (EN_ATTENTE) vers
+   *     le service de destination, chainee a l'episode source
+   *     (episodeSourceId) : a l'acceptation, l'episode d'arrivee heritera de
+   *     episodePrecedentId, ce qui reconstitue le parcours du patient ;
+   *  2. notification temps reel au service destinataire (type
+   *     'transfert_entrant').
+   *
+   * Idempotent : une demande deja creee pour cet episode source est reutilisee.
+   * Best-effort : aucune exception ne remonte (la cloture est deja persistee).
+   */
+  private async notifierTransfertInterne(
+    episode: HospitalisationEpisodeEntity,
+  ): Promise<DemandeEntity | null> {
+    if (
+      episode.modeSortie !== ModeSortie.TRANSFERT_INTERNE ||
+      !episode.destinationServiceId
+    ) {
+      return null;
+    }
+
+    let demande: DemandeEntity | null = null;
+    try {
+      demande = await this.demandeRepository.findOne({
+        where: { episodeSourceId: episode.id },
+      });
+      if (!demande) {
+        demande = await this.demandeRepository.save(
+          this.demandeRepository.create({
+            // Id deterministe : rejouer la cloture ne cree pas de doublon.
+            id: `transfert-${episode.id}`.slice(0, 120),
+            motif:
+              episode.motifSortie ??
+              episode.diagnosticFinal ??
+              'Transfert interne',
+            patientId: episode.patientId,
+            // La source de la demande est le service qui transfere.
+            serviceIdSource: episode.serviceIdDest,
+            serviceIdDest: episode.destinationServiceId,
+            chuId: episode.chuId,
+            statut: StatutDemande.EN_ATTENTE,
+            infoComplementaire: this.buildResumeTransfert(episode),
+            episodeSourceId: episode.id,
+            createdBy: episode.updatedBy ?? episode.createdBy,
+          }),
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Transfert interne ${episode.id} : demande d'admission non creee : ${String(error)}`,
+      );
+    }
+
+    try {
+      await this.notificationApi.sendToService({
+        serviceId: episode.destinationServiceId,
+        title: 'Transfert entrant',
+        message: `Le patient ${episode.patientId} vous est transfere par un autre service. Une demande d'admission pre-remplie est en attente.`,
+        type: 'transfert_entrant',
+        source: 'hospitalisation-back',
+        data: {
+          demandeId: demande?.id ?? null,
+          episodeSourceId: episode.id,
+          patientId: episode.patientId,
+          chuId: episode.chuId,
+          serviceIdSource: episode.serviceIdDest,
+          serviceIdDest: episode.destinationServiceId,
+          modeSortie: episode.modeSortie,
+          motifSortie: episode.motifSortie ?? null,
+          diagnosticFinal: episode.diagnosticFinal ?? null,
+          moyenTransport: episode.moyenTransport ?? null,
+          dateSortie: episode.dateSortie ? episode.dateSortie.toISOString() : null,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Transfert interne ${episode.id} : notification non envoyee : ${String(error)}`,
+      );
+    }
+
+    try {
+      await this.kafkaService.emit('hospitalisation.transfert.interne', {
+        episodeSourceId: episode.id,
+        demandeId: demande?.id ?? null,
+        patientId: episode.patientId,
+        chuId: episode.chuId,
+        serviceIdSource: episode.serviceIdDest,
+        serviceIdDest: episode.destinationServiceId,
+        dateSortie: episode.dateSortie ? episode.dateSortie.toISOString() : null,
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Transfert interne ${episode.id} : evenement Kafka non emis : ${String(error)}`,
+      );
+    }
+
+    return demande;
+  }
+
+  /** Resume transmis au service d'accueil pour eviter toute ressaisie. */
+  private buildResumeTransfert(episode: HospitalisationEpisodeEntity): string {
+    const lignes: string[] = [];
+    const ajouter = (libelle: string, valeur?: string | null) => {
+      if (valeur && valeur.trim()) {
+        lignes.push(`${libelle} : ${valeur.trim()}`);
+      }
+    };
+    lignes.push(`Transfert interne (episode source ${episode.id})`);
+    ajouter('Motif du transfert', episode.motifSortie);
+    ajouter('Diagnostic final', episode.diagnosticFinal);
+    ajouter('Resume d hospitalisation', episode.resumeSortie);
+    ajouter('Traitement de sortie', episode.traitementSortie);
+    ajouter('Conduite a tenir', episode.conduiteATenir);
+    ajouter('Etat a la sortie', episode.etatSortie);
+    ajouter('Moyen de transport', episode.moyenTransport);
+    return lignes.join('\n');
+  }
+
   private resolveFinalStatus(modeSortie: ModeSortie): StatutHospitalisation {
     switch (modeSortie) {
       case ModeSortie.DECES:

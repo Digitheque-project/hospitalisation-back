@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { HospitalisationController } from './hospitalisation.controller';
 import { ChambreEntity } from '../../domain/entities/chambre.entity';
 import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisation-episode.entity';
+import { DemandeEntity } from '../../domain/entities/demande.entity';
 import { LitEntity } from '../../domain/entities/lit.entity';
 import { HospitalisationResolver } from './hospitalisation.resolver';
 import { HospitalisationService } from './hospitalisation.service';
@@ -17,7 +18,7 @@ import { NotificationApiModule } from '../../infrastructure/http-clients/notific
     DossierPatientApiModule,
     KafkaModule,
     NotificationApiModule,
-    TypeOrmModule.forFeature([HospitalisationEpisodeEntity, LitEntity, ChambreEntity]),
+    TypeOrmModule.forFeature([HospitalisationEpisodeEntity, LitEntity, ChambreEntity, DemandeEntity]),
   ],
   controllers: [HospitalisationController],
   providers: [HospitalisationService, HospitalisationResolver],

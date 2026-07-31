@@ -72,6 +72,16 @@ export class HospitalisationEpisodeEntity {
   @Column({ type: 'uuid', nullable: true })
   serviceIdSource?: string | null;
 ​
+  /**
+   * Chainage des parcours : episode d'ORIGINE dont celui-ci est la suite
+   * (transfert interne). Permet de reconstituer le parcours complet du
+   * patient d'un service a l'autre et d'afficher les transferts entrants.
+   */
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ required: false, nullable: true, description: 'Episode precedent (transfert interne) dont cet episode est la suite' })
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  episodePrecedentId?: string | null;
+
   @Field(() => String, { nullable: true })
   @Column({ type: 'varchar', length: 120, nullable: true })
   litId?: string | null;

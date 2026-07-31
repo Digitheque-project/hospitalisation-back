@@ -59,6 +59,13 @@ export class CreateHospitalisationEpisodeDto {
   @IsUUID()
   @Length(1, 120)
   serviceIdSource?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @ApiPropertyOptional({ description: 'Episode precedent (transfert interne) dont cet episode est la suite' })
+  @IsOptional()
+  @IsString()
+  @Length(1, 120)
+  episodePrecedentId?: string | null;
 }
 ​
 @InputType()

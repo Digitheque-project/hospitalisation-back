@@ -41,16 +41,23 @@ export class DemandeService {
       chuId: input.chuId,
       statut: StatutDemande.EN_ATTENTE,
       infoComplementaire: input.infoComplementaire ?? null,
+      // Renseigne uniquement pour une demande generee par un transfert interne.
+      episodeSourceId: input.episodeSourceId ?? null,
       createdBy: input.createdBy,
     });
 ​
     const saved = await this.demandeRepository.save(entity);
 
+    // Un transfert interne est annonce comme tel (et non comme une simple demande).
+    const estTransfert = !!saved.episodeSourceId;
+
     await this.notificationApi.sendToService({
       serviceId: saved.serviceIdDest,
-      title: 'Nouvelle demande d\'hospitalisation',
-      message: `Une demande pour le patient ${saved.patientId} nécessite votre attention.`,
-      type: 'demande_created',
+      title: estTransfert ? 'Transfert entrant' : 'Nouvelle demande d\'hospitalisation',
+      message: estTransfert
+        ? `Le patient ${saved.patientId} vous est transfere par un autre service.`
+        : `Une demande pour le patient ${saved.patientId} nécessite votre attention.`,
+      type: estTransfert ? 'transfert_entrant' : 'demande_created',
       source: 'hospitalisation-back',
       data: {
         demandeId: saved.id,
@@ -59,6 +66,7 @@ export class DemandeService {
         serviceIdDest: saved.serviceIdDest,
         statut: saved.statut,
         motif: saved.motif,
+        episodeSourceId: saved.episodeSourceId ?? null,
       },
     });
 
@@ -164,6 +172,9 @@ export class DemandeService {
             serviceIdSource: demande.serviceIdSource,
             chuId: demande.chuId,
             motifAdmission: input.motif ?? demande.motif,
+            // Transfert interne : on chaine l'episode d'arrivee a l'episode source
+            // afin de conserver la continuite du parcours patient.
+            episodePrecedentId: demande.episodeSourceId ?? null,
             createdBy: input.updatedBy,
           },
           demande.chuId,

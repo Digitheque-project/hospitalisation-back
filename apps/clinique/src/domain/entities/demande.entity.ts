@@ -58,6 +58,17 @@ export class DemandeEntity {
   @Column({ type: 'text', nullable: true })
   motifRefus?: string | null;
 ​
+  /**
+   * Renseigne uniquement pour une demande generee par un TRANSFERT INTERNE :
+   * identifiant de l'episode source clos dans le service d'origine.
+   * Sert a distinguer un transfert entrant d'une demande classique et a
+   * chainer les episodes (episodePrecedentId) a l'acceptation.
+   */
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ required: false, nullable: true, description: 'Episode source du transfert interne' })
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  episodeSourceId?: string | null;
+
   @Field()
   @Column({ type: 'uuid' })
   createdBy: string;
