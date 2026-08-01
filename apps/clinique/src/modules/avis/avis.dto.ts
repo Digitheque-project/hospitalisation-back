@@ -112,6 +112,30 @@ export class UpdateAvisDto {
   @IsString()
   @Length(1, 120)
   updatedBy: string;
+
+  // Identite du signataire, transmise au passage a REPONDUE / REFUSEE. Elle
+  // n'est prise en compte QUE pour ces deux transitions (cf. avis.service).
+
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ example: "RAKOTO", required: false })
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  repondeurNom?: string;
+
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ example: "Jean", required: false })
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  repondeurPrenom?: string;
+
+  @Field(() => String, { nullable: true })
+  @ApiProperty({ example: "Medecin, Cardiologie", required: false })
+  @IsOptional()
+  @IsString()
+  @Length(0, 120)
+  repondeurFonction?: string;
 }
 
 export class AvisQuery {

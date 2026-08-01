@@ -293,7 +293,11 @@ export class AvisService {
       }
 
       avis.statut = nouveauStatut;
-      this.horodater(avis, nouveauStatut, input.updatedBy);
+      this.horodater(avis, nouveauStatut, input.updatedBy, {
+        nom: input.repondeurNom,
+        prenom: input.repondeurPrenom,
+        fonction: input.repondeurFonction,
+      });
     }
 
     const saved = await this.avisRepository.save(avis);
@@ -381,13 +385,31 @@ export class AvisService {
     }
   }
 
-  /** Horodate l'etape atteinte et mesure le delai de reponse effectif. */
+  /**
+   * Horodate l'etape atteinte, mesure le delai de reponse effectif et fige la
+   * signature du consultant au moment de la reponse (ou du refus).
+   */
   private horodater(
     avis: AvisEntity,
     statut: StatutAvis,
     acteurId?: string,
+    identite?: { nom?: string; prenom?: string; fonction?: string },
   ): void {
     const now = new Date();
+
+    // La signature n'est enregistree qu'aux etapes ou un praticien engage sa
+    // responsabilite : REPONDUE et REFUSEE. Elle n'est jamais ecrasee par une
+    // valeur vide, pour qu'un amendement ulterieur ne fasse pas disparaitre
+    // l'auteur du compte-rendu initial.
+    const signer = () => {
+      avis.repondeurId = acteurId ?? avis.repondeurId ?? null;
+      const nom = identite?.nom?.trim();
+      const prenom = identite?.prenom?.trim();
+      const fonction = identite?.fonction?.trim();
+      if (nom) avis.repondeurNom = nom;
+      if (prenom) avis.repondeurPrenom = prenom;
+      if (fonction) avis.repondeurFonction = fonction;
+    };
 
     switch (statut) {
       case StatutAvis.CONSULTEE:
@@ -402,13 +424,13 @@ export class AvisService {
         avis.dateConsultation = avis.dateConsultation ?? now;
         avis.datePriseEnCharge = avis.datePriseEnCharge ?? now;
         avis.dateReponse = now;
-        avis.repondeurId = acteurId ?? avis.repondeurId ?? null;
+        signer();
         avis.delaiReponseMinutes = this.minutesEntre(avis.createdAt, now);
         break;
       case StatutAvis.REFUSEE:
         avis.dateConsultation = avis.dateConsultation ?? now;
         avis.dateReponse = now;
-        avis.repondeurId = acteurId ?? avis.repondeurId ?? null;
+        signer();
         avis.delaiReponseMinutes = this.minutesEntre(avis.createdAt, now);
         break;
       case StatutAvis.CLOTUREE:

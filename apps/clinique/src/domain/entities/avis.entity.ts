@@ -180,6 +180,31 @@ export class AvisEntity {
   @Column({ type: 'uuid', nullable: true })
   repondeurId?: string | null;
 
+  // ---------------------------------------------------------------------------
+  // Identite du repondeur FIGEE au moment de la signature (equivalent de
+  // Provenance.agent / DiagnosticReport.performer en HL7 FHIR).
+  //
+  // On denormalise volontairement au lieu de resoudre repondeurId a chaque
+  // affichage : un compte-rendu signe doit conserver l'identite telle qu'elle
+  // etait a la signature. Si le praticien change de role, de service, ou quitte
+  // le CHU, l'avis de juillet doit continuer d'afficher son auteur d'alors.
+  // ---------------------------------------------------------------------------
+
+  /** Nom du praticien consultant, au moment ou il a signe. */
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  repondeurNom?: string | null;
+
+  /** Prenom du praticien consultant, au moment ou il a signe. */
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  repondeurPrenom?: string | null;
+
+  /** Fonction / role du praticien (Medecin, Interne, Chef de service...). */
+  @Field(() => String, { nullable: true })
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  repondeurFonction?: string | null;
+
   /** Praticien du service demandeur qui a lu le compte-rendu. */
   @Field(() => String, { nullable: true })
   @Column({ type: 'uuid', nullable: true })
