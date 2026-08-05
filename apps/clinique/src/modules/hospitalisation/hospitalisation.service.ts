@@ -36,7 +36,7 @@ import { KafkaService } from '../../infrastructure/kafka/kafka.service';
 import { buildEpisodeId } from '../../common/utils/ids';
 import { NotificationApiService } from '../../infrastructure/http-clients/notification-api.service';
 import { DemandeEntity, StatutDemande } from '../../domain/entities/demande.entity';
-​
+
 @Injectable()
 export class HospitalisationService {
   constructor(
@@ -55,24 +55,24 @@ export class HospitalisationService {
   ) {}
 
   private readonly logger = new Logger(HospitalisationService.name);
-​
+
   async createEpisode(
     input: CreateHospitalisationEpisodeDto,
     chuId: string,
     options: { notifyServiceConcerne?: boolean } = {},
   ): Promise<HospitalisationEpisodeEntity> {
     await this.accueilPatientApi.ensurePatientExistsAtAccueil(input.patientId);
-​
-​
+
+
     const admissionDate = input.dateAdmission ? new Date(input.dateAdmission) : new Date();
-​
+
     let lit: LitEntity | null = null;
     if (input.litId) {
       lit = await this.findAvailableLit(input.litId, input.serviceIdDest, chuId);
       lit.statut = StatutLit.OCCUPE;
       await this.litRepository.save(lit);
     }
-​
+
     const entity = this.hospitalisationRepository.create({
       id: buildEpisodeId({
         chuId,
@@ -95,9 +95,11 @@ export class HospitalisationService {
       sortieMedicaleValidee: false,
       sortieAdministrativeValidee: false,
     });
-​
+
     const saved = await this.hospitalisationRepository.save(entity);
-​
+
+    await this.notifierStatsMisesAJour(saved, 'admission');
+
     await this.kafkaService.emit('hospitalisation.episode.created', {
       id: saved.id,
       patientId: saved.patientId,
@@ -110,7 +112,7 @@ export class HospitalisationService {
       litId: saved.litId ?? null,
       litCode: saved.litCode ?? null,
     });
-​
+
     // Notification patient en attente de lit au service concerne (destination).
     // Declenchee par le POST /clinique/hospitalisations (consultation externe).
     // Le flux d'acceptation d'une demande passe notifyServiceConcerne=false car
@@ -138,10 +140,10 @@ export class HospitalisationService {
         },
       });
     }
-​
+
     return saved;
   }
-​
+
   async updateStatus(
     id: string,
     input: UpdateHospitalisationStatusDto,
@@ -153,12 +155,14 @@ export class HospitalisationService {
     if (this.isClosedStatus(input.statut)) {
       throw new BadRequestException('Utiliser /hospitalisations/:id/close pour cloturer un episode');
     }
-​
+
     episode.statut = input.statut;
     episode.updatedBy = input.updatedBy;
-​
+
     const saved = await this.hospitalisationRepository.save(episode);
-​
+
+    await this.notifierStatsMisesAJour(saved, 'statut');
+
     await this.kafkaService.emit('hospitalisation.episode.status.updated', {
       id: saved.id,
       chuId: saved.chuId,
@@ -166,10 +170,10 @@ export class HospitalisationService {
       updatedBy: saved.updatedBy ?? null,
       dateSortie: saved.dateSortie ? saved.dateSortie.toISOString() : null,
     });
-​
+
     return saved;
   }
-​
+
   async closeEpisode(
     id: string,
     input: CloseHospitalisationEpisodeDto,
@@ -178,12 +182,12 @@ export class HospitalisationService {
     if (this.isClosedStatus(episode.statut)) {
       throw new BadRequestException('Episode deja cloture');
     }
-​
+
     const finalStatus = input.statutFinal ?? this.resolveFinalStatus(input.modeSortie);
     if (!this.isClosedStatus(finalStatus)) {
       throw new BadRequestException('Le statut final doit etre un statut de cloture');
     }
-​
+
     const effectiveExitDate = input.dateSortie ? new Date(input.dateSortie) : new Date();
     if (Number.isNaN(effectiveExitDate.getTime())) {
       throw new BadRequestException('Date de sortie invalide');
@@ -191,10 +195,10 @@ export class HospitalisationService {
     if (effectiveExitDate.getTime() < episode.dateAdmission.getTime()) {
       throw new BadRequestException('La date de sortie ne peut pas etre avant la date d admission');
     }
-​
+
     this.validateCloseInput(input, finalStatus);
     const paymentState = this.resolvePaymentState(input, input.updatedBy, effectiveExitDate);
-​
+
     episode.statut = finalStatus;
     episode.modeSortie = input.modeSortie;
     episode.updatedBy = input.updatedBy;
@@ -226,11 +230,13 @@ export class HospitalisationService {
     episode.fraisReglesAt = paymentState.fraisReglesAt;
     episode.sortieMedicaleValidee = true;
     episode.sortieAdministrativeValidee = paymentState.sortieAdministrativeValidee;
-​
+
     await this.releaseLitIfNeeded(episode.litId);
-​
+
     const saved = await this.hospitalisationRepository.save(episode);
-​
+
+    await this.notifierStatsMisesAJour(saved, 'sortie');
+
     await this.kafkaService.emit('hospitalisation.episode.closed', {
       id: saved.id,
       patientId: saved.patientId,
@@ -246,7 +252,7 @@ export class HospitalisationService {
       statutPaiementSortie: saved.statutPaiementSortie,
       sortieAdministrativeValidee: saved.sortieAdministrativeValidee,
     });
-​
+
     await this.dossierPatientApi.archivePatientDiagnostics({
       chuId: saved.chuId,
       serviceId: saved.serviceIdDest,
@@ -258,10 +264,10 @@ export class HospitalisationService {
     // Best-effort : la cloture est deja persistee, une panne notification/demande
     // ne doit jamais faire echouer la sortie.
     await this.notifierTransfertInterne(saved);
-​
+
     return saved;
   }
-​
+
   async findEpisodeById(id: string, chuId?: string): Promise<HospitalisationEpisodeEntity> {
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = chuId
       ? { id, chuId }
@@ -276,9 +282,9 @@ export class HospitalisationService {
     }
     return episode;
   }
-​
+
   async listEpisodes(query: HospitalisationEpisodeQuery): Promise<HospitalisationEpisodeEntity[]> {
-​
+
     const where: FindOptionsWhere<HospitalisationEpisodeEntity> = {};
     where.serviceIdDest = query.serviceIdDest;
     where.chuId = query.chuId;
@@ -288,12 +294,12 @@ export class HospitalisationService {
     if (query.statut) {
       where.statut = query.statut;
     }
-​
+
     const episodes = await this.hospitalisationRepository.find({
       where,
       order: { dateAdmission: 'DESC' },
     });
-​
+
     await Promise.all(
       episodes.map(async (episode) => {
         const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
@@ -302,10 +308,10 @@ export class HospitalisationService {
         }
       }),
     );
-​
+
     return episodes;
   }
-​
+
   /**
    * Archive du service : liste paginee des episodes CLOTURES (SORTIE,
    * TRANSFERE, DECEDE, EVADE), enrichis des informations patient. Le back
@@ -605,12 +611,45 @@ export class HospitalisationService {
     };
   }
 
+  /**
+   * Signale aux tableaux de bord du service qu'une admission, une sortie ou un
+   * changement d'etat vient de modifier les compteurs. L'envoi est best-effort
+   * et ne doit jamais faire echouer l'operation metier deja enregistree.
+   */
+  private async notifierStatsMisesAJour(
+    episode: HospitalisationEpisodeEntity,
+    action: 'admission' | 'statut' | 'sortie',
+  ): Promise<void> {
+    if (!episode.serviceIdDest) return;
+    try {
+      await this.notificationApi.sendToService({
+        serviceId: episode.serviceIdDest,
+        title: 'Mise a jour du tableau de bord',
+        message: 'Les statistiques d hospitalisation ont change.',
+        type: 'hospitalisation_stats_updated',
+        source: 'hospitalisation-back',
+        data: {
+          episodeId: episode.id,
+          patientId: episode.patientId,
+          chuId: episode.chuId,
+          serviceIdDest: episode.serviceIdDest,
+          statut: episode.statut,
+          action,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Signal temps reel des statistiques non envoye pour ${episode.id}: ${String(error)}`,
+      );
+    }
+  }
+
   async getStats(chuId: string, serviceIdDest?: string): Promise<{
     hospitalizedTotal: number;
     hospitalizedNewToday: number;
   }> {
     const activeStatuts = this.activeStatuses();
-​
+
     const [total, newToday] = await Promise.all([
       this.hospitalisationRepository.count({
         where: { chuId, statut: In(activeStatuts), ...(serviceIdDest ? { serviceIdDest } : {}) },
@@ -630,10 +669,10 @@ export class HospitalisationService {
           .getCount();
       })(),
     ]);
-​
+
     return { hospitalizedTotal: total, hospitalizedNewToday: newToday };
   }
-​
+
   async getActives(
     chuId: string,
     serviceIdDest?: string,
@@ -646,13 +685,13 @@ export class HospitalisationService {
     if (serviceIdDest) {
       where.serviceIdDest = serviceIdDest;
     }
-​
+
     const episodes = await this.hospitalisationRepository.find({
       where,
       order: { dateAdmission: 'DESC' },
       take: limit,
     });
-​
+
     await Promise.all(
       episodes.map(async (episode) => {
         const patientInfo = await this.accueilPatientApi.getPatientById(episode.patientId);
@@ -661,10 +700,10 @@ export class HospitalisationService {
         }
       }),
     );
-​
+
     return episodes;
   }
-​
+
   /**
    * Episode actif (ADMIS/EN_COURS) d'un patient dans un service.
    * Utilise par l'attribution de lit et par l'acceptation d'une demande
@@ -685,34 +724,34 @@ export class HospitalisationService {
       order: { dateAdmission: 'DESC' },
     });
   }
-​
+
   async assignLit(input: AttributeLitDto): Promise<HospitalisationEpisodeEntity> {
     const episode = await this.findActiveEpisode(
       input.patientId,
       input.serviceIdDest,
       input.chuId,
     );
-​
+
     if (!episode) {
       throw new NotFoundException(
         'Aucun episode actif trouvé pour ce patient dans ce service',
       );
     }
-​
+
     if (episode.litId) {
       await this.releaseLitIfNeeded(episode.litId);
     }
-​
+
     const lit = await this.findAvailableLit(input.litId, input.serviceIdDest, input.chuId);
     lit.statut = StatutLit.OCCUPE;
     await this.litRepository.save(lit);
-​
+
     episode.litId = lit.id;
     episode.litCode = lit.codeLit;
     episode.updatedBy = input.updatedBy;
-​
+
     const saved = await this.hospitalisationRepository.save(episode);
-​
+
     await this.kafkaService.emit('hospitalisation.lit.assigned', {
       id: saved.id,
       patientId: saved.patientId,
@@ -722,10 +761,10 @@ export class HospitalisationService {
       litCode: saved.litCode,
       updatedBy: saved.updatedBy,
     });
-​
+
     return saved;
   }
-​
+
   async setExeatable(
     id: string,
     input: UpdateExeatableDto,
@@ -734,7 +773,7 @@ export class HospitalisationService {
     episode.exeatable = input.exeatable;
     return this.hospitalisationRepository.save(episode);
   }
-​
+
   private async findAvailableLit(
     litId: string,
     serviceId: string,
@@ -761,7 +800,7 @@ export class HospitalisationService {
     }
     return lit;
   }
-​
+
   private async releaseLitIfNeeded(litId?: string | null): Promise<void> {
     if (!litId) {
       return;
@@ -773,7 +812,7 @@ export class HospitalisationService {
     lit.statut = StatutLit.A_NETTOYER;
     await this.litRepository.save(lit);
   }
-​
+
   private validateCloseInput(input: CloseHospitalisationEpisodeDto, finalStatus: StatutHospitalisation): void {
     if (input.modeSortie === ModeSortie.DECES && !input.causeDeces) {
       throw new BadRequestException('La cause du deces est obligatoire');
@@ -802,7 +841,7 @@ export class HospitalisationService {
       }
     }
   }
-​
+
   /**
    * TRANSFERT INTERNE : cote reception.
    *
@@ -941,7 +980,7 @@ export class HospitalisationService {
         return StatutHospitalisation.SORTIE;
     }
   }
-​
+
   private resolvePaymentState(
     input: CloseHospitalisationEpisodeDto,
     userId: string,
@@ -959,14 +998,14 @@ export class HospitalisationService {
     } else if (input.fraisRegles === false && !input.statutPaiementSortie) {
       statut = StatutPaiementSortie.NON_REGLE;
     }
-​
+
     const paiementOK = [
       StatutPaiementSortie.REGLE,
       StatutPaiementSortie.EXONERE,
       StatutPaiementSortie.PRISE_EN_CHARGE,
       StatutPaiementSortie.REGLEMENT_DIFFERE,
     ].includes(statut);
-​
+
     return {
       fraisRegles: statut === StatutPaiementSortie.REGLE,
       statutPaiementSortie: statut,
@@ -975,11 +1014,11 @@ export class HospitalisationService {
       sortieAdministrativeValidee: paiementOK,
     };
   }
-​
+
   private activeStatuses(): StatutHospitalisation[] {
     return [StatutHospitalisation.ADMIS, StatutHospitalisation.EN_COURS];
   }
-​
+
   private isClosedStatus(statut: StatutHospitalisation): boolean {
     return this.closedStatuses().includes(statut);
   }
@@ -1146,4 +1185,3 @@ export class HospitalisationService {
     return date;
   }
 }
-​
