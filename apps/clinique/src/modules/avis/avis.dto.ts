@@ -96,12 +96,6 @@ export class UpdateAvisDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  motifRefus?: string;
-
-  @Field(() => String, { nullable: true })
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
   infoComplementaire?: string;
 
   @Field()
@@ -113,8 +107,8 @@ export class UpdateAvisDto {
   @Length(1, 120)
   updatedBy: string;
 
-  // Identite du signataire, transmise au passage a REPONDUE / REFUSEE. Elle
-  // n'est prise en compte QUE pour ces deux transitions (cf. avis.service).
+  // Identite du signataire, transmise au passage a REPONDUE. Elle n'est prise
+  // en compte que pour cette transition (cf. avis.service).
 
   @Field(() => String, { nullable: true })
   @ApiProperty({ example: "RAKOTO", required: false })

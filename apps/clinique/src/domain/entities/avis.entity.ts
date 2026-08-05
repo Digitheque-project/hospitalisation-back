@@ -11,8 +11,8 @@ import {
  * Cycle de vie d'une demande d'avis inter-services.
  *
  * Jumeau de StatutDemande mais SANS creation d'episode : le patient reste dans
- * son service source ; le service destinataire prend en charge, repond (compte-
- * rendu) ou refuse, puis le demandeur cloture.
+ * son service source ; le service destinataire prend en charge et repond
+ * (compte-rendu), puis le demandeur cloture.
  */
 export enum StatutAvis {
   EN_ATTENTE = 'EN_ATTENTE',
@@ -21,6 +21,7 @@ export enum StatutAvis {
   PRISE_EN_CHARGE = 'PRISE_EN_CHARGE',
   REPONDUE = 'REPONDUE',
   CLOTUREE = 'CLOTUREE',
+  // Valeur historique uniquement : aucune nouvelle transition ne la produit.
   REFUSEE = 'REFUSEE',
 }
 
@@ -40,10 +41,10 @@ registerEnumType(UrgenceAvis, { name: 'UrgenceAvis' });
 
 /**
  * Transitions autorisees du cycle de vie (standard HL7 FHIR ServiceRequest /
- * Task : requested -> received -> in-progress -> completed | rejected).
+ * Task : requested -> received -> in-progress -> completed).
  *
- * Aucun retour arriere : un avis repondu ne redevient pas "en attente", un
- * refus et une cloture sont terminaux. REPONDUE -> REPONDUE est tolere pour
+ * Aucun retour arriere : un avis repondu ne redevient pas "en attente" et une
+ * cloture est terminale. REPONDUE -> REPONDUE est tolere pour
  * permettre au consultant d'amender son compte-rendu (report amendment).
  */
 export const TRANSITIONS_AVIS: Record<StatutAvis, StatutAvis[]> = {
@@ -51,14 +52,12 @@ export const TRANSITIONS_AVIS: Record<StatutAvis, StatutAvis[]> = {
     StatutAvis.CONSULTEE,
     StatutAvis.PRISE_EN_CHARGE,
     StatutAvis.REPONDUE,
-    StatutAvis.REFUSEE,
   ],
   [StatutAvis.CONSULTEE]: [
     StatutAvis.PRISE_EN_CHARGE,
     StatutAvis.REPONDUE,
-    StatutAvis.REFUSEE,
   ],
-  [StatutAvis.PRISE_EN_CHARGE]: [StatutAvis.REPONDUE, StatutAvis.REFUSEE],
+  [StatutAvis.PRISE_EN_CHARGE]: [StatutAvis.REPONDUE],
   [StatutAvis.REPONDUE]: [StatutAvis.REPONDUE, StatutAvis.CLOTUREE],
   [StatutAvis.REFUSEE]: [],
   [StatutAvis.CLOTUREE]: [],

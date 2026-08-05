@@ -29,17 +29,16 @@ import { NotificationApiService } from "../../infrastructure/http-clients/notifi
  *   accepted /
  *   in-progress -> PRISE_EN_CHARGE  (le consultant se saisit du dossier)
  *   completed   -> REPONDUE         (compte-rendu d'avis restitue au demandeur)
- *   rejected    -> REFUSEE          (avec motif obligatoire)
  *   closed      -> CLOTUREE         (le demandeur a lu et clot la boucle)
  *
  * Regles portees par le service :
  *  - transitions verrouillees (pas de retour arriere, pas de saut illegal) ;
- *  - compte-rendu obligatoire pour REPONDUE, motif obligatoire pour REFUSEE ;
+ *  - compte-rendu obligatoire pour REPONDUE ;
  *  - horodatage de chaque etape + delai de reponse mesure ;
  *  - delai cible (echeance) derive du degre d'urgence ;
  *  - a CHAQUE etape, la partie concernee est notifiee : le consultant a
  *    l'emission, le DEMANDEUR a la reception, la prise en charge, la reponse et
- *    le refus, le consultant a la lecture et a la cloture.
+ *    la reponse, le consultant a la lecture et a la cloture.
  */
 @Injectable()
 export class AvisService {
@@ -264,9 +263,6 @@ export class AvisService {
     if (input.reponse !== undefined) {
       avis.reponse = input.reponse;
     }
-    if (input.motifRefus !== undefined) {
-      avis.motifRefus = input.motifRefus;
-    }
     if (input.infoComplementaire !== undefined) {
       avis.infoComplementaire = input.infoComplementaire;
     }
@@ -283,15 +279,6 @@ export class AvisService {
           "Le compte-rendu d'avis est obligatoire pour repondre a une demande d'avis.",
         );
       }
-      if (
-        nouveauStatut === StatutAvis.REFUSEE &&
-        !avis.motifRefus?.toString().trim()
-      ) {
-        throw new BadRequestException(
-          "Le motif de refus est obligatoire pour refuser une demande d'avis.",
-        );
-      }
-
       avis.statut = nouveauStatut;
       this.horodater(avis, nouveauStatut, input.updatedBy, {
         nom: input.repondeurNom,
@@ -387,7 +374,7 @@ export class AvisService {
 
   /**
    * Horodate l'etape atteinte, mesure le delai de reponse effectif et fige la
-   * signature du consultant au moment de la reponse (ou du refus).
+   * signature du consultant au moment de la reponse.
    */
   private horodater(
     avis: AvisEntity,
@@ -398,7 +385,7 @@ export class AvisService {
     const now = new Date();
 
     // La signature n'est enregistree qu'aux etapes ou un praticien engage sa
-    // responsabilite : REPONDUE et REFUSEE. Elle n'est jamais ecrasee par une
+    // responsabilite : REPONDUE. Elle n'est jamais ecrasee par une
     // valeur vide, pour qu'un amendement ulterieur ne fasse pas disparaitre
     // l'auteur du compte-rendu initial.
     const signer = () => {
@@ -423,12 +410,6 @@ export class AvisService {
       case StatutAvis.REPONDUE:
         avis.dateConsultation = avis.dateConsultation ?? now;
         avis.datePriseEnCharge = avis.datePriseEnCharge ?? now;
-        avis.dateReponse = now;
-        signer();
-        avis.delaiReponseMinutes = this.minutesEntre(avis.createdAt, now);
-        break;
-      case StatutAvis.REFUSEE:
-        avis.dateConsultation = avis.dateConsultation ?? now;
         avis.dateReponse = now;
         signer();
         avis.delaiReponseMinutes = this.minutesEntre(avis.createdAt, now);
@@ -476,16 +457,6 @@ export class AvisService {
             `${avis.delaiReponseMinutes != null ? ` (en ${this.formatDelai(avis.delaiReponseMinutes)})` : ""} : ` +
             this.extrait(avis.reponse),
           type: "avis_answered",
-        });
-        break;
-
-      case StatutAvis.REFUSEE:
-        await this.notifySource(avis, {
-          title: "Demande d'avis refusee",
-          message:
-            `Votre demande d'avis pour le patient ${avis.patientId} a ete refusee.` +
-            `${avis.motifRefus ? ` Motif : ${avis.motifRefus}` : ""}`,
-          type: "avis_refused",
         });
         break;
 
