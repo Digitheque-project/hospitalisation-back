@@ -9,17 +9,24 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV}
       CLINIQUE_PORT: ${CLINIQUE_PORT}
-      SERVICE_CHU_API_BASE_URL: ${SERVICE_CHU_API_BASE_URL}
-      ACCUEIL_API_BASE_URL: ${ACCUEIL_API_BASE_URL}
+      SERVICE_CHU_API_BASE_URL: ${SERVICE_CHU_API_BASE_URL:-}
+      ACCUEIL_API_BASE_URL: ${ACCUEIL_API_BASE_URL:-}
+      DOSSIER_PATIENT_API_BASE_URL: ${DOSSIER_PATIENT_API_BASE_URL:-}
+      NOTIFICATION_API_BASE_URL: ${NOTIFICATION_API_BASE_URL:-}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      DB_SYNC: ${DB_SYNC}
-      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      DB_SYNC: ${DB_SYNC:-false}
+      DB_SSL: ${DB_SSL:-false}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-}
+      KAFKA_CLIENT_ID: ${KAFKA_CLIENT_ID:-hospitalisation-back}
       SECURITY_CORS_ORIGINS: ${SECURITY_CORS_ORIGINS}
-      GRAPHQL_PLAYGROUND_ENABLED: ${GRAPHQL_PLAYGROUND_ENABLED}
+      GRAPHQL_PLAYGROUND_ENABLED: ${GRAPHQL_PLAYGROUND_ENABLED:-false}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est obligatoire}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY est obligatoire}
+      AUTHZ_ENFORCE: ${AUTHZ_ENFORCE:-true}
     depends_on:
       - postgres
       - kafka
@@ -32,14 +39,17 @@ services:
     container_name: clinique-dev
     environment:
       NODE_ENV: development
-      SERVICE_CHU_API_BASE_URL: ${SERVICE_CHU_API_BASE_URL}
-      ACCUEIL_API_BASE_URL: ${ACCUEIL_API_BASE_URL}
+      SERVICE_CHU_API_BASE_URL: ${SERVICE_CHU_API_BASE_URL:-}
+      ACCUEIL_API_BASE_URL: ${ACCUEIL_API_BASE_URL:-}
+      DOSSIER_PATIENT_API_BASE_URL: ${DOSSIER_PATIENT_API_BASE_URL:-}
+      NOTIFICATION_API_BASE_URL: ${NOTIFICATION_API_BASE_URL:-}
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-      DB_SYNC: ${DB_SYNC}
+      DB_SYNC: ${DB_SYNC:-false}
+      DB_SSL: ${DB_SSL:-false}
     volumes:
       - ./apps/clinique/src/database/migrations:/app/apps/clinique/src/database/migrations
     depends_on:
