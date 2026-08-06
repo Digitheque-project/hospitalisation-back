@@ -1,19 +1,30 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
-import { DemandeEntity, StatutDemande } from '../../domain/entities/demande.entity';
-import { HospitalisationEpisodeEntity } from '../../domain/entities/hospitalisation-episode.entity';
-import { CreateDemandeDto, UpdateDemandeDto, DemandeQuery } from './demande.dto';
-import { buildEpisodeId } from '../../common/utils/ids';
-import { ServiceChuApiService } from '../../infrastructure/http-clients/service-chu-api.service';
-import { NotificationApiService } from '../../infrastructure/http-clients/notification-api.service';
-import { HospitalisationService } from '../hospitalisation/hospitalisation.service';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { FindOptionsWhere, In, Repository } from "typeorm";
+import {
+  DemandeEntity,
+  StatutDemande,
+} from "../../domain/entities/demande.entity";
+import { HospitalisationEpisodeEntity } from "../../domain/entities/hospitalisation-episode.entity";
+import {
+  CreateDemandeDto,
+  UpdateDemandeDto,
+  DemandeQuery,
+} from "./demande.dto";
+import { buildEpisodeId } from "../../common/utils/ids";
+import { ServiceChuApiService } from "../../infrastructure/http-clients/service-chu-api.service";
+import { NotificationApiService } from "../../infrastructure/http-clients/notification-api.service";
+import { HospitalisationService } from "../hospitalisation/hospitalisation.service";
 
 /** Reponse du PATCH quand la demande est acceptee : la demande + l'episode cree/retrouve. */
 export type DemandeUpdateResult = DemandeEntity & {
   episode?: HospitalisationEpisodeEntity | null;
 };
-​
+
 @Injectable()
 export class DemandeService {
   constructor(
@@ -23,12 +34,35 @@ export class DemandeService {
     private readonly notificationApi: NotificationApiService,
     private readonly hospitalisationService: HospitalisationService,
   ) {}
-​
+
   async create(input: CreateDemandeDto): Promise<DemandeEntity> {
+    // Idempotence inter-services : une relance ORL ne doit pas creer une seconde
+    // demande tant que la premiere est encore en attente de traitement.
+    const existingPending = await this.demandeRepository.findOne({
+      where: {
+        patientId: input.patientId,
+        serviceIdSource: input.serviceIdSource,
+        serviceIdDest: input.serviceIdDest,
+        chuId: input.chuId,
+        statut: In([StatutDemande.EN_ATTENTE, StatutDemande.CONSULTEE]),
+      },
+      order: { createdAt: "DESC" },
+    });
+    if (existingPending) {
+      return existingPending;
+    }
+
     // Le service destination n'est pas porte par le token : on le valide
     // via le service CHU externe (SERVICE_CHU_API_BASE_URL).
-    await this.serviceChuApi.getServiceById(input.serviceIdDest);
-​
+    const destination = await this.serviceChuApi.getServiceById(
+      input.serviceIdDest,
+    );
+    if (destination.chuId && destination.chuId !== input.chuId) {
+      throw new BadRequestException(
+        "Le service destination ne correspond pas au CHU de la demande",
+      );
+    }
+
     const entity = this.demandeRepository.create({
       id: buildEpisodeId({
         chuId: input.chuId,
@@ -45,7 +79,7 @@ export class DemandeService {
       episodeSourceId: input.episodeSourceId ?? null,
       createdBy: input.createdBy,
     });
-​
+
     const saved = await this.demandeRepository.save(entity);
 
     // Un transfert interne est annonce comme tel (et non comme une simple demande).
@@ -53,12 +87,14 @@ export class DemandeService {
 
     await this.notificationApi.sendToService({
       serviceId: saved.serviceIdDest,
-      title: estTransfert ? 'Transfert entrant' : 'Nouvelle demande d\'hospitalisation',
+      title: estTransfert
+        ? "Transfert entrant"
+        : "Nouvelle demande d'hospitalisation",
       message: estTransfert
         ? `Le patient ${saved.patientId} vous est transfere par un autre service.`
         : `Une demande pour le patient ${saved.patientId} nécessite votre attention.`,
-      type: estTransfert ? 'transfert_entrant' : 'demande_created',
-      source: 'hospitalisation-back',
+      type: estTransfert ? "transfert_entrant" : "demande_created",
+      source: "hospitalisation-back",
       data: {
         demandeId: saved.id,
         patientId: saved.patientId,
@@ -72,16 +108,18 @@ export class DemandeService {
 
     return saved;
   }
-​
+
   async findById(id: string, chuId?: string): Promise<DemandeEntity> {
-    const where: FindOptionsWhere<DemandeEntity> = chuId ? { id, chuId } : { id };
+    const where: FindOptionsWhere<DemandeEntity> = chuId
+      ? { id, chuId }
+      : { id };
     const demande = await this.demandeRepository.findOne({ where });
     if (!demande) {
-      throw new NotFoundException('Demande introuvable');
+      throw new NotFoundException("Demande introuvable");
     }
     return demande;
   }
-​
+
   async findAll(query: DemandeQuery): Promise<DemandeEntity[]> {
     const where: FindOptionsWhere<DemandeEntity> = {};
     if (query.chuId) {
@@ -99,13 +137,13 @@ export class DemandeService {
     if (query.statut) {
       where.statut = query.statut;
     }
-​
+
     return this.demandeRepository.find({
       where,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
   }
-​
+
   /**
    * Marque comme CONSULTEE toutes les demandes encore EN_ATTENTE d'un service
    * destination. Etat PARTAGE (persiste) : une fois consultees, elles ne
@@ -132,10 +170,10 @@ export class DemandeService {
       try {
         await this.notificationApi.sendToService({
           serviceId: serviceIdDest,
-          title: 'Demandes consultees',
-          message: 'Les demandes en attente ont ete consultees.',
-          type: 'demande_consulted',
-          source: 'hospitalisation-back',
+          title: "Demandes consultees",
+          message: "Les demandes en attente ont ete consultees.",
+          type: "demande_consulted",
+          source: "hospitalisation-back",
           data: {
             serviceIdDest,
             chuId,
@@ -143,14 +181,21 @@ export class DemandeService {
           },
         });
       } catch (error) {
-        console.error('[DemandeService] Echec notification demande_consulted:', error);
+        console.error(
+          "[DemandeService] Echec notification demande_consulted:",
+          error,
+        );
       }
     }
 
     return { updated };
   }
 
-  async update(id: string, input: UpdateDemandeDto, chuId?: string): Promise<DemandeUpdateResult> {
+  async update(
+    id: string,
+    input: UpdateDemandeDto,
+    chuId?: string,
+  ): Promise<DemandeUpdateResult> {
     const demande = await this.findById(id, chuId);
 
     // L'acceptation cree l'episode d'hospitalisation AVANT de persister le statut :
@@ -184,7 +229,7 @@ export class DemandeService {
         );
       }
     }
-​
+
     if (input.motif !== undefined) {
       demande.motif = input.motif;
     }
@@ -198,8 +243,9 @@ export class DemandeService {
       demande.motifRefus = input.motifRefus;
     }
     demande.updatedBy = input.updatedBy;
-​
-    const saved: DemandeUpdateResult = await this.demandeRepository.save(demande);
+
+    const saved: DemandeUpdateResult =
+      await this.demandeRepository.save(demande);
     if (episode) {
       saved.episode = episode;
     }
@@ -207,16 +253,27 @@ export class DemandeService {
     if (input.statut === StatutDemande.ACCEPTE) {
       await this.notificationApi.sendToService({
         serviceId: demande.serviceIdSource,
-        title: 'Demande d\'hospitalisation acceptée',
+        title: "Demande d'hospitalisation acceptée",
         message: `Votre demande pour le patient ${demande.patientId} a été acceptée par le service de destination.`,
-        type: 'demande_accepted',
-        source: 'hospitalisation-back',
+        type: "demande_accepted",
+        source: "hospitalisation-back",
         data: {
           demandeId: saved.id,
           patientId: saved.patientId,
           serviceIdSource: demande.serviceIdSource,
           serviceIdDest: demande.serviceIdDest,
           statut: saved.statut,
+          episodeId: episode?.id ?? null,
+          episode: episode
+            ? {
+                id: episode.id,
+                patientId: episode.patientId,
+                serviceIdSource: episode.serviceIdSource,
+                serviceIdDest: episode.serviceIdDest,
+                chuId: episode.chuId,
+                statut: episode.statut,
+              }
+            : null,
         },
       });
     }
@@ -224,10 +281,10 @@ export class DemandeService {
     if (input.statut === StatutDemande.REFUSE) {
       await this.notificationApi.sendToService({
         serviceId: demande.serviceIdSource,
-        title: 'Demande d\'hospitalisation refusée',
-        message: `Votre demande pour le patient ${demande.patientId} a été refusée.${input.motifRefus ? ` Motif : ${input.motifRefus}` : ''}`,
-        type: 'demande_refused',
-        source: 'hospitalisation-back',
+        title: "Demande d'hospitalisation refusée",
+        message: `Votre demande pour le patient ${demande.patientId} a été refusée.${input.motifRefus ? ` Motif : ${input.motifRefus}` : ""}`,
+        type: "demande_refused",
+        source: "hospitalisation-back",
         data: {
           demandeId: saved.id,
           patientId: saved.patientId,
@@ -241,7 +298,7 @@ export class DemandeService {
 
     return saved;
   }
-​
+
   async delete(id: string, chuId?: string): Promise<void> {
     const demande = await this.findById(id, chuId);
     await this.demandeRepository.remove(demande);
