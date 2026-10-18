@@ -5,6 +5,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { chuEndpoint } from '../../config/chu-api.config';
+import { buildInternalAuthHeader } from '../../common/internal-auth.util';
 import { ServiceChuInfo } from './service-chu-info.type';
 
 interface CacheEntry<T> {
@@ -30,16 +31,11 @@ export class ServiceChuApiService {
     return chuEndpoint('/services');
   }
 
-  // service-service protege TOUTES ses routes par un JwtAuthGuard global.
-  // Le guard accepte le contournement service-a-service via l'entete x-api-key
-  // dont la valeur doit egaler l'INTERNAL_API_KEY de service-service.
+  // service-service protege TOUTES ses routes par un JwtAuthGuard global, qui
+  // n'accepte qu'un JWT signe avec le JWT_SECRET partage (l'ancien en-tete
+  // x-api-key n'y est pas reconnu : 401, donc validation du CHU impossible).
   private buildHeaders(): Record<string, string> {
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    const apiKey = process.env.INTERNAL_API_KEY;
-    if (apiKey) {
-      headers['x-api-key'] = apiKey;
-    }
-    return headers;
+    return { Accept: 'application/json', ...buildInternalAuthHeader() };
   }
 
   async ensureChuExists(chuId: string): Promise<void> {

@@ -1,5 +1,5 @@
 export const NOTIFICATION_API_BASE_URL = (
-  process.env.NOTIFICATION_API_BASE_URL || 'http://localhost:3005'
+  process.env.NOTIFICATION_API_BASE_URL || ''
 ).replace(/\/+$/, '');
 
 export function notificationEndpoint(path: string): string {
