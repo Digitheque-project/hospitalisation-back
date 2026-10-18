@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { accueilEndpoint } from '../../config/accueil-api.config';
 import { PatientInformationsAccueil } from './patient-informations-accueil.type';
+import { buildInternalAuthHeader } from '../../common/internal-auth.util';
 
 function pickStr(obj: Record<string, unknown>, ...keys: string[]): string | undefined {
   if (!obj || typeof obj !== 'object') {
@@ -104,7 +105,9 @@ export class AccueilPatientApiService {
   private async fetchPatient(patientId: string): Promise<Response> {
     return fetch(this.patientUrl(patientId), {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      // La gateway exige un Bearer token sur /accueil (requiresAuth: true du
+      // registre) meme pour cet appel serveur-a-serveur sans utilisateur.
+      headers: { Accept: 'application/json', ...buildInternalAuthHeader() },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   }

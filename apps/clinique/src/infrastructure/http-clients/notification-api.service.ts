@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { notificationEndpoint } from './notification-api.config';
+import { buildInternalAuthHeader } from '../../common/internal-auth.util';
 
 export interface SendNotificationInput {
   userId: string;
@@ -28,7 +29,9 @@ export class NotificationApiService {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // La gateway exige un Bearer token sur /notifications (requiresAuth:
+        // true du registre) meme pour cet appel serveur-a-serveur.
+        headers: { 'Content-Type': 'application/json', ...buildInternalAuthHeader() },
         body: JSON.stringify({
           userId: input.userId,
           title: input.title,
@@ -55,7 +58,9 @@ export class NotificationApiService {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // La gateway exige un Bearer token sur /notifications (requiresAuth:
+        // true du registre) meme pour cet appel serveur-a-serveur.
+        headers: { 'Content-Type': 'application/json', ...buildInternalAuthHeader() },
         body: JSON.stringify({
           serviceId: input.serviceId,
           title: input.title,

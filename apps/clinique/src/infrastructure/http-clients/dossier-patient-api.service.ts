@@ -3,6 +3,7 @@ import {
   DOSSIER_PATIENT_API_BASE_URL,
   dossierPatientEndpoint,
 } from '../../config/dossier-patient-api.config';
+import { buildInternalAuthHeader } from '../../common/internal-auth.util';
 ​
 export interface ArchiveDiagnosticsInput {
   chuId: string;
@@ -34,6 +35,9 @@ export class DossierPatientApiService {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Accept: 'application/json',
+        // La gateway exige un Bearer token sur /dossier-patient (requiresAuth:
+        // true du registre) meme pour cet appel serveur-a-serveur.
+        ...buildInternalAuthHeader(),
       };
       // Authentification service-a-service (verifiee par le guard du dossier-patient).
       if (process.env.INTERNAL_API_KEY) {

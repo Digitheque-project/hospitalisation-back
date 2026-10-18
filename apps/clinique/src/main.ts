@@ -1,3 +1,10 @@
+// Doit rester le tout premier import : plusieurs modules (ex: config/*-api.config.ts)
+// lisent process.env.* au chargement du module (constante top-level), pas via
+// ConfigService — sans ce chargement anticipe, ils capturent des valeurs vides
+// avant que quoi que ce soit d'autre n'ait eu la chance de peupler process.env
+// depuis le .env local. En prod (Render), les variables sont deja injectees
+// dans process.env et cet appel est un no-op sans effet.
+import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';

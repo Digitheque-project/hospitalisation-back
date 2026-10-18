@@ -89,7 +89,7 @@ export class UpdateHospitalisationStatusDto {
 ​
 @InputType()
 export class CloseHospitalisationEpisodeDto {
-  @Field()
+  @Field(() => ModeSortie)
   @ApiProperty({ enum: ModeSortie, example: ModeSortie.SORTIE_AUTORISEE, description: 'Mode métier de sortie' })
   @IsEnum(ModeSortie)
   modeSortie: ModeSortie;
