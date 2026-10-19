@@ -25,7 +25,7 @@ export class DossierPatientApiService {
   async archivePatientDiagnostics(input: ArchiveDiagnosticsInput): Promise<void> {
     if (!DOSSIER_PATIENT_API_BASE_URL) {
       this.logger.warn(
-        'DOSSIER_PATIENT_API_BASE_URL non configurée : archivage des diagnostics ignoré.',
+        'GATEWAY_URL non configurée : archivage des diagnostics ignoré.',
       );
       return;
     }

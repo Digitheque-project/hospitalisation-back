@@ -53,7 +53,7 @@ export class DemandeService {
     }
 
     // Le service destination n'est pas porte par le token : on le valide
-    // via le service CHU externe (SERVICE_CHU_API_BASE_URL).
+    // via le service CHU externe (via GATEWAY_URL).
     const destination = await this.serviceChuApi.getServiceById(
       input.serviceIdDest,
     );

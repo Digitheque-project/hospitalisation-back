@@ -53,7 +53,7 @@ export class AvisService {
 
   async create(input: CreateAvisDto): Promise<AvisEntity> {
     // Le service destinataire n'est pas porte par le token : on le valide
-    // via le service CHU externe (SERVICE_CHU_API_BASE_URL).
+    // via le service CHU externe (via GATEWAY_URL).
     // Validation best-effort : ne bloque pas la creation si le service CHU
     // externe est momentanement indisponible (500/503).
     try {
