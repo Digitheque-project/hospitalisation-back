@@ -20,6 +20,15 @@ import { ServiceChuApiService } from "../../infrastructure/http-clients/service-
 import { NotificationApiService } from "../../infrastructure/http-clients/notification-api.service";
 import { HospitalisationService } from "../hospitalisation/hospitalisation.service";
 
+/**
+ * Service des Urgences : une demande qui lui est adressee est acceptee d'office
+ * (admission directe, attribution de lit sans etape Accepter / Refuser).
+ * Reconnu a son nom dans le referentiel des services ("Urgence", "Urgences"...).
+ */
+export function estServiceUrgences(nom: string | null | undefined): boolean {
+  return /urgen/i.test(nom ?? "");
+}
+
 /** Reponse du PATCH quand la demande est acceptee : la demande + l'episode cree/retrouve. */
 export type DemandeUpdateResult = DemandeEntity & {
   episode?: HospitalisationEpisodeEntity | null;
@@ -82,6 +91,14 @@ export class DemandeService {
 
     const saved = await this.demandeRepository.save(entity);
 
+    // Urgences : pas d'etape Accepter / Refuser, le patient passe directement en
+    // attente d'attribution de lit. Si l'acceptation automatique echoue, la demande
+    // reste EN_ATTENTE et suit le circuit normal (notification ci-dessous).
+    if (estServiceUrgences(destination.name)) {
+      const acceptee = await this.accepterAutomatiquement(saved);
+      if (acceptee) return acceptee;
+    }
+
     // Un transfert interne est annonce comme tel (et non comme une simple demande).
     const estTransfert = !!saved.episodeSourceId;
 
@@ -107,6 +124,58 @@ export class DemandeService {
     });
 
     return saved;
+  }
+
+  /**
+   * Acceptation automatique d'une demande adressee aux Urgences : meme chemin
+   * que l'acceptation manuelle (update -> episode cree, demande ACCEPTE,
+   * notification demande_accepted au service source), puis le service des
+   * Urgences est prevenu qu'un patient attend un lit. Renvoie null si
+   * l'acceptation echoue : la demande reste alors EN_ATTENTE.
+   */
+  private async accepterAutomatiquement(
+    demande: DemandeEntity,
+  ): Promise<DemandeUpdateResult | null> {
+    let acceptee: DemandeUpdateResult;
+    try {
+      acceptee = await this.update(
+        demande.id,
+        { statut: StatutDemande.ACCEPTE, updatedBy: demande.createdBy },
+        demande.chuId,
+      );
+    } catch (error) {
+      console.error(
+        "[DemandeService] Acceptation automatique (Urgences) impossible, demande laissee en attente :",
+        error,
+      );
+      return null;
+    }
+
+    // Best-effort : la demande est deja acceptee et l'episode cree.
+    try {
+      await this.notificationApi.sendToService({
+        serviceId: demande.serviceIdDest,
+        title: "Nouveau patient en attente de lit",
+        message: `Le patient ${demande.patientId} est admis aux Urgences et attend l'attribution d'un lit.`,
+        type: "hospitalisation_en_attente_lit",
+        source: "hospitalisation-back",
+        data: {
+          demandeId: acceptee.id,
+          episodeId: acceptee.episode?.id ?? null,
+          patientId: demande.patientId,
+          serviceIdSource: demande.serviceIdSource,
+          serviceIdDest: demande.serviceIdDest,
+          motif: demande.motif,
+          admissionDirecte: true,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "[DemandeService] Notification d'attente de lit (Urgences) echouee :",
+        error,
+      );
+    }
+    return acceptee;
   }
 
   async findById(id: string, chuId?: string): Promise<DemandeEntity> {
