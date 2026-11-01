@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LitEntity, StatutLit } from '../../domain/entities/lit.entity';
-import { CreateLitsDto, LitQueryDto, PlanLitsQueryDto, PlanLitsResponseDto, UpdateLitDto } from './lit.dto';
+import { CreateLitsDto, LitQueryDto, NettoyerLitDto, PlanLitsQueryDto, PlanLitsResponseDto, UpdateLitDto } from './lit.dto';
 import { LitService } from './lit.service';
 import { Permissions } from '../../common/auth/decorators/permissions.decorator';
 ​
@@ -85,6 +85,16 @@ export class LitController {
   @ApiResponse({ status: 404, description: 'Lit introuvable' })
   updateLit(@Param('id') id: string, @Body() body: UpdateLitDto) {
     return this.litService.updateLit(id, body);
+  }
+
+  @Patch('lits/:id/nettoye')
+  @Permissions('lit:nettoyer')
+  @ApiOperation({ summary: 'Chambre nettoyée : lit « à nettoyer » → disponible' })
+  @ApiParam({ name: 'id', description: 'Identifiant lit' })
+  @ApiResponse({ status: 200, description: 'Lit disponible', type: LitEntity })
+  @ApiResponse({ status: 400, description: "Le lit n'est pas à nettoyer" })
+  marquerNettoye(@Param('id') id: string, @Body() body: NettoyerLitDto) {
+    return this.litService.marquerNettoye(id, body.chuId);
   }
 ​
   @Get('plan-lits')

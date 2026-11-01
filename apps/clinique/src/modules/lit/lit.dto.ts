@@ -103,3 +103,9 @@ export class PlanLitsLitDto {
   statut: StatutLit;
 }
 ​
+/** Chambre nettoyée (paramédical) : seul le CHU est attendu. */
+export class NettoyerLitDto {
+  @ApiProperty({ example: '1e5bbbb7-fa10-4d59-8848-2d0ce96a9394', description: 'Identifiant CHU' })
+  @IsUUID()
+  chuId: string;
+}

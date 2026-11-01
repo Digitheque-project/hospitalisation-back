@@ -98,6 +98,21 @@ export class LitService {
     return this.litRepository.save(lit);
   }
 ​
+  /**
+   * Chambre nettoyée : un lit « à nettoyer » redevient disponible. Action
+   * séparée de la modification d'un lit (permission lit:nettoyer) pour que le
+   * paramédical puisse la faire sans pouvoir modifier les lits.
+   */
+  async marquerNettoye(id: string, chuId: string): Promise<LitEntity> {
+    const lit = await this.getLitById(id, chuId);
+    if (lit.statut !== StatutLit.A_NETTOYER) {
+      throw new BadRequestException("Ce lit n'est pas à nettoyer");
+    }
+    await this.assertStatutChange(lit, StatutLit.DISPONIBLE);
+    lit.statut = StatutLit.DISPONIBLE;
+    return this.litRepository.save(lit);
+  }
+
   async planLits(query: PlanLitsQueryDto) {
 ​
     const activeStatuts = [
