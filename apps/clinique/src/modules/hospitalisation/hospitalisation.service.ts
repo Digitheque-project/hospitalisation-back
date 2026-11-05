@@ -4,8 +4,10 @@ import {
   Between,
   FindOptionsWhere,
   In,
+  IsNull,
   LessThanOrEqual,
   MoreThanOrEqual,
+  Not,
   Repository,
 } from 'typeorm';
 import {
@@ -650,9 +652,17 @@ export class HospitalisationService {
   }> {
     const activeStatuts = this.activeStatuses();
 
+    // Seuls les patients effectivement installés dans un lit sont « hospitalisés ».
+    // Une demande acceptée crée l'épisode (ADMIS) avant l'attribution du lit :
+    // la compter faisait diverger le tableau de bord du plan des lits du service.
     const [total, newToday] = await Promise.all([
       this.hospitalisationRepository.count({
-        where: { chuId, statut: In(activeStatuts), ...(serviceIdDest ? { serviceIdDest } : {}) },
+        where: {
+          chuId,
+          statut: In(activeStatuts),
+          litId: Not(IsNull()),
+          ...(serviceIdDest ? { serviceIdDest } : {}),
+        },
       }),
       (() => {
         const startOfDay = new Date();
@@ -661,6 +671,7 @@ export class HospitalisationService {
           .createQueryBuilder('ep')
           .where('ep."chuId" = :chuId', { chuId })
           .andWhere('ep.statut IN (:...statuts)', { statuts: activeStatuts })
+          .andWhere('ep."litId" IS NOT NULL')
           .andWhere('ep."dateAdmission" >= :startOfDay', { startOfDay })
           .andWhere(
             serviceIdDest ? 'ep."serviceIdDest" = :serviceIdDest' : '1=1',
