@@ -165,7 +165,9 @@ export class HospitalisationController {
   }
 
   @Patch("assign-lit")
-  @Permissions("hospitalisation:update")
+  // Permission dediee : le Paramedical attribue les lits au quotidien sans
+  // recevoir hospitalisation:update (statut, exeat...). Decision du 25/11/2026.
+  @Permissions("lit:attribuer")
   @ApiOperation({
     summary: "Attribuer un lit a un patient",
     description:
