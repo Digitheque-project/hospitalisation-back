@@ -620,14 +620,16 @@ export class HospitalisationService {
    */
   private async notifierStatsMisesAJour(
     episode: HospitalisationEpisodeEntity,
-    action: 'admission' | 'statut' | 'sortie',
+    action: 'admission' | 'statut' | 'sortie' | 'lit',
   ): Promise<void> {
     if (!episode.serviceIdDest) return;
     try {
       await this.notificationApi.sendToService({
         serviceId: episode.serviceIdDest,
-        title: 'Mise a jour du tableau de bord',
-        message: 'Les statistiques d hospitalisation ont change.',
+        title: action === 'lit' ? 'Lit attribué' : action === 'admission' ? 'Patient admis dans le service' : 'Mise a jour du tableau de bord',
+        message: action === 'lit'
+          ? `Lit ${episode.litCode ?? ''} attribué au patient.`.replace('  ', ' ')
+          : action === 'admission' ? 'Demande acceptée : patient en attente de lit.' : 'Les statistiques d hospitalisation ont change.',
         type: 'hospitalisation_stats_updated',
         source: 'hospitalisation-back',
         data: {
@@ -637,6 +639,10 @@ export class HospitalisationService {
           serviceIdDest: episode.serviceIdDest,
           statut: episode.statut,
           action,
+          // Auteur de l'action : son propre écran ne sonne pas, les autres
+          // membres du service sont prévenus (27/11/2026).
+          acteurId: episode.updatedBy ?? episode.createdBy ?? null,
+          litCode: episode.litCode ?? null,
         },
       });
     } catch (error) {
@@ -772,6 +778,7 @@ export class HospitalisationService {
       litCode: saved.litCode,
       updatedBy: saved.updatedBy,
     });
+    await this.notifierStatsMisesAJour(saved, 'lit');
 
     return saved;
   }
