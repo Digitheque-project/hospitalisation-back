@@ -971,13 +971,16 @@ export class HospitalisationService {
         lignes.push(`${libelle} : ${valeur.trim()}`);
       }
     };
-    lignes.push(`Transfert interne (episode source ${episode.id})`);
+    // Jamais d'identifiant technique dans un texte lu par le personnel
+    // (« episode source episode-… », 27/11/2026) : la date du transfert suffit.
+    const quand = (episode.dateSortie ?? new Date()).toLocaleDateString('fr-FR', { timeZone: 'Indian/Antananarivo' });
+    lignes.push(`Transfert interne du ${quand}`);
     ajouter('Motif du transfert', episode.motifSortie);
     ajouter('Diagnostic final', episode.diagnosticFinal);
-    ajouter('Resume d hospitalisation', episode.resumeSortie);
+    ajouter("Résumé d'hospitalisation", episode.resumeSortie);
     ajouter('Traitement de sortie', episode.traitementSortie);
-    ajouter('Conduite a tenir', episode.conduiteATenir);
-    ajouter('Etat a la sortie', episode.etatSortie);
+    ajouter('Conduite à tenir', episode.conduiteATenir);
+    ajouter('État à la sortie', episode.etatSortie);
     ajouter('Moyen de transport', episode.moyenTransport);
     return lignes.join('\n');
   }
